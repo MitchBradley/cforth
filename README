@@ -1,0 +1,51 @@
+This is a version of Mitch Bradley's C Forth system that
+has been optimized for embedded use in semi-constrained
+systems such as System On Chip processors.
+
+To port it to a new system, you will need to add some or all
+of the following new directories and files:
+
+a) CPU-dependent code and compiler definitions in src/cpu/*
+b) Platform-dependent code in src/platform/*
+c) Application-specific code in app/*
+d) Build directories for your versions in build/*
+
+There is a test build directory build/template .  You can
+copy that template directory to a new name as a starting
+point for your version.
+
+Typing "make" in build/template will make a test version.
+It builds a host image and a target image for the same
+CPU as the host.  The target image contains stub routines
+for system I/O and startup, so it probably won't run,
+but host image should work:
+
+   $ cd build/template
+   $ make
+   $ ./forth app.dic
+   $ C Forth  Copyright (c) 2008 FirmWorks
+   ok bye
+   $ 
+
+The "forth" executable program is a version of the Forth core kernel
+(the equivalent of "code words") that runs on the compilation host
+system.  It loads a "dictionary file" like "app.dic", which is a
+machine-independent representation of a Forth dictionary containing
+compiled colon definitions and other objects.
+
+The target executable "app.elf" (or its raw-binary equivalent
+"app.img") contains both a target version of the executable program
+and an embedded copy of "app.dic".  To make it run on a real
+target system, you would have to link it with appropriate startup
+code and other necessary CPU and platform I/O routines for your
+specific target.
+
+The host and target systems need not use the same CPU - the
+target can be cross-compiled.
+
+Read the Makefile in the build/template to see how to configure
+the CPU, the platform code, and the application code.
+
+There is some ARM-specific code in cpu/arm and subdirectories
+thereof.  At one point that code worked on an AT91SAM7 system,
+but the build is currently broken as a result of a tree reorg.

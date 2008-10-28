@@ -1,0 +1,85 @@
+The process of building the embedded Forth interpreter is rather complex,
+involving these steps (automated via the Makefile):
+
+a) Compile the "makename" program
+
+b) Use the C preprocessor to expand "forth.c" into "forth.ip", thus
+make the results of various #ifdef's visible.
+
+c) Run the "makename" program with "forth.ip" as input, generating
+   "init.x", "prims.h", and "vars.h".  "makename" looks for specially
+   formatted comments in the C source, e.g.
+     /*$p not */ case NOT:
+   From those lines, it generates
+     init.x  : a list of the Forth names of the various primitives
+     prims.h : an include file assigning integer values to the primitives
+     vars.h  : an include file assigning integer indices to the variables
+
+d) Compile, using the C cross-compiler ( $TCC ) for the target system,
+   various C source files, thus generating object files for the target
+   version of the Forth interpreter run-time primitives.
+
+e) Compile, using the native C compiler ( $CC ) for the compilation host
+   system,  many of the same C source files, thus generating the run-time
+   primitives for a Forth interpreter that will run on the host.  The
+   executable file is "forth".
+
+f) Compile, using the native C compiler, the "meta" program, which is
+   sort of a "bootstrap Forth compiler".
+
+g) Run "meta" on the host system to create the initial Forth dictionary
+   file "kernel.dic".  The initial dictionary contains
+
+   a) Forth words that invoke the low-level run-time primitives, which
+      are implemented in C.  Their names are taken from "init.x", which
+      was created during step (c).
+   b) Higher-level Forth words that implement the Forth interpreter/compiler,
+      which are implemented as Forth colon definitions.  The Forth source
+      code is in interp.fth .  interp.fth is standard Forth as far as it
+      goes, but "meta" implements on a restricted subset of Forth -
+      essentially colon definitions and constants.  "interp.fth" can't
+      include vocabulary definitions and the like.
+
+h) Run, still on the host, "forth" (from step e) with arguments of
+   "kernel.dic" (from step g) and "load.fth".  "forth kernel.dic" is
+   a fully functional minimal Forth interpreter/compiler that can
+   extend itself by compiling Forth code.  "load.fth" is a Forth
+   load file which includes a bunch of other Forth source files,
+   thus adding a lot of tools and other features to the Forth system.
+   It writes out the resulting extended dictionary to the file
+   "forth.dic".
+
+i) Run, still on the host, "forth forth.dic app.fth" .  This is similar
+   to step h, but instead of adding generic tools and extension to minimal
+   Forth to extended Forth, this step starts with the extended Forth and
+   adds application-specific words.  The resulting dictionary file is
+   "app.dic".
+
+j) Compile the "makebi" program.
+
+h) Run "makebi app.dic", converting "app.dic" (a Forth dictionary in
+   binary form) to a text format that the C compiler can compile into
+   a data array.  The output files are
+     dict.h     - ASCII hex representation of the Forth dictionary
+                  portion of app.dic
+     userarea.h - ASCII hex representation of the variable storage
+                  portion of app.dic
+     dicthdr.h  - Some numbers that initialize a header that tells
+                  the sizes of dict.h and userarea.h
+
+i) Compile, using the C cross-compiler ( $TCC ) for the target system,
+   rodict.c , which #include's the files generated in step h.  The
+   resulting object file "rodict.o" contains the data structures for
+   the Forth dictionary.
+
+j) Link, using the target (cross) linker, the object files compiled in
+   steps c and i.  The result is an object file "embed.o" that can
+   subsequently be linked into a target main application.  "embed.o"
+   has only a very small number of external dependencies that must
+   be provided by the main application, namely "getchar()" and "putchar()".
+   embed.o in turn provides two entry points that the main app can call:
+
+      init_forth()      - must be called once to set things up
+
+      execute_word(str) - call this to execute the Forth word "str"
+          For the interactive interpreter, use execute_word("quit")
