@@ -15,7 +15,7 @@ TCFLAGS += -g
 all: default
 
 %.o: %.S
-	$(TCC) $(INCS) -c $< -o $@
+	$(TCC) $(INCS) $(TSFLAGS) -c $< -o $@
 
 %.o: %.s
 	$(TCC) $(INCS) -c $< -o $@

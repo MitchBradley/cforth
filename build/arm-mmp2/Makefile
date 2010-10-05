@@ -20,7 +20,7 @@ SRC=$(TOPDIR)/src
 
 # BUILDDIR is relative to TOPDIR; it's the name of this directory
 # !!CHANGE!!
-BUILDDIR=build/template
+BUILDDIR=build/arm-mmp2
 
 # OBJPATH is relative to $(SRC)/cforth/embed; don't change
 OBJPATH=../../../$(BUILDDIR)
@@ -48,7 +48,7 @@ OBJPATH2=../../../$(BUILDDIR)
 # make a new platform directory and populate it with drivers and startup
 # code for your system.
 # !!CHANGE!!
-PLATPATH = $(SRC)/platform/generic
+PLATPATH = $(SRC)/platform/arm-mmp2
 
 VPATH += $(PLATPATH)
 INCS += -I$(PLATPATH)
@@ -56,7 +56,7 @@ INCS += -I$(PLATPATH)
 # Set this to ROM or RAM depending on where you want the base Forth
 # dictionary to live.  RAM is nice if you have enough, so you can
 # patch the dictionary.
-DICTIONARY=ROM
+DICTIONARY=RAM
 
 DICTSIZE=0xe000
 

@@ -16,10 +16,11 @@ u_char dictionary[MAXDICT] = {
 };
 
 // dictmax is ignored because the dictionary is defined statically
-void
+void *
 prepare_builtin_dictionary(int dictmax)
 {
     u_char *here;
     here = dictionary + builtin_hdr.dsize;
     init_compiler(dictionary, dictionary+MAXDICT, 0xfffe, here, dictionary + MAXDICT, (cell *)variables);
+    return (void *)variables;
 }
