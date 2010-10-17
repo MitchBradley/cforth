@@ -20,14 +20,14 @@ SRC=$(TOPDIR)/src
 
 # BUILDDIR is relative to TOPDIR; it's the name of this directory
 # !!CHANGE!!
-BUILDDIR=build/arm-mmp2
+BUILDDIR=build/arm-xo-1.75
 
 # OBJPATH is relative to $(SRC)/cforth/embed; don't change
 OBJPATH=../../../$(BUILDDIR)
 
 # APPPATH is where your application code lives.
 # !!CHANGE!!
-APPPATH=$(TOPDIR)/src/app/arm-mmp2
+APPPATH=$(TOPDIR)/src/app/arm-xo-1.75
 
 # APPLOADFILE is the top-level "Forth load file" for your application code.
 # It's okay to leave its name as "app.fth" and just use APPPATH to set the
@@ -48,7 +48,7 @@ OBJPATH2=../../../$(BUILDDIR)
 # make a new platform directory and populate it with drivers and startup
 # code for your system.
 # !!CHANGE!!
-PLATPATH = $(SRC)/platform/arm-mmp2
+PLATPATH = $(SRC)/platform/arm-xo-1.75
 
 VPATH += $(PLATPATH)
 INCS += -I$(PLATPATH)
