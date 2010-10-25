@@ -14,18 +14,20 @@ DUMPFLAGS = --disassemble-all -z -x
 # Platform-specific object files for low-level startup and platform I/O
 # Add more as needed
 
-PLAT_OBJS = start.o tmain.o consoleio.o
+PLAT_OBJS = start.o
 
 
 # Object files for the Forth system and application-specific extensions
 
-FORTH_OBJS = embed.o textend.o
+FORTH_OBJS = tmain.o embed.o textend.o  spiread.o consoleio.o
 
+SHIM_OBJS = shimmain.o spiread.o
 
 # Recipe for linking the final image
 
-RAMBASE = 0xd1000000
-RAMTOP  = 0xd1020000
+RAMBASE  = 0xd1000000
+RAMTOP   = 0xd1020000
+SHIMBASE = 0xd1018000
 
 TSFLAGS += -DRAMTOP=${RAMTOP}
 
@@ -38,6 +40,15 @@ app.elf: $(PLAT_OBJS) $(FORTH_OBJS)
 	    $(LIBDIRS) $(LIBGCC) -lc
 	@$(TOBJDUMP) $(DUMPFLAGS) $@ >$(@:.elf=.dump)
 	@nm -n $@ >$(@:.elf=.nm)
+
+shim.elf: $(PLAT_OBJS) $(SHIM_OBJS)
+	@echo Linking $@ ... 
+	$(TLD) -N  -o $@  $(TLFLAGS) -Ttext $(SHIMBASE) \
+	    $(PLAT_OBJS) $(SHIM_OBJS) \
+	    $(LIBDIRS) $(LIBGCC) -lc
+	@$(TOBJDUMP) $(DUMPFLAGS) $@ >$(@:.elf=.dump)
+	@nm -n $@ >$(@:.elf=.nm)
+
 
 # This rule extracts the executable bits from an ELF file, yielding raw binary.
 

@@ -69,4 +69,5 @@ include $(SRC)/common.mk                     # Probably won't need to change thi
 include $(SRC)/cforth/embed/targets.mk       # Probably won't need to change this
 include $(PLATPATH)/targets.mk
 
-default: $(NAME).$(EXT)
+default: $(NAME).$(EXT) shim.img
+

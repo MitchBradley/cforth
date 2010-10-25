@@ -6,23 +6,232 @@
 
 // Prototypes
 
+void spi_send(cell len, cell adr);
+void spi_read(cell offset, cell len, cell adr);
 #if 0   // Examples
 cell sum(cell b, cell a);
 cell byterev(cell n);
 #endif
 
+void spi_send(cell len, cell adr)
+{
+    unsigned char *p = (char *)adr;
+    unsigned long regval;
+    volatile unsigned long *fifo = (volatile unsigned long *)0xd4035010;
+    volatile unsigned long *stat = (volatile unsigned long *)0xd4035008;
+    while (len--)
+        *fifo = (unsigned long)*p++;
+}
+
+void spi_send_only(cell len, cell adr)
+{
+    unsigned char *p = (char *)adr;
+    unsigned long regval;
+    volatile unsigned long *fifo = (volatile unsigned long *)0xd4035010;
+    volatile unsigned long *stat = (volatile unsigned long *)0xd4035008;
+    int i;
+    for (i = len; i; i--)
+        *fifo = (unsigned long)*p++;
+    for (i = len; i; i--) {
+        while ((*stat & 8) == 0)
+            ;
+        regval = *fifo;
+    }
+}
+
+#ifdef notdef
+void spi_send_many(cell len, cell adr)
+{
+    unsigned char *p = (char *)adr;
+    int cansend;
+    unsigned long regval;
+    volatile unsigned long *fifo = (volatile unsigned long *)0xd4035010;
+    volatile unsigned long *stat = (volatile unsigned long *)0xd4035008;
+    while (len) {
+        do {
+            regval = *stat;
+        } while ((regval & 4) == 0);
+        cansend = 16 - ((regval >> 8) & 0xf);
+        if (cansend > len)
+            cansend = len;
+        len -= cansend;
+        while (cansend--)
+            *(volatile unsigned long *)fifo = (unsigned long)*p++;
+    }
+}
+#endif
+
+void spi_send_page(cell offset, cell len, cell adr)
+{
+    unsigned char *p = (char *)adr;
+    int cansend, i;
+    unsigned long regval;
+    volatile unsigned long *fifo = (volatile unsigned long *)0xd4035010;
+    volatile unsigned long *stat = (volatile unsigned long *)0xd4035008;
+
+    *fifo = 0x02;  // Page write
+    *fifo = (offset >> 16) & 0xff;
+    *fifo = (offset >>  8) & 0xff;
+    *fifo = offset & 0xff;
+
+    cansend = 12;
+    while (len) {
+        if (len < cansend)
+            cansend = len;
+
+        for (i = cansend; i; i--)
+            *(volatile unsigned long *)fifo = (unsigned long)*p++;
+
+        len -= cansend;
+
+        do {
+            regval = *stat;
+        } while ((regval & 4) == 0);
+        cansend = 16 - ((regval >> 8) & 0xf);
+    }
+    while ((*stat & 8) != 0)
+        regval = *fifo;
+}
+
+#define CHUNK 12
+void spi_read_slow(cell offset, cell len, cell adr)
+{
+    unsigned char *p = (char *)adr;
+    int cansend, i;
+    volatile unsigned long *fifo = (volatile unsigned long *)0xd4035010;
+    volatile unsigned long *stat = (volatile unsigned long *)0xd4035008;
+    unsigned long regval;
+    while (len) {
+        *fifo = 0x03;
+        *fifo = (offset >> 16) & 0xff;
+        *fifo = (offset >>  8) & 0xff;
+        *fifo = offset & 0xff;
+        cansend = (len < CHUNK) ? len : CHUNK;
+        for(i = cansend; i; i--) {
+            *fifo = 0;
+        }
+        for(i = 4; i; i--) {
+            while ((*stat & 8) == 0)
+                ;
+            regval = (unsigned char)*fifo;  // Discard readback from cmd and adr bytes
+        }
+
+        for(i = cansend; i; i--) {
+            while ((*stat & 8) == 0)
+                ;
+            *p++ = (unsigned char)*fifo;
+        }
+        len -= cansend;
+        offset += cansend;
+    }
+}
+
+void lfill(cell value, cell len, cell adr)
+{
+    unsigned long *p = (unsigned long *)adr;
+    while(len>0) {
+        *p++ = value;
+        len -= sizeof(long);
+    }
+}
+cell lcheck(cell value, cell len, cell adr)
+{
+    unsigned long *p = (unsigned long *)adr;
+    while(len>0) {
+        if (*p != value)
+            return (cell)p;
+        p++;
+        len -= sizeof(long);
+    }
+    return -1;
+}
+void incfill(cell len, cell adr)
+{
+    unsigned long *p = (unsigned long *)adr;
+    while(len>0) {
+        *p = (unsigned long)p;
+        p++;
+        len -= sizeof(long);
+    }
+}
+cell inccheck(cell len, cell adr)
+{
+    unsigned long *p = (unsigned long *)adr;
+    while(len>0) {
+        if (*p != (cell)p)
+            return (cell)p;
+        p++;
+        len -= sizeof(long);
+    }
+    return -1;
+}
+#define NEXTRAND(n) ((n*1103515245+12345) & 0x7fffffff)
+void randomfill(cell len, cell adr)
+{
+    unsigned long *p = (unsigned long *)adr;
+    unsigned long value = 0;
+    while(len>0) {
+        value = NEXTRAND(value);
+        *p = value;
+        p++;
+        len -= sizeof(long);
+    }
+}
+cell randomcheck(cell len, cell adr)
+{
+    unsigned long *p = (unsigned long *)adr;
+    unsigned long value = 0;
+    while(len>0) {
+        value = NEXTRAND(value);
+        if (*p != value)
+            return (cell)p;
+        p++;
+        len -= sizeof(long);
+    }
+    return -1;
+}
+
+
+cell spi_read_status()
+{
+    volatile unsigned long *fifo = (volatile unsigned long *)0xd4035010;
+    volatile unsigned long *stat = (volatile unsigned long *)0xd4035008;
+    unsigned long regval;
+    *fifo = 5;
+    *fifo = 0;
+    while ((*stat & 8) == 0) ;
+    regval = (unsigned char)*fifo;  // Discard readback from cmd byte
+    while ((*stat & 8) == 0) ;
+    return *fifo;
+}
+
 cell ((* const ccalls[])()) = {
 // Add your own routines here
+    (cell (*)())spi_send,        // Entry # 0
+    (cell (*)())spi_send_only,   // Entry # 1
+    (cell (*)())spi_read_slow,   // Entry # 2
+    (cell (*)())spi_read_status, // Entry # 3
+    (cell (*)())spi_send_page,   // Entry # 4
+    (cell (*)())spi_read,        // Entry # 5
+    (cell (*)())lfill,           // Entry # 6
+    (cell (*)())lcheck,          // Entry # 7
+    (cell (*)())incfill,         // Entry # 8
+    (cell (*)())inccheck,        // Entry # 9
+    (cell (*)())randomfill,      // Entry # 10
+    (cell (*)())randomcheck,     // Entry # 11
 #if 0  // Examples
     (cell (*)())sum,          // Entry # 0
     (cell (*)())byterev,      // Entry # 1
 #endif
 };
 
+
+
 // Forth words to call the above routines may be created by:
 //
-//  system also
-//  0 ccall: sum      { i.a i.b -- i.sum }
+// system also
+// 0 ccall: spi-send     { i.adr i.len -- }
+
 //  1 ccall: byterev  { s.in -- s.out }
 //
 // and could be used as follows:

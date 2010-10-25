@@ -446,14 +446,14 @@ warning off
 warning on
 : u.r  ( u len -- )  >r   (u.)   r> over - spaces  type  ;
 : (.)  ( n -- a len )  dup abs u>d   <# #s  rot sign   #>  ;
-: (.s  ( -- )  depth 0 ?do  depth i - 1- pick .  loop  ;
-: .s  ( -- )  ?stack  depth  if  (.s  else  ." Empty "  then  ;
 : s.  ( n -- )  (.)   type space  ;
 : .  ( n -- ) base @ 10 =  if  s.  else  u.  then  ;
 : .r  ( n l -- )  >r  (.)  r> over - spaces  type  ;
 16\ : l.  ( l -- )  tuck labs  <# #s nlswap sign #> type space  ;
 16\ : ul.  ( l -- )  <# #s #> type space  ;
 32\ alias l. .         ( l -- )
+: (.s  ( -- )  depth 0 ?do  depth i - 1- pick .  loop  ;
+: .s  ( -- )  ?stack  depth  if  (.s  else  ." Empty "  then  ;
 
 : ?  ( adr -- )  @ .  ;
 
