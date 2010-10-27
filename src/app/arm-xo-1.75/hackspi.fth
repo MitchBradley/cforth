@@ -3,7 +3,9 @@
    h# 5003 h# d401e100 l!
    h# 5003 h# d401e104 l!
    h# 5003 h# d401e108 l!
-   h# 5003 h# d401e10c l!
+   d# 46 gpio-set
+   d# 46 gpio-dir-out
+   h# c0 h# d401e10c l!
 ;
 
 : init-spi  ( -- )
@@ -15,18 +17,53 @@
 
 h# 10 buffer: cmdbuf
 
+: [[ d# 46 gpio-clr  ;
+: ]] d# 46 gpio-set  ;
+
 0 value bufp
 : spi-out  ( n -- )  bufp c!  bufp 1+ to bufp  ;
 : spi-cmd  ( n -- )  cmdbuf to bufp  spi-out  ;
-: spi-cs-off  ( -- )  cmdbuf bufp over - spi-send-only  ;
+: spi-cs-off  ( -- )  cmdbuf bufp over - [[ spi-send-only ]]  ;
 
 : spi-adr  ( offset -- )  lbsplit drop  spi-out spi-out spi-out  ;
+
+\ Programmed I/O versions
+: cs0  d# 46 gpio-clr ;
+: cs1  d# 46 gpio-set ;
+: pio-mode  d# 46 gpio-set  d# 46 gpio-dir-out  h# c0 d# 46 af!  ;
+: ssp-mode  h# 5003 d# 46 af!  ;
+: g  begin d4035008 l@ 8 and until  d4035010 l@  ;
+: p  d4035010 l! ;
+: p0 0 d4035010 l! ;
+: slow-spi-read  ( adr len offset -- )
+   pio-mode
+   cs0
+      3 p
+      dup d# 16 rshift h# ff and p
+      dup 8 rshift ff and p
+      ff and p
+      g drop g drop g drop g drop
+      bounds ?do  p0 g i c!  loop
+   cs1
+;
+: flush-ssp  ( -- )
+   begin d4035008 l@ 8 and  while  d4035010 l@ drop  repeat 
+;
+: .spi-id  ( -- )
+   flush-ssp
+   cs0
+   h# 9f p  g drop
+   ." ID: " p0 g .  p0 g .  p0 g .  cr
+   cs1
+;
 
 : identify-spi-flash  ( -- )
    h# 9f spi-cmd  0 spi-cmd  0 spi-cmd  0 spi-cmd  spi-cs-off
 ;
 
-: wakeup-spi-flash  ( -- )  h# ab spi-cmd spi-cs-off  ;
+: wakeup-spi-flash  ( -- )
+   h# ab spi-cmd 0 spi-out 0 spi-out 0 spi-out  0 spi-out  spi-cs-off
+;
 
 : wait-write-done  ( -- )
    \ The Spansion part's datasheet claims that the only operation
@@ -35,7 +72,11 @@ h# 10 buffer: cmdbuf
 
    d# 100000 0  do  \ 1 second at 10 us/loop
       d# 10 us
-      spi-read-status 1 and 0=  if  unloop exit  then  \ Test WIP bit
+      [[ spi-read-status ]]  dup  1 and 0=  if  ( stat )  \ Test WIP bit
+         h# 3c and  abort" SPI FLASH Write Protect Bits came back on!"
+         unloop exit
+      then 
+      drop
    loop
    true abort" SPI FLASH write timed out"
 ;
@@ -46,7 +87,7 @@ h# 10 buffer: cmdbuf
 
    d# 500 0  do  \ 1 millisecond at 2 us/loop
       d# 2 us
-      spi-read-status 2 and  if  unloop exit  then  \ Test WE bit
+      [[ spi-read-status ]]  2 and  if  unloop exit  then  \ Test WE bit
    loop
    true abort" SPI FLASH write enable timed out"
 ;
@@ -65,11 +106,11 @@ h# 10 buffer: cmdbuf
 ;
 
 \ "0 spi-write-status" turns off write protect bits
-: clear-spi-flash-write-protect  ( -- )  wakeup-spi-flash  0 spi-write-status  ;
+: clear-spi-flash-write-protect  ( -- )  0 spi-write-status  ;
 
 : write-spi-page  ( adr len offset -- )
-   spi-write-enable   ( adr len offset )
-   spi-send-page      ( )   
+   spi-write-enable     ( adr len offset )
+   [[ spi-send-page ]]  ( )   
    wait-write-done
 ;
 
@@ -77,7 +118,8 @@ h#   100 constant /spi-page
 h# 10000 constant /spi-block
 /spi-page buffer: ff-buf
 : dirty?  ( adr -- flag )  ff-buf /spi-page comp  ;
-: erase-range  ( offset len -- )
+: erase-range  ( len offset -- )
+   swap                                ( offset len )
    over 0=  over h# 100000 =  and  if  ( offset len )
       2drop  erase-spi-chip       ( )
    else                           ( offset len )
@@ -89,6 +131,8 @@ h# 10000 constant /spi-block
    then
 ;
 : program-range  ( adr len offset -- )
+   ff-buf /spi-page h# ff fill             ( offset adr len )
+
    -rot                                    ( offset adr len )
    bounds ?do                              ( offset )
       i dirty?  if                         ( offset )
@@ -109,6 +153,7 @@ h# 10000 constant /spi-block
    spi-read         ( r: len )
    h# 100000 r>  h# ffffffff lcheck dup -1 <>  if  ( adr )
       ." Not erased at address " h# 100000 - . cr
+      abort
    else                                            ( -1 )
       drop
    then
@@ -116,25 +161,28 @@ h# 10000 constant /spi-block
 [ifndef] 3dup  : 3dup  2 pick  2 pick  2 pick  ;  [then]
 \ Assumes offset is block-aligned
 : write-setup-dance  ( -- )
-   init-spi
+\  init-spi
    wakeup-spi-flash
-   identify-spi-flash
+   .spi-id
    d# 40 us
    clear-spi-flash-write-protect   ( adr len offset )
-;   
-: erase-dance  ( adr len offset -- )
-   ff-buf /spi-page h# ff fill
-   write-setup-dance
-   ." Erasing" cr
-   2dup swap erase-range           ( adr len offset )
-   2dup check-spi-erased           ( adr len offset )
 ;
-: reflash  ( adr len offset -- )
-   erase-dance
+: erase-dance  ( len offset -- )
+   ." Erasing" cr
+   write-setup-dance
+   2dup erase-range        ( adr len offset )
+   check-spi-erased        ( adr len offset )
+;
+: program-dance  ( adr len offset -- )
    ." Programming" cr
    write-setup-dance
    3dup program-range              ( adr len offset )
    ." Verifying" cr
    check-spi-programmed
 ;
+: reflash  ( adr len offset -- )
+   2dup erase-dance
+   program-dance
+;
 : reflash0  ( -- )  0 h# 100000 0 reflash  ;
+

@@ -19,9 +19,11 @@ PLAT_OBJS = start.o
 
 # Object files for the Forth system and application-specific extensions
 
-FORTH_OBJS = tmain.o embed.o textend.o  spiread.o consoleio.o
+# FORTH_OBJS = tmain.o embed.o textend.o  spiread.o consoleio.o
+FORTH_OBJS = tmain.o embed.o textend.o  spiread-simpler.o consoleio.o
 
-SHIM_OBJS = shimmain.o spiread.o
+# SHIM_OBJS = shimmain.o spiread.o
+SHIM_OBJS = shimmain.o spiread-simpler.o
 
 # Recipe for linking the final image
 

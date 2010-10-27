@@ -36,3 +36,4 @@ void spi_read(cell offset, cell len, cell adr)
     *(volatile unsigned long *)0xd4035000 = 0x00000007;  // 8-bit, not enabled
     *(volatile unsigned long *)0xd4035000 = 0x00000087;  // 8-bit, enabled
 }
+

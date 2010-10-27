@@ -29,7 +29,11 @@ purpose: Program Armada610 Fuses
    h# d4292840 l!  ( v3 )
    h# d4292844 l!  ( )
    h# 0203.4000 fuse-ctl!   \ ClkDiv +         HiV + Burn + SOFT
+   begin  h# d4292984 l@ h# 100 and  until  \ Wait for complete
    h# 0202.4000 fuse-ctl!   \ ClkDiv +         HiV +      + SOFT
+   h# 0200.4000 fuse-ctl!   \ ClkDiv +                    + SOFT
+   h# 0240.4000 fuse-ctl!   \ ClkDiv + SetRst             + SOFT
+   h# 0200.4000 fuse-ctl!   \ ClkDiv +                    + SOFT
 ;
 : read-fuses  ( -- )
    ena-fuse-module

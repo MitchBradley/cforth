@@ -13,22 +13,27 @@ cell sum(cell b, cell a);
 cell byterev(cell n);
 #endif
 
+#define DECLARE_REGS \
+    volatile unsigned long *fifo = (volatile unsigned long *)0xd4035010; \
+    volatile unsigned long *stat = (volatile unsigned long *)0xd4035008
+
 void spi_send(cell len, cell adr)
 {
     unsigned char *p = (char *)adr;
     unsigned long regval;
-    volatile unsigned long *fifo = (volatile unsigned long *)0xd4035010;
-    volatile unsigned long *stat = (volatile unsigned long *)0xd4035008;
+    DECLARE_REGS;
     while (len--)
         *fifo = (unsigned long)*p++;
+    do {
+        regval = *stat;
+    } while ((regval & 0xf04) != 4);
 }
 
 void spi_send_only(cell len, cell adr)
 {
     unsigned char *p = (char *)adr;
     unsigned long regval;
-    volatile unsigned long *fifo = (volatile unsigned long *)0xd4035010;
-    volatile unsigned long *stat = (volatile unsigned long *)0xd4035008;
+    DECLARE_REGS;
     int i;
     for (i = len; i; i--)
         *fifo = (unsigned long)*p++;
@@ -45,8 +50,7 @@ void spi_send_many(cell len, cell adr)
     unsigned char *p = (char *)adr;
     int cansend;
     unsigned long regval;
-    volatile unsigned long *fifo = (volatile unsigned long *)0xd4035010;
-    volatile unsigned long *stat = (volatile unsigned long *)0xd4035008;
+    DECLARE_REGS;
     while (len) {
         do {
             regval = *stat;
@@ -66,8 +70,7 @@ void spi_send_page(cell offset, cell len, cell adr)
     unsigned char *p = (char *)adr;
     int cansend, i;
     unsigned long regval;
-    volatile unsigned long *fifo = (volatile unsigned long *)0xd4035010;
-    volatile unsigned long *stat = (volatile unsigned long *)0xd4035008;
+    DECLARE_REGS;
 
     *fifo = 0x02;  // Page write
     *fifo = (offset >> 16) & 0xff;
@@ -98,8 +101,7 @@ void spi_read_slow(cell offset, cell len, cell adr)
 {
     unsigned char *p = (char *)adr;
     int cansend, i;
-    volatile unsigned long *fifo = (volatile unsigned long *)0xd4035010;
-    volatile unsigned long *stat = (volatile unsigned long *)0xd4035008;
+    DECLARE_REGS;
     unsigned long regval;
     while (len) {
         *fifo = 0x03;
@@ -194,8 +196,7 @@ cell randomcheck(cell len, cell adr)
 
 cell spi_read_status()
 {
-    volatile unsigned long *fifo = (volatile unsigned long *)0xd4035010;
-    volatile unsigned long *stat = (volatile unsigned long *)0xd4035008;
+    DECLARE_REGS;
     unsigned long regval;
     *fifo = 5;
     *fifo = 0;

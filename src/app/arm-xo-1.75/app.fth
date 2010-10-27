@@ -11,6 +11,7 @@ fl hwaddrs.fth
 
 defer ms  defer get-msecs
 fl timer.fth
+fl timer2.fth
 fl gpio.fth
 fl mfpr.fth
 fl boardgpio.fth
@@ -58,6 +59,18 @@ h# 1000.0000 value memtest-length
    then
 ;
 
+: ofw  ( -- )
+\   0 h# e0000 h# 20000 spi-read
+\   spi-go
+   d# 20 gpio-pin@  0=  if  ." Skipping OFW" cr  exit  then
+   0 h# c0000 h# 20000 spi-read
+   ." releasing" cr
+   d# 20 ms
+   0 h# d4050020 l!  \ Release reset for PJ4
+   begin  d# 50 ms  d# 20 gpio-pin@ 0=  until  \ Wait until KEY_5 GPIO pressed
+   ." Resuming CForth on Security Processor" cr
+;
+
 : init
    init-timers
    set-gpio-directions
@@ -66,17 +79,9 @@ h# 1000.0000 value memtest-length
    init-dram
    fix-fuses
    init-spi
+   ofw
 ;
 
-: ofw  ( -- )
-\   0 h# e0000 h# 20000 spi-read
-\   spi-go
-   0 h# c0000 h# 20000 spi-read
-   ." releasing" cr
-   d# 20 ms
-   0 h# d4050020 l!
-   begin again
-;
 : t
    0 h# 0 l!
 \  h# 2000.0000 dup l!

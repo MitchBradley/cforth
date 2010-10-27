@@ -1,15 +1,28 @@
 
 // Character I/O stubs
 
-// #define UARTREG ((unsigned int volatile *)0xd4018000)  // UART3
-#define UARTREG ((unsigned int volatile *)0xd4030000)  // UART1
+#define UART3REG ((unsigned int volatile *)0xd4018000)  // UART3 - main board
+#define UART1REG ((unsigned int volatile *)0xd4030000)  // UART1 - JTAG board
+
+void tx1(char c)
+{
+    // send the character to the console output device
+    while ((UART1REG[5] & 0x20) == 0)
+        ;
+    UART1REG[0] = (unsigned int)c;
+}
+void tx3(char c)
+{
+    // send the character to the console output device
+    while ((UART3REG[5] & 0x20) == 0)
+        ;
+    UART3REG[0] = (unsigned int)c;
+}
 
 void tx(char c)
 {
-    // send the character to the console output device
-    while ((UARTREG[5] & 0x20) == 0)
-        ;
-    UARTREG[0] = (unsigned int)c;
+    tx1(c);
+    tx3(c);
 }
 
 void putchar(char c)
@@ -19,8 +32,15 @@ void putchar(char c)
     tx(c);
 }
 
+int kbhit1() {
+    return (UART1REG[5] & 0x1) != 0;
+}
+int kbhit3() {
+    return (UART3REG[5] & 0x1) != 0;
+}
+
 int kbhit() {
-    return (UARTREG[5] & 0x1) != 0;
+    return kbhit1() || kbhit3();
 }
 
 int getchar()
@@ -28,7 +48,8 @@ int getchar()
     while (!kbhit())
         ;
     // return the next character from the console input device
-    return (unsigned char)UARTREG[0];
+    
+    return (unsigned char) (kbhit1() ? UART1REG[0] : UART3REG[0]);
 }
 
 void init_io()
@@ -41,17 +62,26 @@ void init_io()
 
 //  *(int *)0xd401e120 = 0xc1;        // GPIO51 = af1 for UART3 RXD
 //  *(int *)0xd401e124 = 0xc1;        // GPIO52 = af1 for UART3 TXD
+
     *(int *)0xd401e260 = 0xc4;        // GPIO115 = af4 for UART3 RXD
     *(int *)0xd401e264 = 0xc4;        // GPIO116 = af4 for UART3 TXD
+
     *(int *)0xd401e0c8 = 0xc1;        // GPIO29 = af1 for UART1 RXD
     *(int *)0xd401e0cc = 0xc1;        // GPIO30 = af1 for UART1 TXD
 
-    UARTREG[1] = 0x40;  // Marvell-specific UART Enable bit
-    UARTREG[3] = 0x83;  // Divisor Latch Access bit
-    UARTREG[0] = 42;    // 38400 baud
-    UARTREG[1] = 00;    // 38400 baud
-    UARTREG[3] = 0x03;  // 8n1
-    UARTREG[2] = 0x07;  // FIFOs and stuff
+    UART1REG[1] = 0x40;  // Marvell-specific UART Enable bit
+    UART1REG[3] = 0x83;  // Divisor Latch Access bit
+    UART1REG[0] = 42;    // 38400 baud
+    UART1REG[1] = 00;    // 38400 baud
+    UART1REG[3] = 0x03;  // 8n1
+    UART1REG[2] = 0x07;  // FIFOs and stuff
+
+    UART3REG[1] = 0x40;  // Marvell-specific UART Enable bit
+    UART3REG[3] = 0x83;  // Divisor Latch Access bit
+    UART3REG[0] = 42;    // 38400 baud
+    UART3REG[1] = 00;    // 38400 baud
+    UART3REG[3] = 0x03;  // 8n1
+    UART3REG[2] = 0x07;  // FIFOs and stuff
 }
 
 void irq_handler()
