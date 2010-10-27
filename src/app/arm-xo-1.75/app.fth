@@ -11,7 +11,7 @@ fl hwaddrs.fth
 
 defer ms  defer get-msecs
 fl timer.fth
-fl timer2.fth
+\ fl timer2.fth
 fl gpio.fth
 fl mfpr.fth
 fl boardgpio.fth
@@ -63,6 +63,8 @@ h# 1000.0000 value memtest-length
 \   0 h# e0000 h# 20000 spi-read
 \   spi-go
    d# 20 gpio-pin@  0=  if  ." Skipping OFW" cr  exit  then
+   init-spi
+   .spi-id
    0 h# c0000 h# 20000 spi-read
    ." releasing" cr
    d# 20 ms
@@ -78,10 +80,10 @@ h# 1000.0000 value memtest-length
    clk-fast
    init-dram
    fix-fuses
-   init-spi
    ofw
 ;
 
+0 [if]
 : t
    0 h# 0 l!
 \  h# 2000.0000 dup l!
@@ -93,6 +95,7 @@ h# 1000.0000 value memtest-length
 ;
 
 : what  init-dram  t  ;
+[then]
 
 \ Run this at startup
 : app  init  hex quit  ;

@@ -22,8 +22,7 @@ PLAT_OBJS = start.o
 # FORTH_OBJS = tmain.o embed.o textend.o  spiread.o consoleio.o
 FORTH_OBJS = tmain.o embed.o textend.o  spiread-simpler.o consoleio.o
 
-# SHIM_OBJS = shimmain.o spiread.o
-SHIM_OBJS = shimmain.o spiread-simpler.o
+SHIM_OBJS = shimmain.o spiread.o
 
 # Recipe for linking the final image
 
