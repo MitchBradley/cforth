@@ -65,8 +65,15 @@ h# 1000.0000 value memtest-length
    d# 20 gpio-pin@  0=  if  ." Skipping OFW" cr  exit  then
    init-spi
    .spi-id
-   0 h# c0000 h# 20000 spi-read
+
+   h# 2fa0.0000 h# c0000 h# 20000 spi-read
+
    ." releasing" cr
+   h# ea000000 h# 0 l!  \ b 8
+   h# 1fa00000 h# 4 l!  \ OFW load address
+   h# e51f000c h# 8 l!  \ ldr r0,[pc,#-0xc]
+   h# e1a0f000 h# c l!  \ mov pc,r0
+
    d# 20 ms
    0 h# d4050020 l!  \ Release reset for PJ4
    begin  d# 50 ms  d# 20 gpio-pin@ 0=  until  \ Wait until KEY_5 GPIO pressed
