@@ -128,7 +128,7 @@ bye:
     mvn r2, #255        // 0xffffff00 - MCR_RCR
     mov r3, #1          // REMAP bit
     str r3, [r2, #0]    // Map the ROM back to 0
-    b   0
+    b   _start
 
 .L1:
     .word   reset_reason
