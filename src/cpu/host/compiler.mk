@@ -3,7 +3,7 @@
 
 TCC=$(CC)
 TLD=$(LD)
-LIBDIRS=
+LIBDIRS=-L$(dir $(shell $(TCC) -print-libgcc-file-name))
 
 TOBJDUMP=objdump
 TOBJCOPY=objcopy
