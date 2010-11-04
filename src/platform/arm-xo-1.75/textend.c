@@ -234,7 +234,7 @@ cell get_tcm_size()
 
 cell inflate_adr(void)
 {
-    return inflate;
+    return (cell)inflate;
 }
 
 cell ((* const ccalls[])()) = {

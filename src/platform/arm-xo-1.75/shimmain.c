@@ -6,6 +6,8 @@ void spi_read(cell offset, cell len, cell adr);
 #define UARTREG ((unsigned int volatile *)0xd4018000)  // UART3
 // #define UARTREG ((unsigned int volatile *)0xd4030000)  // UART1
 
+void init_io(void);
+
 main()
 {
     void *up;

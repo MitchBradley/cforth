@@ -25,11 +25,12 @@ void tx(char c)
     tx3(c);
 }
 
-void putchar(char c)
+int putchar(int c)
 {
     if (c == '\n')
         tx('\r');
     tx(c);
+    return c;
 }
 
 int kbhit1() {

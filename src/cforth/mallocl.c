@@ -14,13 +14,15 @@ getmem(unsigned int nbytes)
 void
 memfree(char *ptr)
 {
+    extern void free(void *);
+
     free(ptr);
 }
 
 char *
 memresize(char *ptr, unsigned int nbytes)
 {
-    extern char *realloc();
+    extern void *realloc(void *, unsigned int);
 
     return( realloc(ptr, nbytes) );
 }
