@@ -4,7 +4,7 @@
 # for specific environments
 
 TLFLAGS += -static
-TCFLAGS += -O2
+TCFLAGS += -O
 TCFLAGS += -g
 # TCFLAGS = -O2 -fno-optimize-sibling-calls
 

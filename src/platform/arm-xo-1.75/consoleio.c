@@ -71,15 +71,15 @@ void init_io()
 
     UART1REG[1] = 0x40;  // Marvell-specific UART Enable bit
     UART1REG[3] = 0x83;  // Divisor Latch Access bit
-    UART1REG[0] = 42;    // 38400 baud
-    UART1REG[1] = 00;    // 38400 baud
+    UART1REG[0] = 14;    // 115200 baud
+    UART1REG[1] = 00;    // 115200 baud
     UART1REG[3] = 0x03;  // 8n1
     UART1REG[2] = 0x07;  // FIFOs and stuff
 
     UART3REG[1] = 0x40;  // Marvell-specific UART Enable bit
     UART3REG[3] = 0x83;  // Divisor Latch Access bit
-    UART3REG[0] = 42;    // 38400 baud
-    UART3REG[1] = 00;    // 38400 baud
+    UART3REG[0] = 14;    // 115200 baud
+    UART3REG[1] = 00;    // 11500 baud
     UART3REG[3] = 0x03;  // 8n1
     UART3REG[2] = 0x07;  // FIFOs and stuff
 }

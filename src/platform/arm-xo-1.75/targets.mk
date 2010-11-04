@@ -8,6 +8,7 @@
 
 DUMPFLAGS = --disassemble-all -z -x
 
+VPATH += $(SRC)/cpu/arm $(SRC)/platform/arm-xo-1.75 $(SRC)/lib
 # VPATH += $(SRC)/cpu/<whatever> $(SRC)/platform/<whatever>
 # INC += -I$(SRC)/cpu/<whatever> -I$(SRC)/platform/<whatever>
 
@@ -20,7 +21,7 @@ PLAT_OBJS = start.o
 # Object files for the Forth system and application-specific extensions
 
 # FORTH_OBJS = tmain.o embed.o textend.o  spiread.o consoleio.o
-FORTH_OBJS = tmain.o embed.o textend.o  spiread-simpler.o consoleio.o
+FORTH_OBJS = tmain.o embed.o textend.o  spiread-simpler.o consoleio.o inflate.o
 
 SHIM_OBJS = shimmain.o spiread.o
 

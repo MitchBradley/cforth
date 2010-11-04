@@ -39,8 +39,14 @@ fl fuse.fth
 9 ccall: inc-check         { a.adr i.len -- i.erraddr }
 d# 10 ccall: random-fill   { a.adr i.len -- }
 d# 11 ccall: random-check  { a.adr i.len -- i.erraddr }
+d# 12 ccall: (inflate)     { a.compadr a.expadr i.nohdr a.workadr -- i.expsize }
+d# 13 ccall: control@      { -- i.value }
+d# 14 ccall: control!      { i.value -- }
+d# 15 ccall: tcm-size@     { -- i.value }
+d# 16 ccall: inflate-adr   { -- a.value }
 
 fl hackspi.fth
+fl dropin.fth
 
 0 value memtest-start
 h# 1000.0000 value memtest-length
@@ -59,15 +65,11 @@ h# 1000.0000 value memtest-length
    then
 ;
 
-: ofw  ( -- )
-\   0 h# e0000 h# 20000 spi-read
-\   spi-go
-   d# 20 gpio-pin@  0=  if  ." Skipping OFW" cr  exit  then
-   init-spi
-   .spi-id
-
-   h# 2fa0.0000 h# c0000 h# 20000 spi-read
-
+: cforth-wait  ( -- )
+   begin  d# 50 ms  d# 20 gpio-pin@ 0=  until  \ Wait until KEY_5 GPIO pressed
+   ." Resuming CForth on Security Processor" cr
+;
+: ofw-go  ( -- )
    ." releasing" cr
    h# ea000000 h# 0 l!  \ b 8
    h# 1fa00000 h# 4 l!  \ OFW load address
@@ -76,8 +78,34 @@ h# 1000.0000 value memtest-length
 
    d# 20 ms
    0 h# d4050020 l!  \ Release reset for PJ4
-   begin  d# 50 ms  d# 20 gpio-pin@ 0=  until  \ Wait until KEY_5 GPIO pressed
-   ." Resuming CForth on Security Processor" cr
+;
+
+: ofw-old  ( -- )
+\   0 h# e0000 h# 20000 spi-read
+\   spi-go
+   d# 20 gpio-pin@  0=  if  ." Skipping OFW" cr  exit  then
+
+   init-spi
+   .spi-id
+
+   h# 2fa0.0000 h# c0000 h# 20000 spi-read
+
+   ofw-go
+   cforth-wait
+;
+
+: ofw  ( -- )
+\   0 h# e0000 h# 20000 spi-read
+\   spi-go
+   d# 20 gpio-pin@  0=  if  ." Skipping OFW" cr  exit  then
+
+   init-spi
+   .spi-id
+
+   h# 2fa0.0000 " firmware" load-drop-in
+
+   ofw-go
+   cforth-wait
 ;
 
 : init
@@ -87,6 +115,7 @@ h# 1000.0000 value memtest-length
    clk-fast
    init-dram
    fix-fuses
+   init-spi
    ofw
 ;
 

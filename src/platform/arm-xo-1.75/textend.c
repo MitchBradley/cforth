@@ -8,6 +8,7 @@
 
 void spi_send(cell len, cell adr);
 void spi_read(cell offset, cell len, cell adr);
+cell inflate(cell wpptr, cell nohdr, cell clear, cell compr);
 #if 0   // Examples
 cell sum(cell b, cell a);
 cell byterev(cell n);
@@ -206,6 +207,36 @@ cell spi_read_status()
     return *fifo;
 }
 
+void set_control_reg(cell arg)
+{
+    __asm__ __volatile__ (
+        "mcr	p15, 0, %0, c1, c0, 0\n\t"
+        : : "r" (arg));
+}
+
+cell get_control_reg()
+{
+    unsigned long value;
+    __asm__ __volatile__ (
+        "mrc	p15, 0, %0, c1, c0, 0\n\t"
+        : "=r" (value));
+    return value;
+}
+
+cell get_tcm_size()
+{
+    unsigned long value;
+    __asm__ __volatile__ (
+        "mrc	p15, 0, %0, c0, c0, 2\n\t"
+        : "=r" (value));
+    return value;
+}
+
+cell inflate_adr(void)
+{
+    return inflate;
+}
+
 cell ((* const ccalls[])()) = {
 // Add your own routines here
     (cell (*)())spi_send,        // Entry # 0
@@ -220,6 +251,11 @@ cell ((* const ccalls[])()) = {
     (cell (*)())inccheck,        // Entry # 9
     (cell (*)())randomfill,      // Entry # 10
     (cell (*)())randomcheck,     // Entry # 11
+    (cell (*)())inflate,         // Entry # 12
+    (cell (*)())get_control_reg, // Entry # 13
+    (cell (*)())set_control_reg, // Entry # 14
+    (cell (*)())get_tcm_size,    // Entry # 15
+    (cell (*)())inflate_adr,     // Entry # 16
 #if 0  // Examples
     (cell (*)())sum,          // Entry # 0
     (cell (*)())byterev,      // Entry # 1
