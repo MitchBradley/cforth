@@ -33,7 +33,7 @@ SHIMBASE = 0xd1018000
 
 TSFLAGS += -DRAMTOP=${RAMTOP}
 
-LIBGCC= $(shell gcc -print-libgcc-file-name)
+LIBGCC= -lgcc
 
 app.elf: $(PLAT_OBJS) $(FORTH_OBJS)
 	@echo Linking $@ ... 

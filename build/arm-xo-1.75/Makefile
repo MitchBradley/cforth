@@ -63,7 +63,7 @@ DICTSIZE=0xe000
 # Target compiler definitions.  Change this to a different cpu/* directory
 # if you are cross-compiling
 # !!CHANGE!!
-include $(SRC)/cpu/host/compiler.mk
+include $(SRC)/cpu/arm/compiler.mk
 
 include $(SRC)/common.mk                     # Probably won't need to change this
 include $(SRC)/cforth/embed/targets.mk       # Probably won't need to change this
