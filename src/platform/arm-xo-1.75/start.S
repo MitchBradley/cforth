@@ -44,11 +44,6 @@ dorestart:
     orr r5, r5, #0xdf   // System mode (0x1f), Disable interrupts (0xc0)
     msr cpsr, r5        // Now we should be back to a clean mode
 
-    mcr p15,0,r0,cr7,cr5,0  // Flush Icache
-    mcr p15,0,r0,cr1,cr0,0  // Read control register
-    orr r0,r0,#0x1000       // Icache on
-    mrc p15,0,r0,cr1,cr0,0  // Write control register
-
     ldr sp, =RAMTOP
 
 #if STALLER1
