@@ -1,4 +1,10 @@
 hex
+: basic-setup  ( -- )
+   \ Stuff from jasper.c that is not already done elsewhere
+   0001ffff d42828dc l! \ PMUA_GLB_CLK_CTRL - Enable CLK66 to APB, PLL2/12/6/3/16/8/4/2/1, PLL1/12/6/3/16/8/4 
+   \ Slow queue, L2 cache burst 8, bypass L2 clock gate, disable MMU xlat abort, Multi-ICE WFI, bypass clock gate
+   d4282c08 l@  00086240 or  00800000 invert and  d4282c08 l!
+;
 : clk-fast
    ffffffff d4050024 l!  \ PMUM_CGR_SP     \ All clocks ON
    00061808 d4282888 l!  \ PMUA_DEBUG      \ Reserved bits, but supposed to "allow freq"

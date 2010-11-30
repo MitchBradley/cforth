@@ -109,6 +109,7 @@ h# 1000.0000 value memtest-length
 ;
 
 : init
+   basic-setup
    init-timers
    set-gpio-directions
    init-mfprs
