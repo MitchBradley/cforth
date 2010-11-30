@@ -22,8 +22,8 @@ purpose: Board-specific setup details - pin assigments, etc.
    d# 58 gpio-dir-out  \ WLAN_RESET#
    d# 73 gpio-dir-out  \ CAM_RST
 
-   d# 125 gpio-dir-out  \ EC_SPI_ACK
    d# 125 gpio-set      \ EC_SPI_ACK
+   d# 125 gpio-dir-out  \ EC_SPI_ACK
    d# 145 gpio-dir-out  \ EN_CAM_PWR
    d# 146 gpio-dir-out  \ HUB_RESET#
    d# 151 gpio-dir-out  \ DCONLOAD
