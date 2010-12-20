@@ -1,5 +1,8 @@
 \ Load file for application-specific Forth extensions
 
+\ create cl2-a1
+create cl2-a2
+
 alias purpose: \
 
 fl ../../lib/misc.fth
@@ -44,6 +47,7 @@ d# 13 ccall: control@      { -- i.value }
 d# 14 ccall: control!      { i.value -- }
 d# 15 ccall: tcm-size@     { -- i.value }
 d# 16 ccall: inflate-adr   { -- a.value }
+d# 17 ccall: wfi           { -- }
 
 fl hackspi.fth
 fl dropin.fth
@@ -117,7 +121,6 @@ h# 1000.0000 value memtest-length
    init-dram
    fix-fuses
    init-spi
-   ofw
 ;
 
 0 [if]
@@ -135,7 +138,7 @@ h# 1000.0000 value memtest-length
 [then]
 
 \ Run this at startup
-: app  init  hex quit  ;
+: app  init  ofw  hex quit  ;
 \ " ../objs/tester" $chdir drop
 
 " app.dic" save
