@@ -237,6 +237,14 @@ cell inflate_adr(void)
     return (cell)inflate;
 }
 
+cell wfi()
+{
+    __asm__ __volatile__ (
+        "wfi\n\t"
+        );
+    return 0;
+}
+
 cell ((* const ccalls[])()) = {
 // Add your own routines here
     (cell (*)())spi_send,        // Entry # 0
@@ -256,6 +264,7 @@ cell ((* const ccalls[])()) = {
     (cell (*)())set_control_reg, // Entry # 14
     (cell (*)())get_tcm_size,    // Entry # 15
     (cell (*)())inflate_adr,     // Entry # 16
+    (cell (*)())wfi,             // Entry # 17
 #if 0  // Examples
     (cell (*)())sum,          // Entry # 0
     (cell (*)())byterev,      // Entry # 1
