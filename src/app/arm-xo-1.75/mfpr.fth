@@ -49,5 +49,6 @@ h# d401.e000 constant mfpr-base
 : af@  ( gpio# -- function# )  gpio>mfpr l@  ;
 : af!  ( function# gpio# -- )  gpio>mfpr l!  ;
 : af,   ( n -- )  h# c0 + w,  ;
+: +fast     ( n -- n' )  h# 1800 or  ;
 : pull-up,  ( n -- )  h# c0c0 + w,  ;
 : pull-dn,  ( n -- )  h# a0c0 + w,  ;
