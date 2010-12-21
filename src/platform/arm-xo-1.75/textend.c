@@ -237,6 +237,7 @@ cell inflate_adr(void)
     return (cell)inflate;
 }
 
+#if 0
 cell wfi()
 {
     __asm__ __volatile__ (
@@ -244,6 +245,7 @@ cell wfi()
         );
     return 0;
 }
+#endif
 
 cell ((* const ccalls[])()) = {
 // Add your own routines here
@@ -264,15 +266,9 @@ cell ((* const ccalls[])()) = {
     (cell (*)())set_control_reg, // Entry # 14
     (cell (*)())get_tcm_size,    // Entry # 15
     (cell (*)())inflate_adr,     // Entry # 16
+#if 0
     (cell (*)())wfi,             // Entry # 17
-#if 0  // Examples
-    (cell (*)())sum,          // Entry # 0
-    (cell (*)())byterev,      // Entry # 1
 #endif
-};
-
-
-
 // Forth words to call the above routines may be created by:
 //
 // system also
