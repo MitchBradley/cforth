@@ -269,6 +269,9 @@ cell ((* const ccalls[])()) = {
 #if 0
     (cell (*)())wfi,             // Entry # 17
 #endif
+};
+
+
 // Forth words to call the above routines may be created by:
 //
 // system also
