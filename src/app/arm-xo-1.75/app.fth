@@ -70,8 +70,13 @@ h# 1000.0000 value memtest-length
    then
 ;
 
+: rotate-button?  ( -- flag )
+   [ifdef] cl2-a1  d# 20  [else]  d# 15  [then]
+   gpio-pin@  0=
+;
+
 : cforth-wait  ( -- )
-   begin  d# 50 ms  d# 20 gpio-pin@ 0=  until  \ Wait until KEY_5 GPIO pressed
+   begin  d# 50 ms  rotate-button?  until  \ Wait until KEY_5 GPIO pressed
    ." Resuming CForth on Security Processor" cr
 ;
 : ofw-go  ( -- )
@@ -85,24 +90,10 @@ h# 1000.0000 value memtest-length
    0 h# d4050020 l!  \ Release reset for PJ4
 ;
 
-: ofw-old  ( -- )
-\   0 h# e0000 h# 20000 spi-read
-\   spi-go
-   d# 20 gpio-pin@  0=  if  ." Skipping OFW" cr  exit  then
-
-   init-spi
-   .spi-id
-
-   h# 2fa0.0000 h# c0000 h# 20000 spi-read
-
-   ofw-go
-   cforth-wait
-;
-
 : ofw  ( -- )
 \   0 h# e0000 h# 20000 spi-read
 \   spi-go
-   d# 20 gpio-pin@  0=  if  ." Skipping OFW" cr  exit  then
+   rotate-button?  if  ." Skipping OFW" cr  exit  then
 
    init-spi
    .spi-id
@@ -110,7 +101,8 @@ h# 1000.0000 value memtest-length
    h# 2fa0.0000 " firmware" load-drop-in
 
    ofw-go
-   cforth-wait
+\   cforth-wait
+   begin again
 ;
 
 : init
