@@ -214,10 +214,10 @@ create mfpr-table
    0 af,      \ GPIO_112 - ND_RDY[0]
 [else]
    1 pull-up, \ GPIO_110 - DCON_SDA
-   2 af,      \ GPIO_111 - eMMC_D0
-   2 af,      \ GPIO_112 - eMMC_CMD
+   2 +fast af, \ GPIO_111 - eMMC_D0
+   2 +fast af, \ GPIO_112 - eMMC_CMD
 [then]
-   3 af,      \ GPIO_113 - (SM_RDY)  - MSD_CMD aka SD1_CMD (externally pulled up)
+   3 +fast af,      \ GPIO_113 - (SM_RDY)  - MSD_CMD aka SD1_CMD (externally pulled up)
    1 af,      \ GPIO_114 - G_CLK_OUT - Not connected (TP93)
 
    4 af,      \ GPIO_115 - UART3_TXD (J4)
@@ -235,21 +235,21 @@ create mfpr-table
 \  0 af,      \ GPIO_125 - EC_SPI_ACK
    0 pull-up, \ GPIO_125 - EC_SPI_ACK
 
-   3 pull-up, \ GPIO_126 - MSD_DATA2 AKA SD1_DATA2
-   3 pull-up, \ GPIO_127 - MSD_DATA0 AKA SD1_DATA0
+   3 +fast af, \ GPIO_126 - MSD_DATA2 AKA SD1_DATA2
+   3 +fast af, \ GPIO_127 - MSD_DATA0 AKA SD1_DATA0
    0 af,      \ GPIO_128 - EB_MODE#
    0 af,      \ GPIO_129 - LID_SW#
-   3 pull-up, \ GPIO_130 - MSD_DATA3 AKA SD1_DATA3
-   1 +fast pull-up,      \ GPIO_131 - SD_DATA3 AKA SD2_DATA3
-   1 +fast pull-up,      \ GPIO_132 - SD_DATA2 AKA SD2_DATA2
-   1 +fast pull-up,      \ GPIO_133 - SD_DATA1 AKA SD2_DATA1
-   1 +fast pull-up,      \ GPIO_134 - SD_DATA0 AKA SD2_DATA0
-   3 pull-up, \ GPIO_135 - MSD_DATA1 AKA SD1_DATA1
-\  1 +fast pull-up,      \ GPIO_136 - SD_CMD AKA SD2_CMD
-   1 +fast af,           \ GPIO_136 - SD_CMD AKA SD2_DATA - CMD is pulled up externally
+   3 +fast af, \ GPIO_130 - MSD_DATA3 AKA SD1_DATA3
+   1 +fast af, \ GPIO_131 - SD_DATA3 AKA SD2_DATA3
+   1 +fast af, \ GPIO_132 - SD_DATA2 AKA SD2_DATA2
+   1 +fast af, \ GPIO_133 - SD_DATA1 AKA SD2_DATA1
+   1 +fast af, \ GPIO_134 - SD_DATA0 AKA SD2_DATA0
+   3 +fast af, \ GPIO_135 - MSD_DATA1 AKA SD1_DATA1
+\  1 +fast pull-up, \ GPIO_136 - SD_CMD AKA SD2_CMD
+   1 +fast af,      \ GPIO_136 - SD_CMD AKA SD2_CMD - CMD is pulled up externally
    no-update, \ GPIO_137 - Not connected (TP111)
-   3 pull-up, \ GPIO_138 - MSD_CLK AKA SD1_CLK
-   1 +fast pull-up,      \ GPIO_139 - SD_CLK AKA SD2_CLK
+   3 +fast af, \ GPIO_138 - MSD_CLK AKA SD1_CLK
+   1 +fast af, \ GPIO_139 - SD_CLK AKA SD2_CLK
    no-update, \ GPIO_140 - Not connected if R130 is nopop
 \  1 af,      \ GPIO_140 - (SD_CD# if R130 is populated)
    1 af,      \ GPIO_141 - SD_WP# AKA SD2_WP#
@@ -278,7 +278,7 @@ create mfpr-table
 [else]
    1 af,      \ GPIO_149 - eMMC_RST#
    1 af,      \ GPIO_150 - EN_CAM_PWR
-   2 af,      \ GPIO_151 - eMMC_CLK
+   2 +fast af, \ GPIO_151 - eMMC_CLK
 [then]
    1 af,      \ GPIO_152 - (SM_BELn) - Not connected (TP40)
    1 af,      \ GPIO_153 - (SM_BEHn) - Not connected (TP105)
@@ -300,13 +300,13 @@ create mfpr-table
    0 af,      \ GPIO_168 - ND_IO[0]
 [else]
    1 af,      \ GPIO_161 - DCON_SCL
-   2 af,      \ GPIO_162 - eMMC_D6
-   2 af,      \ GPIO_163 - eMMC_D4
-   2 af,      \ GPIO_164 - eMMC_D2
-   2 af,      \ GPIO_165 - eMMC_D7
-   2 af,      \ GPIO_166 - eMMC_D5
-   2 af,      \ GPIO_167 - eMMC_D3
-   2 af,      \ GPIO_168 - eMMC_D1
+   2 +fast af, \ GPIO_162 - eMMC_D6
+   2 +fast af, \ GPIO_163 - eMMC_D4
+   2 +fast af, \ GPIO_164 - eMMC_D2
+   2 +fast af, \ GPIO_165 - eMMC_D7
+   2 +fast af, \ GPIO_166 - eMMC_D5
+   2 +fast af, \ GPIO_167 - eMMC_D3
+   2 +fast af, \ GPIO_168 - eMMC_D1
 [then]
 
 : init-mfprs
