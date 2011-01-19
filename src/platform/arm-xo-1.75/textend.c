@@ -237,6 +237,16 @@ cell inflate_adr(void)
     return (cell)inflate;
 }
 
+cell byte_checksum(cell len, cell adr)
+{
+    unsigned char *p = (unsigned char *)adr;
+    unsigned long value = 0;
+    while(len--) {
+        value += *p++;
+    }
+    return value;
+}
+
 #if 0
 cell wfi()
 {
@@ -266,8 +276,9 @@ cell ((* const ccalls[])()) = {
     (cell (*)())set_control_reg, // Entry # 14
     (cell (*)())get_tcm_size,    // Entry # 15
     (cell (*)())inflate_adr,     // Entry # 16
+    (cell (*)())byte_checksum,   // Entry # 17
 #if 0
-    (cell (*)())wfi,             // Entry # 17
+    (cell (*)())wfi,             // Entry # 18
 #endif
 };
 

@@ -47,7 +47,8 @@ d# 13 ccall: control@      { -- i.value }
 d# 14 ccall: control!      { i.value -- }
 d# 15 ccall: tcm-size@     { -- i.value }
 d# 16 ccall: inflate-adr   { -- a.value }
-\ d# 17 ccall: wfi           { -- }
+d# 17 ccall: byte-checksum { a.adr i.len -- i.checksum }
+\ d# 18 ccall: wfi           { -- }
 
 
 fl hackspi.fth

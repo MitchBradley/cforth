@@ -53,16 +53,32 @@ defer inflate ' fast-inflate to inflate
    drop abort
 ;
 
+: test-checksum  ( -- )
+   'compressed di-buffer h# 4 + be-l@     ( adr len )
+   byte-checksum                          ( sum )
+   dup  di-buffer h# 8 + be-l@   <>  if   ( sum )
+      ." !!! Dropin checksum mismatch !!!" cr         ( sum )
+      ." Stored checksum: " di-buffer h# 8 + be-l@ .  ( sum )
+      ."   Computed checksum: " .  cr                 ( )
+      abort
+   else
+      drop
+   then
+;
 variable file-size
 : load-drop-in  ( adr name$ -- )
    drop-in-location   ( adr offset base-len expanded-len )
    dup  if            ( adr offset base-len expanded-len )
-      ." Decompressing" cr
+      ." Reading ... "
       file-size !     ( adr offset base-len )
-      'compressed swap rot         ( adr  base-len compressed-adr offset )
-      spi-read                     ( adr )
+      'compressed swap rot     ( adr compressed-adr base-len offset )
+      spi-read                 ( adr )
+      ." Checksumming ... "
+      test-checksum            ( adr )
+      ." Decompressing "
       'compressed swap inflate     ( inflated-len )
       file-size @  <> abort" Inflated dropin was the wrong size"   ( )
+      cr
    else                            ( adr offset base-len expanded-len )
       drop  tuck  file-size !      ( adr base-len offset )
       spi-read                     ( )
