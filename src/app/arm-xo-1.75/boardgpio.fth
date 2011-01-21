@@ -33,9 +33,9 @@ purpose: Board-specific setup details - pin assigments, etc.
 [else]
    d#  53 gpio-set     \ RTC_SCK
    d#  53 gpio-dir-out \ RTC_SCK
-   d# 103 gpio-dir-out \ EC_EDI_DO
    d# 104 gpio-set     \ EC_EDI_CS#
    d# 104 gpio-dir-out \ EC_EDI_CS#
+   d# 105 gpio-dir-out \ EC_EDI_MOSI
    d# 106 gpio-dir-out \ EC_EDI_CLK
    d# 110 gpio-dir-out \ DCON_SDA
    d# 142 gpio-dir-out \ DCONLOAD
