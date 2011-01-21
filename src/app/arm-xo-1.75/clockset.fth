@@ -25,4 +25,8 @@ hex
    \ divider setting and frequency change request, core-800, ddr-400, axi-200
    08fd8248 d4282800 l!  \ PMUA_CC_SP      \ speed change voting, ACLK:7, DCLK:5, BACLK1:1, PCLK:0
    78fd8248 d4282804 l!  \ PMUA_CC_PJ      \ 
+\  \ divider setting and frequency change request, core-400, ddr-400, axi-200
+\   08fd8249 d4282800 l!  \ PMUA_CC_SP      \ speed change voting, ACLK:7, DCLK:5, BACLK1:1, PCLK:0
+\   78fd8249 d4282804 l!  \ PMUA_CC_PJ      \ 
+\  ." Running at 400 MHz" cr
 ;
