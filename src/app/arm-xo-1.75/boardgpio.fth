@@ -115,14 +115,14 @@ create mfpr-table
    no-update, \ GPIO_50 - Not connected (TP114)
    no-update, \ GPIO_51 - Not connected (TP59)
    no-update, \ GPIO_52 - Not connected (TP113)
-\  2 af,      \ GPIO_53 - RTC_SCK (TWSI2) if R124 populated
-\  2 af,      \ GPIO_54 - RTC_SDA (TWSI2) if R125 populated
 [ifdef] cl2-a1
    no-update, \ GPIO_53 - Not connected if nopop R124 to use TWSI6 for RTC
    no-update, \ GPIO_54 - Not connected if nopop R125 to use TWSI6 for RTC
 [else]
-   0 af,      \ GPIO_53 - RTC_SCK
-   0 af,      \ GPIO_54 - RTC_SDA
+   2 af,      \ GPIO_53 - RTC_SCK (TWSI2) if R124 populated
+   2 af,      \ GPIO_54 - RTC_SDA (TWSI2) if R125 populated
+\   0 af,      \ GPIO_53 - RTC_SCK
+\   0 af,      \ GPIO_54 - RTC_SDA
 [then]
    no-update, \ GPIO_55 - Not connected (TP51)
 [ifdef] cl2-a1
