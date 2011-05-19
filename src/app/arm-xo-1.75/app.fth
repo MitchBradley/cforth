@@ -27,6 +27,13 @@ fl boardgpio.fth
 fl clockset.fth
 fl initdram.fth
 fl fuse.fth
+fl smbus.fth
+h# 1fc0.0000 constant fb-pa
+: wljoin  ( w w -- l )  d# 16 lshift or  ;
+: third  ( a b c -- a b c a )  2 pick  ;
+fl lcdcfg.fth
+fl lcd.fth
+fl mmp2dcon.fth
 
 : short-delay ;
 
@@ -50,6 +57,35 @@ d# 16 ccall: inflate-adr   { -- a.value }
 d# 17 ccall: byte-checksum { a.adr i.len -- i.checksum }
 \ d# 18 ccall: wfi           { -- }
 
+
+h# 2fc0.0000 constant sp-fb-pa
+
+d# 4 constant hdisp-lowres
+d# 3 constant vdisp-lowres
+: blank-display-lowres  ( -- )
+   \ Setup the panel path with the normal resolution
+   init-lcd
+
+   \ This trick uses the hardware scaler so we can display a blank
+   \ white screen very quickly, without spending a lot of time
+   \ filling the frame buffer with a constant value.
+
+   \ Set the source resolution to 4x3
+    hdisp-lowres vdisp-lowres wljoin h# 104 lcd!
+
+   \ Set the pitch to 0 so we only have to fill one line
+   0 h# fc lcd!
+
+   \ Fill one line of the screen
+   \ Since hdisp-lowres is 4, one line is a single longword!
+   sp-fb-pa  hdisp-lowres  h# ffffffff lfill
+
+   \ Set the depth to 8 bpp
+   h# 800a1100 h# 190 lcd!
+
+   \ Turn on the dcon
+   init-xo-display
+;
 
 fl hackspi.fth
 fl dropin.fth
@@ -91,20 +127,50 @@ h# 1000.0000 value memtest-length
    0 h# d4050020 l!  \ Release reset for PJ4
 ;
 
+: load-ofw  ( -- )
+   init-spi
+   .spi-id
+
+   h# 2fa0.0000 " firmware" load-drop-in
+;
+0 value reset-offset
+: ofwdi-go  ( -- )
+   ." releasing" cr
+   h# ea000000 h# 0 l!  \ b 8
+   'compressed reset-offset +  h# 4 l!  \ reset vector address
+   h# e51f000c h# 8 l!  \ ldr r0,[pc,#-0xc]
+   h# e1a0f000 h# c l!  \ mov pc,r0
+
+   d# 20 ms
+   0 h# d4050020 l!  \ Release reset for PJ4
+;
+
+: load-ofwdi  ( -- )
+   ( init-spi ) .spi-id
+   " reset" drop-in-location abort" Can't find reset dropin"  ( adr len )
+   swap h# 20000 - dup to reset-offset      ( len offset )
+   +                                        ( size-to-read )
+   'compressed swap h# 2.0000 spi-read      ( )
+;
+: ofwdi  ( -- )
+   rotate-button?  if  ." Skipping OFW" cr  exit  then
+   blank-display-lowres
+   load-ofwdi
+   ofwdi-go
+   begin again
+;
 : ofw  ( -- )
 \   0 h# e0000 h# 20000 spi-read
 \   spi-go
    rotate-button?  if  ." Skipping OFW" cr  exit  then
 
-   init-spi
-   .spi-id
-
-   h# 2fa0.0000 " firmware" load-drop-in
-
+   blank-display-lowres
+   load-ofw
    ofw-go
 \   cforth-wait
    begin again
 ;
+: sp-ofw  ( -- )  load-ofw  " " drop  h# 2fa0.0000 acall  ;
 
 : init
    basic-setup
@@ -113,7 +179,7 @@ h# 1000.0000 value memtest-length
    init-mfprs
    clk-fast
    init-dram
-   fix-fuses
+\   fix-fuses
    init-spi
 ;
 
@@ -132,7 +198,7 @@ h# 1000.0000 value memtest-length
 [then]
 
 \ Run this at startup
-: app  init  ofw  hex quit  ;
+: app  init  ofwdi  hex quit  ;
 \ " ../objs/tester" $chdir drop
 
 " app.dic" save
