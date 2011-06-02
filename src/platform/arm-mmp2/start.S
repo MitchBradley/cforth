@@ -99,7 +99,7 @@ restart:
     .global swi
     .type   swi,function
 swi:    
-    swi
+    swi 0
     mov pc, lr
 
     .global ei
