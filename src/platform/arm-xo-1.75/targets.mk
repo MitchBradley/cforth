@@ -39,7 +39,7 @@ app.elf: $(PLAT_OBJS) $(FORTH_OBJS)
 	@echo Linking $@ ... 
 	$(TLD) -N  -o $@  $(TLFLAGS) -Ttext $(RAMBASE) \
 	    $(PLAT_OBJS) $(FORTH_OBJS) \
-	    $(LIBDIRS) $(LIBGCC) -lc
+	    $(LIBDIRS) $(LIBGCC)
 	@$(TOBJDUMP) $(DUMPFLAGS) $@ >$(@:.elf=.dump)
 	@nm -n $@ >$(@:.elf=.nm)
 
@@ -47,7 +47,7 @@ shim.elf: $(PLAT_OBJS) $(SHIM_OBJS)
 	@echo Linking $@ ... 
 	$(TLD) -N  -o $@  $(TLFLAGS) -Ttext $(SHIMBASE) \
 	    $(PLAT_OBJS) $(SHIM_OBJS) \
-	    $(LIBDIRS) $(LIBGCC) -lc
+	    $(LIBDIRS) $(LIBGCC)
 	@$(TOBJDUMP) $(DUMPFLAGS) $@ >$(@:.elf=.dump)
 	@nm -n $@ >$(@:.elf=.nm)
 

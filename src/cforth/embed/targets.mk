@@ -29,6 +29,10 @@ CFLAGS= -g $(OPTIMIZE) $(CONFIG)
 TCFLAGS = -g $(OPTIMIZE) $(CONFIG) -DMAXDICT=$(DICTSIZE)
 TCFLAGS += -DTARGET
 
+ifeq (y, $(shell $(TCC) -xc -c -fno-stack-protector /dev/null -o /dev/null 2>/dev/null && echo y))
+  TCFLAGS += -fno-stack-protector
+endif
+
 FINC=config.h forth.h vars.h 
 
 INCLUDE=compiler.h $(FINC) prims.h

@@ -92,3 +92,7 @@ void irq_handler()
 void swi_handler()
 {
 }
+
+void raise()  /* In case __div and friends need it */
+{
+}
