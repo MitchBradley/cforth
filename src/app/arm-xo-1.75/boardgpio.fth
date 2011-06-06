@@ -182,7 +182,7 @@ create mfpr-table
    0 af,      \ GPIO_97  - RTC_SCK (bitbang) if R100 populated
    0 af,      \ GPIO_98  - RTC_SDA (bitbang) if R106 populated
 [else]
-   0 af,      \ GPIO_96  - EXT_MIC_PLUG
+   0 pull-up, \ GPIO_96  - EXT_MIC_PLUG
    0 af,      \ GPIO_97  - HP_PLUG
    no-update, \ GPIO_98  - Not connected
 [then]
