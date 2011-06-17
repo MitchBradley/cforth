@@ -6,3 +6,5 @@ LIBDIRS=-L$(dir $(shell $(TCC) -print-libgcc-file-name))
 
 TOBJDUMP=$(ARCH)/bin/arm-linux-objdump
 TOBJCOPY=$(ARCH)/bin/arm-linux-objcopy
+
+TCFLAGS += -marm
