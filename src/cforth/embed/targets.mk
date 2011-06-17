@@ -26,7 +26,7 @@ CFLAGS= -g $(OPTIMIZE) $(CONFIG)
 # Leave some room at the top of RAM for the C stack and for executing
 # RAM-resident binary code like serial_to_flash.  serial_to_flash needs
 # 1K of code space, so we reserve 4K for code + stack just to be safe.
-TCFLAGS = -g $(OPTIMIZE) $(CONFIG) -DMAXDICT=$(DICTSIZE)
+TCFLAGS += -g $(OPTIMIZE) $(CONFIG) -DMAXDICT=$(DICTSIZE)
 TCFLAGS += -DTARGET
 
 ifeq (y, $(shell $(TCC) -xc -c -fno-stack-protector /dev/null -o /dev/null 2>/dev/null && echo y))
