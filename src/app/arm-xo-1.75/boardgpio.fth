@@ -146,8 +146,8 @@ create mfpr-table
    1 af,      \ GPIO_69 - PIXMCLK
    1 af,      \ GPIO_70 - PIXCLK
 
-   1 af,      \ GPIO_71 - EC_SCL (TWSI3)
-   1 af,      \ GPIO_72 - EC_SDA 
+   0 af,      \ GPIO_71 - SOC_KBD_CLK  \ Was EC_SCL (TWSI3)
+   0 af,      \ GPIO_72 - SOC_KBD_DAT  \ Was EC_SDA 
    0 af,      \ GPIO_73 - CAM_RST (use as GPIO out)
 
    1 af,      \ GPIO_74 - GFVSYNC
@@ -203,7 +203,7 @@ create mfpr-table
    1 af,      \ GPIO_105 - EC_EDI_DI
    1 af,      \ GPIO_106 - EC_EDI_CLK
 [then]
-   0 af,      \ GPIO_107 - ND_IO[4]
+   1 af,      \ GPIO_107 - (ND_IO[4]) - SOC_TPD_DAT
 
    1 af,      \ GPIO_108 - CAM_SDL - Use as GPIO, bitbang
    1 af,      \ GPIO_109 - CAM_SDA - Use as GPIO, bitbang
@@ -288,7 +288,7 @@ create mfpr-table
    no-update, \ GPIO_157 - PRI_TDS (JTAG)
    no-update, \ GPIO_158 - PRI_TDK (JTAG)
    no-update, \ GPIO_159 - PRI_TDO (JTAG)
-   0 af,      \ GPIO_160 - ND_RDY[1]
+   1 af,      \ GPIO_160 - (ND_RDY[1]) - SOC_TPD_CLK
 [ifdef] cl2-a1
    1 af,      \ GPIO_161 - ND_IO[12] - Not connected (TP 44)
    1 af,      \ GPIO_162 - (ND_IO[11]) - DCON_SCL

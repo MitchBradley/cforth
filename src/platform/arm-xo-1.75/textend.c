@@ -9,10 +9,13 @@
 void spi_send(cell len, cell adr);
 void spi_read(cell offset, cell len, cell adr);
 cell inflate(cell wpptr, cell nohdr, cell clear, cell compr);
+void *ps2_devices[2];
+void init_ps2();
 #if 0   // Examples
 cell sum(cell b, cell a);
 cell byterev(cell n);
 #endif
+cell ps2_out(cell byte, cell device_num);
 
 #define DECLARE_REGS \
     volatile unsigned long *fifo = (volatile unsigned long *)0xd4035010; \
@@ -247,15 +250,77 @@ cell byte_checksum(cell len, cell adr)
     return value;
 }
 
-#if 0
 cell wfi()
 {
-    __asm__ __volatile__ (
-        "wfi\n\t"
-        );
+    __asm__ __volatile__ (" mcr  p15, 0, r0, c7, c0, 4");
+//        "wfi\n\t"
+//	    ".long 0xe320f003\n\t"  // wfi - which older assemblers don't support
+
     return 0;
 }
-#endif
+
+cell rdpsr()
+{
+    cell psrval;
+    __asm__ __volatile__ (
+	"mrs     %0, cpsr\n\t"
+	: "=r"(psrval)
+	:
+	);
+    return psrval;
+}
+cell wrpsr(cell psrval)
+{
+    __asm__ __volatile__ (
+	"msr     cpsr, %0"
+	:
+	:"r"(psrval)
+	);
+}
+#define GPIO71_MASK 0x80
+#define GPIO72_MASK 0x100
+cell kbd_bit_in()
+{
+    volatile unsigned long *kbdgpio = (unsigned long *)0xd4019008;
+    unsigned long regval;
+    unsigned long bitval;
+    do {
+	regval = *kbdgpio;
+    } while ((regval & GPIO71_MASK) != 0);
+
+    bitval = (regval & GPIO72_MASK) ? 0x100 : 0;
+    
+    do {
+	regval = *kbdgpio;
+    } while ((regval & GPIO71_MASK) == 0);
+
+    return bitval;
+}
+#define DIR_OUT 0x15
+#define DIR_IN 0x18
+cell kbd_bit_out(cell bitval)
+{
+    volatile unsigned long *kbdgpio = (unsigned long *)0xd4019008;
+    unsigned long regval;
+    do {
+	regval = *kbdgpio;
+    } while ((regval & GPIO71_MASK) != 0);
+
+    // Seting direction IN pulls up to 1, OUT drives to 0
+    kbdgpio[bitval ? DIR_IN : DIR_OUT] = GPIO72_MASK;
+    
+    do {
+	regval = *kbdgpio;
+    } while ((regval & GPIO71_MASK) == 0);
+
+    return bitval;
+}
+
+cell ps2_devices_adr(void)
+{
+    return (cell)&ps2_devices;
+}
+
 
 cell ((* const ccalls[])()) = {
 // Add your own routines here
@@ -277,9 +342,14 @@ cell ((* const ccalls[])()) = {
     (cell (*)())get_tcm_size,    // Entry # 15
     (cell (*)())inflate_adr,     // Entry # 16
     (cell (*)())byte_checksum,   // Entry # 17
-#if 0
     (cell (*)())wfi,             // Entry # 18
-#endif
+    (cell (*)())rdpsr,           // Entry # 19
+    (cell (*)())wrpsr,           // Entry # 20
+    (cell (*)())kbd_bit_in,      // Entry # 21
+    (cell (*)())kbd_bit_out,     // Entry # 22
+    (cell (*)())ps2_devices_adr, // Entry # 23
+    (cell (*)())init_ps2,        // Entry # 24
+    (cell (*)())ps2_out,         // Entry # 25
 };
 
 

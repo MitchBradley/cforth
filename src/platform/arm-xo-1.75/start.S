@@ -59,9 +59,9 @@ doirq:
     subs    lr, lr, #4  // Adjust the return address and
     stmfd   sp!, {lr}   // save it on the stack.
     mrs     r14, SPSR   // Save SPSR
-    stmfd   sp!, {r14}  // on the stack.
+    stmfd   sp!, {r0,r1,r2,r3,r14}  // on the stack.
     bl      irq_handler // Call the high level handler.
-    ldmfd   sp!, {r14}  // Unstack and
+    ldmfd   sp!, {r0,r1,r2,r3,r14}  // Unstack and
     msr     spsr, r14   // restore SPSR.
     ldmfd   sp!, {pc}^  // Return.
         

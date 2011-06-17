@@ -14,7 +14,7 @@ fl hwaddrs.fth
 
 defer ms  defer get-msecs
 fl timer.fth
-\ fl timer2.fth
+fl timer2.fth
 fl gpio.fth
 fl mfpr.fth
 fl boardgpio.fth
@@ -55,8 +55,17 @@ d# 14 ccall: control!      { i.value -- }
 d# 15 ccall: tcm-size@     { -- i.value }
 d# 16 ccall: inflate-adr   { -- a.value }
 d# 17 ccall: byte-checksum { a.adr i.len -- i.checksum }
-\ d# 18 ccall: wfi           { -- }
+d# 18 ccall: wfi           { -- }
+d# 19 ccall: psr@          { -- i.value }
+d# 20 ccall: psr!          { i.value -- }
+d# 21 ccall: kbd-bit-in    { -- i.value }
+d# 22 ccall: kbd-bit-out   { i.value -- }
+d# 23 ccall: ps2-devices   { -- a.value }
+d# 24 ccall: init-ps2      { -- }
+d# 25 ccall: ps2-out       { i.byte i.device# -- i.ack? }
 
+: enable-interrupts  ( -- )  psr@ h# 80 invert and psr!  ;
+: disable-interrupts  ( -- )  psr@ h# 80 or psr!  ;
 
 h# 2fc0.0000 constant sp-fb-pa
 
@@ -89,6 +98,8 @@ d# 3 constant vdisp-lowres
 
 fl hackspi.fth
 fl dropin.fth
+
+fl tick.fth
 
 0 value memtest-start
 h# 1000.0000 value memtest-length
@@ -157,7 +168,7 @@ h# 1000.0000 value memtest-length
    blank-display-lowres
    load-ofwdi
    ofwdi-go
-   begin again
+   begin wfi again
 ;
 : ofw  ( -- )
 \   0 h# e0000 h# 20000 spi-read
@@ -168,7 +179,7 @@ h# 1000.0000 value memtest-length
    load-ofw
    ofw-go
 \   cforth-wait
-   begin again
+   begin wfi again
 ;
 : sp-ofw  ( -- )  load-ofw  " " drop  h# 2fa0.0000 acall  ;
 
