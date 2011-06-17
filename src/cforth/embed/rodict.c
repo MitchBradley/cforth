@@ -20,7 +20,7 @@ const u_char romdict[] = {
 u_char ramdict[MAXDICT];
 
 // dictmax is ignored because the dictionary is defined statically
-void *
+cell *
 prepare_builtin_dictionary(int dictmax)
 {
     const u_char *p;
@@ -35,5 +35,5 @@ prepare_builtin_dictionary(int dictmax)
     init_compiler(romdict, ramdict, 
                   (token_t)(sizeof(romdict) / sizeof(token_t)),
                   ramdict, ramdict + MAXDICT, ramvars);
-    return (void *)ramvars;
+    return ramvars;
 }

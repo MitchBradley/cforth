@@ -1,13 +1,15 @@
 // Copyright 1997 FirmWorks  All Rights Reserved
 
+#include "forth.h"
+
 // Implements entry points whereby an enclosing application
 // can initialize and invoke the Forth application
 
-void *
+cell *
 init_forth()
 {
-    extern void *prepare_builtin_dictionary(int);
-    void *up;
+    extern cell *prepare_builtin_dictionary(int);
+    cell *up;
     up = prepare_builtin_dictionary(MAXDICT);
     title(up);
     return up;
