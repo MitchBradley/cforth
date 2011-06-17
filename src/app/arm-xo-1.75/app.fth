@@ -99,7 +99,7 @@ d# 3 constant vdisp-lowres
 fl hackspi.fth
 fl dropin.fth
 
-fl tick.fth
+fl ps2.fth
 
 0 value memtest-start
 h# 1000.0000 value memtest-length
@@ -129,10 +129,16 @@ h# 1000.0000 value memtest-length
 ;
 : ofw-go  ( -- )
    ." releasing" cr
+
+   \ If the ITCM is on, we must turn it off so we can write to RAM at 0
+   control@  itcm-off   ( old-value )
+
    h# ea000000 h# 0 l!  \ b 8
    h# 1fa00000 h# 4 l!  \ OFW load address
    h# e51f000c h# 8 l!  \ ldr r0,[pc,#-0xc]
    h# e1a0f000 h# c l!  \ mov pc,r0
+
+   control!             \ Turn the ITCM back on if necessary
 
    d# 20 ms
    0 h# d4050020 l!  \ Release reset for PJ4
@@ -147,10 +153,15 @@ h# 1000.0000 value memtest-length
 0 value reset-offset
 : ofwdi-go  ( -- )
    ." releasing" cr
+   \ If the ITCM is on, we must turn it off so we can write to RAM at 0
+   control@  itcm-off   ( old-value )
+
    h# ea000000 h# 0 l!  \ b 8
    'compressed reset-offset +  h# 4 l!  \ reset vector address
    h# e51f000c h# 8 l!  \ ldr r0,[pc,#-0xc]
    h# e1a0f000 h# c l!  \ mov pc,r0
+
+   control!             \ Turn the ITCM back on if necessary
 
    d# 20 ms
    0 h# d4050020 l!  \ Release reset for PJ4
