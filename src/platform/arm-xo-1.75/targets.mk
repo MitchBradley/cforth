@@ -6,7 +6,7 @@
 # and some from the platform-specific directory (src/platform/*).
 
 
-DUMPFLAGS = --disassemble-all -z -x
+DUMPFLAGS = --disassemble -z -x -s
 
 VPATH += $(SRC)/cpu/arm $(SRC)/platform/arm-xo-1.75 $(SRC)/lib
 # VPATH += $(SRC)/cpu/<whatever> $(SRC)/platform/<whatever>
