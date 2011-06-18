@@ -1,4 +1,4 @@
-#include "forth.h"
+#include "config.h"
 
 // Top-level routine for starting Forth
 
