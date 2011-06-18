@@ -8,6 +8,6 @@ main()
 
     init_io();   // Perform platform-specific initialization
 
-    up = init_forth();
+    up = (cell *)init_forth();
     execute_word("app", up);  // Call the top-level application word
 }
