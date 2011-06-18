@@ -88,6 +88,7 @@ void init_io()
 }
 
 #if 1
+
 typedef volatile unsigned long *reg_t;
 #define REG(name, address) volatile reg_t name = (reg_t)address
 REG(TIMER20_FREEZE, 0xd40800a4);
@@ -177,11 +178,14 @@ struct ps2_state tpd_state = {
 struct ps2_state *ps2_devices[] = { &kbd_state, &tpd_state };
 #define NUM_PS2_DEVICES (sizeof (ps2_devices) / sizeof (ps2_devices[0]))
 
+// Silently drops from the head if the queue is full
+// It's better to lose down events than subsequent up events
 void enque(unsigned short w, struct queue *q)
 {
     int put = q->put;
-    if ((((put+1) - q->get) & 0xf) == 0)
-	return;
+    if ((((put+1) - q->get) & 0xf) == 0) {
+	q->get = (q->get+1) & 0xf;
+    }
     q->data[put] = w;
     q->put = (put+1) & 0xf;
 }
@@ -196,6 +200,54 @@ int deque(struct queue *q)
     q->get = (get+1) & 0xf;
     return ret;
 }
+
+// This table maps the EnE3867 scan address (maxtrix value)
+// directly to a set 1 code or if the high bit is set
+// into the extended map
+// which is used for multi-code keys.
+
+// TODO: Get the Fn .5 keys from an alps keyboard
+
+const unsigned char key_EnE3867_matrix_map[] =
+{
+// KSI 0    1    2    3    4    5    6    7
+	0x00,0x00,0x1d,0x00,0x00,0x00,0x00,0x87,	// KSO 0
+	0x29,0x01,0x0f,0x29,0x1e,0x2c,0x02,0x10,	// KSO 1
+	0x3b,0x3e,0x3d,0x3c,0x20,0x2e,0x04,0x12,	// KSO 2
+	0x00,0x88,0x00,0x00,0x00,0x89,0x00,0x00,	// KSO 3
+	0x30,0x22,0x14,0x06,0x21,0x2f,0x05,0x13,	// KSO 4
+	0x42,0x41,0x40,0x3f,0x1f,0x2d,0x03,0x11,	// KSO 5
+	0x73,0x3f,0x1b,0x2b,0x25,0x33,0x09,0x17,	// KSO 6
+	0x8a,0x00,0x00,0x59,0x00,0x00,0x00,0x00,	// KSO 7
+	0x31,0x23,0x15,0x07,0x24,0x32,0x08,0x16,	// KSO 8
+	0x00,0x00,0x00,0x00,0x00,0x2a,0x00,0x36,	// KSO 9
+	0x0d,0x28,0x1a,0x0c,0x27,0x35,0x0b,0x19,	// KSO a
+	0x58,0x57,0x44,0x43,0x26,0x34,0x0a,0x18,	// KSO b
+	0x00,0x74,0x39,0x8b,0x00,0x00,0x00,0x00,	// KSO c
+	0x86,0x00,0x00,0x00,0x00,0x00,0x38,0x00,	// KSO d
+	0x80,0x0e,0x00,0x2b,0x1c,0x39,0x84,0x85,	// KSO e
+	0x81,0x40,0x1b,0x0d,0x00,0x00,0x82,0x83,	// KSO f
+};
+const unsigned char *keymap = key_EnE3867_matrix_map;
+
+// Each of these keycodes expand to a 2 byte sequence.
+// 0xe0 and then the respective value.
+const unsigned char key_set1_extended_key_map[] =
+{
+	0x52,	// 0x80 Insert
+	0x53,	// 0x81 Delete
+	0x4d,	// 0x82 Right Arrow
+	0x4b,	// 0x83 Left Arrow
+	0x50,	// 0x84 Down Arrow
+	0x48,	// 0x85 Up Arrow
+	0x38,	// 0x86 Right Alt (AltGR)
+	0x79,	// 0x87 Magnifiger
+	0x5b,	// 0x88 Left Hand
+	0x5c,	// 0x89 Right Hand
+	0x6e,	// 0x8a Blackboard
+	0x5d,	// 0x8b Frame
+};
+const unsigned char *ext_keymap = key_set1_extended_key_map;
 
 void init_ps2()
 {
@@ -269,6 +321,30 @@ int ps2_out(int device_num, unsigned char byte) {
     return byte;  // Returns true if acked
 }
 
+int got_break = 0;
+int matrix_mapped = 0;
+void forward_event(unsigned char byte, int port) {
+    unsigned char kv;
+
+    if (port != 0 || !matrix_mapped || byte > 0xf0) {
+	enque((unsigned short)((port<<8)|byte), &ps2_queue);
+	return;
+    }
+    if (byte == 0xf0) {
+	got_break = 1;
+	return;
+    }
+
+    if ((kv = keymap[byte]) >= 0x80) {
+	// Matrix map codes > 0x7f are an index into the extended table.
+	// Extended codes are sent upstream preceded by 0xe0
+	kv = ext_keymap[kv-0x80];
+	enque(0xe0, &ps2_queue);
+    }
+    enque(got_break ? kv|0x80 : kv, &ps2_queue);
+    got_break = 0;
+}
+
 int ok_to_send = 0;
 
 void run_queue()
@@ -309,6 +385,9 @@ void do_command() {
 	    if (++rxlevel == 1) {
 		*SP_INTERRUPT_MASK |= 2;  /* Avoid command interrupts while receiving */
 	    }
+
+	    if (data == 0xf7 && port == 0)
+		matrix_mapped = 1;
 
 	    s = ps2_devices[port];
 	    s->bit_number = 20;
@@ -403,7 +482,7 @@ void irq_handler()
 	    s->bit_number++;
 	    break;
 	case 10:
-	    enque((unsigned short)((i<<8)|(s->byte & 0xff)), &ps2_queue);
+	    forward_event(s->byte & 0xff, i);
 	    if (--rxlevel == 0) {
 		*SP_INTERRUPT_MASK &= ~2;  /* Allow command interrupts when receivers are idle */
 	    }

@@ -20,6 +20,30 @@ h# d4282000 value ic-base  \ Interrupt controller
    d# 50 enable-irq         \ IRQ from command transfer block
    h# 100 h# d429.00c4 l!   \ Indicate that it's okay to send commands
 ;
+: send-rdy  ( -- )  h# ff00 h# d429.0040 l!  ;  \ Send downstream ready
+: send-ps2  ( byte channel -- )  bwjoin h# d4290040 l!  ;
+: event?  ( -- false | data channel true )
+   h# d429.00c8 l@ 1 and  if
+      h# d429.0080 l@  wbsplit  true
+      1 h# d429.00c8 l!  \ Ack interrupt
+      send-rdy
+   else
+      false
+   then
+;
+: matrix-mode  ( -- )
+   h# f7 0 send-ps2
+   4 ms
+   event?  if  ( byte port )
+      bwjoin  h# fa  =  if
+	 ." Matrix mode on" cr
+      else
+	 ." Strange response to matrix mode" cr
+      then
+   else
+      ." No ACK from matrix mode" cr
+   then
+;
 : enable-ps2
    init-timer-2s
    init-ps2
@@ -33,6 +57,8 @@ h# d4282000 value ic-base  \ Interrupt controller
    enable-spcmd-irq
    unblock-irqs
    enable-interrupts
+   send-rdy
+   matrix-mode
 ;
 
 [ifdef] testing
@@ -43,20 +69,8 @@ h# d4282000 value ic-base  \ Interrupt controller
 : kbd-state  ( -- )  ps2-devices l@ ;
 : tpd-state  ( -- )  ps2-devices la1+ l@ ;
 
-: send-ps2  ( byte channel -- )  bwjoin h# d4290040 l!  ;
 : send-kbd  ( byte -- )  0 send-ps2  ;
 : send-tpd  ( byte -- )  1 send-ps2 ;
-: send-rdy  ( -- )  h# ff00 h# d429.0040 l!  ;  \ Send downstream ready
-
-: event?  ( -- false | data channel true )
-   h# d429.00c8 l@ 1 and  if
-      h# d429.0080 l@  wbsplit  true
-      1 h# d429.00c8 l!  \ Ack interrupt
-      send-rdy
-   else
-      false
-   then
-;
 
 : .event  if ." +" else ." -" then  .  ;
 : get-keys  ( -- )
