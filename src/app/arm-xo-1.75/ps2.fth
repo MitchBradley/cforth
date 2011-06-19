@@ -44,6 +44,50 @@ h# d4282000 value ic-base  \ Interrupt controller
       ." No ACK from matrix mode" cr
    then
 ;
+: wait-ack?  ( -- timeout? )
+   get-msecs  d# 30 +   ( time-limit )
+   begin
+      event?  if           ( time-limit code port )
+	 if                ( time-limit code )
+	    drop           ( time-limit )
+         else              ( time-limit code )
+	    h# fa =  if    ( time-limit )
+	       false exit  ( -- false )
+	    then           ( time-limit )
+	 then              ( time-limit )
+      then                 ( time-limit )
+      dup get-msecs - 0<   ( time-limit )
+   until                   ( time-limit )
+   drop true
+;
+: wait-data?  ( -- true | data false )
+   get-msecs  d# 30 +   ( time-limit )
+   begin
+      event?  if           ( time-limit data port )
+	 if                ( time-limit data )
+	   drop            ( time-limit )
+	 else              ( time-limit data )
+           false exit      ( -- data false )
+	 then              ( time-limit )
+      then                 ( time-limit )
+      dup get-msecs - 0<   ( time-limit )
+   until                   ( time-limit )
+   drop true               ( true )
+;
+
+: sk  0 send-ps2 wait-ack?  if  ." No ACK"  then  ;
+: set-scan-set  h# f0 sk  sk  ;
+: ss?  h# f0 sk  0 sk  wait-data?  if  ." No data"  else  .  then  ;
+
+: set-kbd-mode  ( -- )
+   h# f2 0 send-ps2          \ Identify command   
+   wait-ack?  if  exit  then
+   wait-data?  if  exit  then        ( data1 )
+   h# ab <>  if  exit  then          ( )
+   wait-data?  if  exit  then        ( data2 )
+   \ Use matrix mode for EnE, reinit ALPS to the PC default scan set 2
+   h# 41 =  if  matrix-mode  else  2 set-scan-set  then
+;
 : enable-ps2
    init-timer-2s
    init-ps2
@@ -58,8 +102,10 @@ h# d4282000 value ic-base  \ Interrupt controller
    unblock-irqs
    enable-interrupts
    send-rdy
-   matrix-mode
+   set-kbd-mode
 ;
+
+: rr  begin  event?  if  drop .  then  key? until  ;
 
 [ifdef] testing
 : dp2

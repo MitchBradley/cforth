@@ -110,7 +110,7 @@ REG(TMR2_MATCH00,      0xd4080004);
 REG(TMR2_MATCH01,      0xd4080008);
 REG(TMR2_MATCH02,      0xd408000c);
 
-#define PS2_TIMEOUT 13000   /* 2 ms at 6.5 MHz */
+#define PS2_TIMEOUT 260000   /* 20 ms at 13 MHz */
 
 #define GPIO71_MASK 0x80
 #define GPIO72_MASK 0x100
@@ -201,53 +201,119 @@ int deque(struct queue *q)
     return ret;
 }
 
-// This table maps the EnE3867 scan address (maxtrix value)
-// directly to a set 1 code or if the high bit is set
-// into the extended map
-// which is used for multi-code keys.
-
-// TODO: Get the Fn .5 keys from an alps keyboard
-
-const unsigned char key_EnE3867_matrix_map[] =
+const unsigned char set2_to_set1[] =
 {
-// KSI 0    1    2    3    4    5    6    7
-	0x00,0x00,0x1d,0x00,0x00,0x00,0x00,0x87,	// KSO 0
-	0x29,0x01,0x0f,0x29,0x1e,0x2c,0x02,0x10,	// KSO 1
-	0x3b,0x3e,0x3d,0x3c,0x20,0x2e,0x04,0x12,	// KSO 2
-	0x00,0x88,0x00,0x00,0x00,0x89,0x00,0x00,	// KSO 3
-	0x30,0x22,0x14,0x06,0x21,0x2f,0x05,0x13,	// KSO 4
-	0x42,0x41,0x40,0x3f,0x1f,0x2d,0x03,0x11,	// KSO 5
-	0x73,0x3f,0x1b,0x2b,0x25,0x33,0x09,0x17,	// KSO 6
-	0x8a,0x00,0x00,0x59,0x00,0x00,0x00,0x00,	// KSO 7
-	0x31,0x23,0x15,0x07,0x24,0x32,0x08,0x16,	// KSO 8
-	0x00,0x00,0x00,0x00,0x00,0x2a,0x00,0x36,	// KSO 9
-	0x0d,0x28,0x1a,0x0c,0x27,0x35,0x0b,0x19,	// KSO a
-	0x58,0x57,0x44,0x43,0x26,0x34,0x0a,0x18,	// KSO b
-	0x00,0x74,0x39,0x8b,0x00,0x00,0x00,0x00,	// KSO c
-	0x86,0x00,0x00,0x00,0x00,0x00,0x38,0x00,	// KSO d
-	0x80,0x0e,0x00,0x2b,0x1c,0x39,0x84,0x85,	// KSO e
-	0x81,0x40,0x1b,0x0d,0x00,0x00,0x82,0x83,	// KSO f
+    0xFF, 0x43, 0x41, 0x3F, 0x3D, 0x3B, 0x3C, 0x58,    //0x00
+    0x64, 0x44, 0x42, 0x40, 0x3E, 0x0F, 0x29, 0x59,
+    0x65, 0x38, 0x2A, 0x70, 0x1D, 0x10, 0x02, 0x5A,    //0x10
+    0xb4, 0x71, 0x2C, 0x1F, 0x1E, 0x11, 0x03, 0x5B,
+    0x67, 0x2E, 0x2D, 0x20, 0x12, 0x05, 0x04, 0x5C,    //0x20
+    0x68, 0x39, 0x2F, 0x21, 0x14, 0x13, 0x06, 0x5D,
+    0x69, 0x31, 0x30, 0x23, 0x22, 0x15, 0x07, 0x5E,    //0x30
+    0x6A, 0x72, 0x32, 0x24, 0x16, 0x08, 0x09, 0x5F,
+    0x6B, 0x33, 0x25, 0x17, 0x18, 0x0B, 0x0A, 0x60,    //0x40
+    0x6C, 0x34, 0x35, 0x26, 0x27, 0x19, 0x0C, 0x61,
+    0x6D, 0x73, 0x28, 0x74, 0x1A, 0x0D, 0x62, 0x6E,    //0x50
+    0x3A, 0x36, 0x1C, 0x1B, 0x75, 0x2B, 0x63, 0x76,
+    0x55, 0x56, 0x77, 0x78, 0x79, 0x7A, 0x0E, 0x7B,    //0x60
+    0x7C, 0x4F, 0x7D, 0x4B, 0x47, 0x7E, 0x7F, 0x6F,
+    0x52, 0x53, 0x50, 0x4C, 0x4D, 0x48, 0x01, 0x45,    //0x70
+    0x57, 0x4E, 0x51, 0x4A, 0x37, 0x49, 0x46, 0x54
 };
-const unsigned char *keymap = key_EnE3867_matrix_map;
 
-// Each of these keycodes expand to a 2 byte sequence.
-// 0xe0 and then the respective value.
-const unsigned char key_set1_extended_key_map[] =
+// Translates the matrix values to scan set 2
+const unsigned char EnE3867_to_set2[] =
 {
-	0x52,	// 0x80 Insert
-	0x53,	// 0x81 Delete
-	0x4d,	// 0x82 Right Arrow
-	0x4b,	// 0x83 Left Arrow
-	0x50,	// 0x84 Down Arrow
-	0x48,	// 0x85 Up Arrow
-	0x38,	// 0x86 Right Alt (AltGR)
-	0x79,	// 0x87 Magnifiger
-	0x5b,	// 0x88 Left Hand
-	0x5c,	// 0x89 Right Hand
-	0x6e,	// 0x8a Blackboard
-	0x5d,	// 0x8b Frame
+// KSI 0     1     2     3     4     5     6     7
+    0x80, 0x80, 0x14, 0x80, 0x80, 0x80, 0x80, 0xa2,    //KSO 0
+    0x0e, 0x8B, 0x0D, 0x0E, 0x1C, 0x1A, 0xa7, 0x15,    //KSO 1
+    0x8C, 0x92, 0x90, 0x8E, 0x23, 0x21, 0xa9, 0x24,    //KSO 2
+    0x80, 0xa5, 0x80, 0x80, 0x80, 0xa6, 0x80, 0x8D,    //KSO 3
+    0x32, 0x34, 0x2C, 0xab, 0x2B, 0x2A, 0xaa, 0x2D,    //KSO 4
+    0x99, 0x97, 0x95, 0x93, 0x1B, 0x22, 0xa8, 0x1D,    //KSO 5
+    0x84, 0x93, 0x5B, 0x5d, 0x42, 0x41, 0xae, 0x43,    //KSO 6
+    0xa3, 0x9F, 0x9D, 0x81, 0x9B, 0x98, 0x96, 0x8F,    //KSO 7
+    0x31, 0x33, 0x35, 0xac, 0x3B, 0x3A, 0xad, 0x3C,    //KSO 8
+    0x80, 0x80, 0x80, 0x80, 0x80, 0x12, 0x80, 0x85,    //KSO 9
+    0xb2, 0x52, 0x54, 0xb1, 0x4C, 0x4A, 0xb0, 0x4D,    //KSO 10
+    0xa0, 0x9E, 0x9C, 0x9A, 0x4B, 0x49, 0xaf, 0x44,    //KSO 11
+    0x80, 0x80, 0x80, 0xa1, 0x80, 0x80, 0x80, 0x91,    //KSO 12
+    0xa4, 0x80, 0x80, 0x80, 0x80, 0x80, 0x11, 0x94,    //KSO 13
+    0x82, 0xb3, 0x80, 0x5D, 0x5A, 0x86, 0x89, 0x88,    //KSO 14
+    0x83, 0x95, 0x5B, 0x55, 0x80, 0x52, 0x8A, 0x87     //KSO 15
 };
-const unsigned char *ext_keymap = key_set1_extended_key_map;
+
+// Special keys - some requiring a 0xe0 prefix, some function-key dependent
+// 0x00 means that no event is sent upstream
+
+#define PREFIX(x) ((x)|0x80)   // If the prefix bit is set, an 0xe0 prefix is sent
+
+const struct {
+    unsigned char normal;
+    unsigned char function;
+} function_table[] =
+{
+//    Normal Function-key
+       0x00,        0x00,     // 80    No key
+       0x0f,        0x0f,     // 81    Function shift
+PREFIX(0x70),PREFIX(0x70),    // 82    Insert
+PREFIX(0x78),PREFIX(0x78),    // 83    Delete
+       0x51,        0x6D,     // 84    Language,       2nd Language
+       0x59, PREFIX(0x70),    // 85    R Shift,        Insert
+       0x29, PREFIX(0x61),    // 86    Space,          kbd Light
+PREFIX(0x6B),PREFIX(0x6C),    // 87    Left Arrow,     Home
+PREFIX(0xf5),PREFIX(0x7D),    // 88    Up Arrow,       Pg Up
+PREFIX(0x72),PREFIX(0x7A),    // 89    Down Arrow,     Pg Dn
+PREFIX(0x74),PREFIX(0x69),    // 8A    Right Arrow,    End
+       0x76, PREFIX(0x76),    // 8B    ESC,            ViewSrc
+       0x05, PREFIX(0x05),    // 8C    F1
+       0x00, PREFIX(0x62),    // 8D                    F1.5
+       0x06, PREFIX(0x06),    // 8E    F2
+       0x00, PREFIX(0x5F),    // 8F                    F2.5
+       0x04, PREFIX(0x04),    // 90    F3
+       0x00, PREFIX(0x5C),    // 91                    F3.5
+       0x0C, PREFIX(0x0C),    // 92    F4
+       0x03, PREFIX(0x03),    // 93    F5
+       0x00, PREFIX(0x53),    // 94                    F5.5
+       0x0B, PREFIX(0x0B),    // 95    F6
+       0x00, PREFIX(0x51),    // 96                    F6.5
+       0x02, PREFIX(0x02),    // 97    F7              0x83 fix to 0x02
+       0x00, PREFIX(0x39),    // 98                    F7.5
+       0x0A, PREFIX(0x0A),    // 99    F8
+       0x01, PREFIX(0x01),    // 9A    F9
+       0x00, PREFIX(0x19),    // 9B                    F9.5
+       0x09, PREFIX(0x09),    // 9C    F10
+       0x00, PREFIX(0x13),    // 9D                    F10.5
+       0x78, PREFIX(0x78),    // 9E    F11
+       0x00, PREFIX(0x6F),    // 9F                    F11.5
+       0x07, PREFIX(0x07),    // A0    F12
+PREFIX(0x2F),PREFIX(0x17),    // A1    Frame,          Win-Apr
+PREFIX(0x64),PREFIX(0x63),    // A2    Camera,         Mic
+PREFIX(0x57),PREFIX(0x08),    // A3    Chat,
+PREFIX(0x11),PREFIX(0x11),    // A4    Right alt gr
+PREFIX(0x1F),PREFIX(0x1F),    // A5    L-Grab(L-Win)
+PREFIX(0x27),PREFIX(0x27),    // A6    R-Grab(R-Win)
+       0x16,        0x05,     // A7    1/!             F1
+       0x1e,        0x06,     // A8    2/@             F2
+       0x26,        0x04,     // A9    3/#             F3
+       0x25,        0x0c,     // AA    4/$             F4
+       0x2e,        0x03,     // AB    5/%             F5
+       0x36,        0x0b,     // AC    6/^             F6
+       0x3d,        0x02,     // AD    7/&             F7
+       0x3e,        0x0a,     // AE    8/*             F8
+       0x46,        0x01,     // AF    9/(             F9
+       0x45,        0x09,     // B0    0/)             F10
+       0x4e,        0x78,     // B1    -/_             F11
+       0x55,        0x07,     // B2    +/=             F12
+       0x66, PREFIX(0x71),    // B3    Erase           Delete
+};
+
+
+int function_shift = 0;
+int got_break = 0;
+int translating = 0;
+int last_cmd;
+int suppress_translate;
 
 void init_ps2()
 {
@@ -259,6 +325,78 @@ void init_ps2()
 	s->bit_number = 0;
     }
     ps2_queue.get = ps2_queue.put = 0;
+    translating = 0;
+    got_break = 0;
+    last_cmd = 0;
+    suppress_translate = 0;
+    function_shift = 0;
+}
+
+// Keyboard translation.
+// Mouse events and ALPS keyboard events are passed through untranslated.
+// The EnE keyboard controller in normal scan-set-2 mode botches the OLPC
+// special keys, so we run it in raw matrix mode and do the translation
+// to scan set 2 or 1 ourselves.  We first translate to scan set 2, and
+// then if scan set 1 is selected, we post-translate to set 1.
+void forward_event(unsigned char byte, int port) {
+    unsigned char kv;
+
+    if (port != 0               // Don't translate mouse events
+	|| !translating         // Don't translate from the ALPS controller
+	|| suppress_translate   // Don't translate command responses
+	) {
+
+	if (port == 0 && suppress_translate) {
+	    // Spoof the "get scan set" command when we are translating to set 1
+	    // In matrix mode, the ENE controller returns "2" for "get scan set"
+	    if (last_cmd == 0 && translating == 1 && byte == 2 ) {
+		byte = 1;
+	    }
+	    --suppress_translate;  // Count the number of non-translated bytes
+	}
+
+	enque((unsigned short)((port<<8)|byte), &ps2_queue);
+	return;
+    }
+
+    if (byte == 0xf0) {  // Up marker
+        got_break = 1;
+	return;
+    }
+
+    // Translate from matrix encoding to scan set 2 value
+    kv = EnE3867_to_set2[byte];
+
+    // Handle extended codes, some with an e0 prefix, some function-key dependent
+    if (kv >= 0x80) {
+	if (kv == 0x81) {  // Fn shift
+	    function_shift = !got_break;
+	}
+
+	if (function_shift) {
+	    kv = function_table[kv-0x80].function;
+	} else {
+	    kv = function_table[kv-0x80].normal;
+	}
+	if (kv == 0) {
+	    goto out;
+	}
+	if (kv & 0x80) {
+	    enque(0xe0, &ps2_queue);
+	    kv &= 0x7f;
+	}
+    }
+
+    if (translating == 1) { // Scan set 1
+	kv = set2_to_set1[kv];
+	enque(got_break ? kv|0x80 : kv, &ps2_queue);
+    } else {	            // Scan set 2
+	if (got_break)
+	    enque(0xf0, &ps2_queue);
+	enque(kv, &ps2_queue);
+    }
+out:
+    got_break = 0;
 }
 
 #define WAIT_CLK_LOW  while ((*clk_gpio & clk_mask) != 0) {}
@@ -321,30 +459,6 @@ int ps2_out(int device_num, unsigned char byte) {
     return byte;  // Returns true if acked
 }
 
-int got_break = 0;
-int matrix_mapped = 0;
-void forward_event(unsigned char byte, int port) {
-    unsigned char kv;
-
-    if (port != 0 || !matrix_mapped || byte > 0xf0) {
-	enque((unsigned short)((port<<8)|byte), &ps2_queue);
-	return;
-    }
-    if (byte == 0xf0) {
-	got_break = 1;
-	return;
-    }
-
-    if ((kv = keymap[byte]) >= 0x80) {
-	// Matrix map codes > 0x7f are an index into the extended table.
-	// Extended codes are sent upstream preceded by 0xe0
-	kv = ext_keymap[kv-0x80];
-	enque(0xe0, &ps2_queue);
-    }
-    enque(got_break ? kv|0x80 : kv, &ps2_queue);
-    got_break = 0;
-}
-
 int ok_to_send = 0;
 
 void run_queue()
@@ -386,8 +500,55 @@ void do_command() {
 		*SP_INTERRUPT_MASK |= 2;  /* Avoid command interrupts while receiving */
 	    }
 
-	    if (data == 0xf7 && port == 0)
-		matrix_mapped = 1;
+	    if (port == 0) {
+		switch (data) {
+		case 0xf7:
+		    translating = 2;
+		    suppress_translate = 1;
+		    break;
+		case 0xf2: /* Identify - fa, ab, NN */
+		    suppress_translate = 3;
+		    break;
+		case 0x00:
+		    /* If we really wanted to spoof this correctly, we would */
+		    /* detect the "get scan set" command in translating mode */
+		    /* and arrange to replace the 2 with a 1 */
+		    /* f0, 00 asks for a scan set report - fa, set# */
+		    suppress_translate = (last_cmd == 0xf0) ? 2 : 1;
+		    break;
+		case 0x01:
+		    /* f0, 01 sets the scan set to 1 */
+		    if (last_cmd == 0xf0 && translating)  /* Don't change translating for ALPS */
+			translating = 1;
+		    suppress_translate = 1;
+		    break;
+		case 0x02:
+		    /* f0, 02 set the scan set to 2 */
+		    if (last_cmd == 0xf0 && translating)  /* Don't change translating for ALPS */
+			translating = 2;
+		    suppress_translate = 1;
+		    break;
+//		case 0xf0: /* Set/get scan set - fa */
+//		case 0xf1: /* Send nak - fe */
+//		case 0xf3: /* Set typematic rate/delay - fa */
+//		case 0xf4: /* Enable - fa */
+//		case 0xf5: /* Disable - fa */
+//		case 0xf6: /* Set default - fa */
+//		case 0xf7: /* Set all typematic - fa */
+//		case 0xf8: /* Set all make/break - fa */
+//		case 0xf9: /* Set all make - fa */
+//		case 0xfa: /* Set all typematic/make/break - fa */
+//		case 0xfb: /* Set key typematic - fa */
+//		case 0xfc: /* Set key make/break - fa */
+//		case 0xfd: /* Set key make - fa */
+//		case 0xfe: /* Resend - ?? */
+//		case 0xff: /* Reset - fa */
+		default:   /* Probably argument to set typematic rate/delay or set key type */
+		    suppress_translate = 1;
+		    break;
+		}
+		last_cmd = data;
+	    }
 
 	    s = ps2_devices[port];
 	    s->bit_number = 20;
