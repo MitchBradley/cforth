@@ -1,7 +1,7 @@
 purpose: Program Armada610 Fuses
 0 value block#
 : fuse-ena!  ( n -- )  h# d4282868 l!  ;
-: fuse-ctl!  ( n -- )  h# d4292804 l!  d# 100 ms  ;
+: fuse-ctl!  ( n -- )  block# d# 18 lshift or  h# d4292804 l!  d# 100 ms  ;
 : ena-fuse-module  ( -- )
    h# 08 fuse-ena!
    h# 09 fuse-ena!
@@ -21,9 +21,9 @@ purpose: Program Armada610 Fuses
 ;
 : +block  ( n -- n' )  d# 18 lshift or  ;
 : pgm-fuses  ( v3 v2 v1 v0 block# -- )
-   ena-fuse-module
-   otp-setup
    to block#       ( v3 v2 v1 v0 )
+   ena-fuse-module ( v3 v2 v1 v0 )
+   otp-setup       ( v3 v2 v1 v0 )
    h# d4292838 l!  ( v3 v2 v1 )
    h# d429283c l!  ( v3 v2 )
    h# d4292840 l!  ( v3 )
