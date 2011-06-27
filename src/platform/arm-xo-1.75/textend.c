@@ -16,6 +16,7 @@ cell sum(cell b, cell a);
 cell byterev(cell n);
 #endif
 cell ps2_out(cell byte, cell device_num);
+cell uart4_only;
 
 #define DECLARE_REGS \
     volatile unsigned long *fifo = (volatile unsigned long *)0xd4035010; \
@@ -320,6 +321,10 @@ cell ps2_devices_adr(void)
 {
     return (cell)&ps2_devices;
 }
+cell one_uart_adr(void)
+{
+    return (cell)&uart4_only;
+}
 
 
 cell ((* const ccalls[])()) = {
@@ -350,6 +355,7 @@ cell ((* const ccalls[])()) = {
     (cell (*)())ps2_devices_adr, // Entry # 23
     (cell (*)())init_ps2,        // Entry # 24
     (cell (*)())ps2_out,         // Entry # 25
+    (cell (*)())one_uart_adr,    // Entry # 26
 };
 
 

@@ -63,6 +63,7 @@ d# 22 ccall: kbd-bit-out   { i.value -- }
 d# 23 ccall: ps2-devices   { -- a.value }
 d# 24 ccall: init-ps2      { -- }
 d# 25 ccall: ps2-out       { i.byte i.device# -- i.ack? }
+d# 26 ccall: 'one-uart     { -- a.value }
 
 : enable-interrupts  ( -- )  psr@ h# 80 invert and psr!  ;
 : disable-interrupts  ( -- )  psr@ h# 80 or psr!  ;
@@ -127,7 +128,7 @@ h# 1000.0000 value memtest-length
    begin  d# 50 ms  rotate-button?  until  \ Wait until KEY_5 GPIO pressed
    ." Resuming CForth on Security Processor" cr
 ;
-: ofw-go  ( -- )
+: ofw-go-slow  ( -- )
    ." releasing" cr
 
    \ If the ITCM is on, we must turn it off so we can write to RAM at 0
@@ -144,17 +145,31 @@ h# 1000.0000 value memtest-length
    0 h# d4050020 l!  \ Release reset for PJ4
 ;
 
-: load-ofw  ( -- )
+: load-ofw-slow  ( -- )
    init-spi
    .spi-id
 
    h# 2fa0.0000 " firmware" load-drop-in
 ;
+: ofw-slow  ( -- )
+\   0 h# e0000 h# 20000 spi-read
+\   spi-go
+   rotate-button?  if  ." Skipping OFW" cr  exit  then
+
+   blank-display-lowres
+   load-ofw-slow
+   ofw-go-slow
+\   cforth-wait
+   begin wfi again
+;
+
 0 value reset-offset
-: ofwdi-go  ( -- )
+: ofw-go  ( -- )
    ." releasing" cr
+
    \ If the ITCM is on, we must turn it off so we can write to RAM at 0
-   control@  itcm-off   ( old-value )
+   psr@ disable-interrupts ( old-psr )
+   control@  itcm-off      ( old-psr old-ctl )
 
    h# ea000000 h# 0 l!  \ b 8
    'compressed reset-offset +  h# 4 l!  \ reset vector address
@@ -162,35 +177,34 @@ h# 1000.0000 value memtest-length
    h# e1a0f000 h# c l!  \ mov pc,r0
 
    control!             \ Turn the ITCM back on if necessary
+   psr!
 
    d# 20 ms
    0 h# d4050020 l!  \ Release reset for PJ4
 ;
 
-: load-ofwdi  ( -- )
+: load-ofw  ( -- )
    ( init-spi ) .spi-id
    " reset" drop-in-location abort" Can't find reset dropin"  ( adr len )
    swap h# 20000 - dup to reset-offset      ( len offset )
    +                                        ( size-to-read )
    'compressed swap h# 2.0000 spi-read      ( )
 ;
-: ofwdi  ( -- )
-   rotate-button?  if  ." Skipping OFW" cr  exit  then
-   blank-display-lowres
-   load-ofwdi
-   ofwdi-go
-   begin wfi again
+: dbg  ( -- )  
+   ." CForth stays active on second serial port" cr
+   'one-uart on
 ;
 : ofw  ( -- )
-\   0 h# e0000 h# 20000 spi-read
-\   spi-go
-   rotate-button?  if  ." Skipping OFW" cr  exit  then
-
    blank-display-lowres
    load-ofw
    ofw-go
-\   cforth-wait
-   begin wfi again
+   'one-uart @  0=  if
+      begin wfi again
+   then
+;
+: maybe-ofw  ( -- )
+   rotate-button?  if  ." Skipping OFW" cr  exit  then
+   ofw
 ;
 : sp-ofw  ( -- )  load-ofw  " " drop  h# 2fa0.0000 acall  ;
 
@@ -203,6 +217,8 @@ h# 1000.0000 value memtest-length
    init-dram
 \   fix-fuses
    init-spi
+d# 300 ms
+   enable-ps2
 ;
 
 0 [if]
@@ -220,7 +236,7 @@ h# 1000.0000 value memtest-length
 [then]
 
 \ Run this at startup
-: app  init  ofwdi  hex quit  ;
+: app  init  ( d# 400 ms )  maybe-ofw  hex quit  ;
 \ " ../objs/tester" $chdir drop
 
 " app.dic" save

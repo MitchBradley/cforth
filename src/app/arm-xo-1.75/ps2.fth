@@ -52,7 +52,7 @@ h# d4282000 value ic-base  \ Interrupt controller
 	    drop           ( time-limit )
          else              ( time-limit code )
 	    h# fa =  if    ( time-limit )
-	       false exit  ( -- false )
+	       drop false exit  ( -- false )
 	    then           ( time-limit )
 	 then              ( time-limit )
       then                 ( time-limit )
@@ -85,8 +85,13 @@ h# d4282000 value ic-base  \ Interrupt controller
    wait-data?  if  exit  then        ( data1 )
    h# ab <>  if  exit  then          ( )
    wait-data?  if  exit  then        ( data2 )
-   \ Use matrix mode for EnE, reinit ALPS to the PC default scan set 2
-   h# 41 =  if  matrix-mode  else  2 set-scan-set  then
+   \ Use matrix mode for EnE
+   h# 41 =  if  matrix-mode  then
+   \ We default to scan set 1 because our Linux driver pretends to be
+   \ controller type SERIO_8042_XL, meaning a scan-set 2 keyboard that is
+   \ translated to scan set 1 by an 8042.
+   1 set-scan-set
+   d# 40 ms
 ;
 : enable-ps2
    init-timer-2s

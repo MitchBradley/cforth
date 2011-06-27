@@ -3,8 +3,12 @@
 
 // Character I/O stubs
 
-#define UART3REG ((unsigned int volatile *)0xd4018000)  // UART3 - main board
+#define UART4REG ((unsigned int volatile *)0xd4016000)  // UART4 - main board lower
+#define UART3REG ((unsigned int volatile *)0xd4018000)  // UART3 - main board upper
+#define UART2REG ((unsigned int volatile *)0xd4017000)  // UART2 - not connected
 #define UART1REG ((unsigned int volatile *)0xd4030000)  // UART1 - JTAG board
+
+int uart4_only = 0;
 
 void tx1(char c)
 {
@@ -20,11 +24,38 @@ void tx3(char c)
         ;
     UART3REG[0] = (unsigned int)c;
 }
+void tx4(char c)
+{
+    // send the character to the console output device
+    while ((UART4REG[5] & 0x20) == 0)
+        ;
+    UART4REG[0] = (unsigned int)c;
+}
 
 void tx(char c)
 {
+    tx4(c);
+    if (uart4_only)
+	return;
     tx1(c);
     tx3(c);
+}
+
+void dbgputn(unsigned int c)
+{
+	char *digits = "0123456789abcdef";
+	tx4(digits[(c>>4)&0x0f]);
+	tx4(digits[c&0x0f]);
+}
+void dbgputcmd(unsigned int c)
+{
+	dbgputn(c);
+	tx4('.');
+}
+void dbgputresp(unsigned int c)
+{
+	dbgputn(c);
+	tx4(' ');
 }
 
 int putchar(int c)
@@ -41,18 +72,25 @@ int kbhit1() {
 int kbhit3() {
     return (UART3REG[5] & 0x1) != 0;
 }
+int kbhit4() {
+    return (UART4REG[5] & 0x1) != 0;
+}
 
 int kbhit() {
-    return kbhit1() || kbhit3();
+    return kbhit1() || kbhit3() || kbhit4();
 }
 
 int getchar()
 {
-    while (!kbhit())
-        ;
     // return the next character from the console input device
-    
-    return (unsigned char) (kbhit1() ? UART1REG[0] : UART3REG[0]);
+    do {
+	if (kbhit4())
+	    return UART4REG[0];
+	if ((!uart4_only) && kbhit3())
+	    return UART3REG[0];
+	if ((!uart4_only) && kbhit1())
+	    return UART1REG[0];
+    } while (1);
 }
 
 void init_io()
@@ -62,12 +100,16 @@ void init_io()
     *(int *)0xD4015064 = 0x3;         // APBC_AIB_CLK_RST - release reset, functional and APB clock on
     *(int *)0xD401502c = 0x13;        // APBC_UART1_CLK_RST - VCTCXO, functional and APB clock on (26 mhz)
     *(int *)0xD4015034 = 0x13;        // APBC_UART3_CLK_RST - VCTCXO, functional and APB clock on (26 mhz)
+    *(int *)0xD4015088 = 0x13;        // APBC_UART4_CLK_RST - VCTCXO, functional and APB clock on (26 mhz)
 
 //  *(int *)0xd401e120 = 0xc1;        // GPIO51 = af1 for UART3 RXD
 //  *(int *)0xd401e124 = 0xc1;        // GPIO52 = af1 for UART3 TXD
 
     *(int *)0xd401e260 = 0xc4;        // GPIO115 = af4 for UART3 RXD
     *(int *)0xd401e264 = 0xc4;        // GPIO116 = af4 for UART3 TXD
+
+    *(int *)0xd401e268 = 0xc3;        // GPIO117 = af3 for UART4 RXD
+    *(int *)0xd401e26c = 0xc3;        // GPIO118 = af3 for UART4 TXD
 
     *(int *)0xd401e0c8 = 0xc1;        // GPIO29 = af1 for UART1 RXD
     *(int *)0xd401e0cc = 0xc1;        // GPIO30 = af1 for UART1 TXD
@@ -85,6 +127,15 @@ void init_io()
     UART3REG[1] = 00;    // 11500 baud
     UART3REG[3] = 0x03;  // 8n1
     UART3REG[2] = 0x07;  // FIFOs and stuff
+
+    UART4REG[1] = 0x40;  // Marvell-specific UART Enable bit
+    UART4REG[3] = 0x83;  // Divisor Latch Access bit
+    UART4REG[0] = 14;    // 115200 baud
+    UART4REG[1] = 00;    // 11500 baud
+    UART4REG[3] = 0x03;  // 8n1
+    UART4REG[2] = 0x07;  // FIFOs and stuff
+
+    uart4_only = 0;
 }
 
 #if 1
@@ -309,26 +360,34 @@ PREFIX(0x27),PREFIX(0x27),    // A6    R-Grab(R-Win)
 };
 
 
+/* nonzero if the function key is pressed */
 int function_shift = 0;
+
+/* nonzero if the last byte was 0xf0, indicating a key break event */
 int got_break = 0;
-int translating = 0;
+
+/* 0 if not translating from matrix mode, otherwise the output scan set */
+int translate_set = 0;
+
+/* The value of the last downstream command, used to track multi-byte commands */
 int last_cmd;
-int suppress_translate;
+
+/* The number of result bytes still expected from the most recent command, */
+/* used to suppress scan set translation for command responses */
+int suppress_count;
 
 void init_ps2()
 {
     int i;
-    struct ps2_state *s;
 
     for (i = 0; i < NUM_PS2_DEVICES; i++) {
-	s = ps2_devices[i];
-	s->bit_number = 0;
+	ps2_devices[i]->bit_number = 0;
     }
     ps2_queue.get = ps2_queue.put = 0;
-    translating = 0;
+    translate_set = 0;
     got_break = 0;
     last_cmd = 0;
-    suppress_translate = 0;
+    suppress_count = 0;
     function_shift = 0;
 }
 
@@ -338,26 +397,34 @@ void init_ps2()
 // special keys, so we run it in raw matrix mode and do the translation
 // to scan set 2 or 1 ourselves.  We first translate to scan set 2, and
 // then if scan set 1 is selected, we post-translate to set 1.
+
 void forward_event(unsigned char byte, int port) {
     unsigned char kv;
 
-    if (port != 0               // Don't translate mouse events
-	|| !translating         // Don't translate from the ALPS controller
-	|| suppress_translate   // Don't translate command responses
+    // This block passes bytes through untranslated
+    if (port != 0           // Don't translate mouse events
+	|| !translate_set   // Don't translate from the ALPS controller
+	|| suppress_count   // Don't translate command responses
 	) {
 
-	if (port == 0 && suppress_translate) {
-	    // Spoof the "get scan set" command when we are translating to set 1
+	if (port == 0 && suppress_count) {
+	    // Spoof the "get scan set" command when translating to set 1
 	    // In matrix mode, the ENE controller returns "2" for "get scan set"
-	    if (last_cmd == 0 && translating == 1 && byte == 2 ) {
+	    if (last_cmd == 0 && translate_set == 1 && byte == 2 ) {
 		byte = 1;
 	    }
-	    --suppress_translate;  // Count the number of non-translated bytes
+	    --suppress_count;  // One fewer byte to pass through untranslated
 	}
 
 	enque((unsigned short)((port<<8)|byte), &ps2_queue);
 	return;
     }
+
+    // If we get here we must translate the raw matrix code to a scan set code
+
+    // We defer the forwarding of the "break" marker until we get the event code
+    // because, if we are outputting scan set 1, the break event is denoted by
+    // setting the high bit instead of sending a preceding 0xf0
 
     if (byte == 0xf0) {  // Up marker
         got_break = 1;
@@ -369,28 +436,40 @@ void forward_event(unsigned char byte, int port) {
 
     // Handle extended codes, some with an e0 prefix, some function-key dependent
     if (kv >= 0x80) {
+
+        // Track the state of the function shift key
 	if (kv == 0x81) {  // Fn shift
 	    function_shift = !got_break;
 	}
 
+        // Lookup the output key sequence depending on the function shift state
 	if (function_shift) {
 	    kv = function_table[kv-0x80].function;
 	} else {
 	    kv = function_table[kv-0x80].normal;
 	}
+
+        // Some keys do not have associated events for some function shift states
 	if (kv == 0) {
 	    goto out;
 	}
+
+	// If the 0x80 bit is set, it means the output code sequence starts with 0xe0
 	if (kv & 0x80) {
 	    enque(0xe0, &ps2_queue);
 	    kv &= 0x7f;
 	}
     }
 
-    if (translating == 1) { // Scan set 1
+    // Now kv is the final scan set 2 code value.
+
+    if (translate_set == 1) {
+        // Scan set 1 - translate scan set 2 value to set 1 and send,
+	// possibly with the 0x80 bit set (break)
 	kv = set2_to_set1[kv];
 	enque(got_break ? kv|0x80 : kv, &ps2_queue);
     } else {	            // Scan set 2
+        // Scan set 2 - send code value as-is, possibly prefixed by 0xf0 (break)
 	if (got_break)
 	    enque(0xf0, &ps2_queue);
 	enque(kv, &ps2_queue);
@@ -459,8 +538,6 @@ int ps2_out(int device_num, unsigned char byte) {
     return byte;  // Returns true if acked
 }
 
-int ok_to_send = 0;
-
 void run_queue()
 {
     int data;
@@ -475,19 +552,18 @@ void run_queue()
     data = deque(&ps2_queue);
     if (data == -1)
 	return;
+//    dbgputresp((unsigned int)data);
     SP_RETURN[0] = data;
     *PJ_INTERRUPT_SET = 1;
-    ok_to_send = 0;
 }
 
 int rxlevel = 0;
 
-void do_command() {
-    int port, data;
+void do_command(unsigned int data) {
+    int port;
     
-    data = *SP_COMMAND;
+//    dbgputcmd(data);
     if (data == 0xff00) {
-	ok_to_send = 1;
 	run_queue();
     } else {
 	port = (data >> 8) & 0xff;
@@ -499,34 +575,36 @@ void do_command() {
 	    if (++rxlevel == 1) {
 		*SP_INTERRUPT_MASK |= 2;  /* Avoid command interrupts while receiving */
 	    }
+	    // XXX should set a timer to reset the state to 0 if the transmission
+	    // doesn't complete within a couple of milliseconds
 
 	    if (port == 0) {
 		switch (data) {
-		case 0xf7:
-		    translating = 2;
-		    suppress_translate = 1;
+		case 0xf7:			/* EnE "enter matrix mode" command */
+		    translate_set = 2;		/* Start out translating to scan set 2 */
+		    suppress_count = 1;	/* The next byte is an ack; don't translate it */
 		    break;
-		case 0xf2: /* Identify - fa, ab, NN */
-		    suppress_translate = 3;
+		case 0xf2: 			/* Identify: f1 <ack> <0xab> <NN> */
+		    suppress_count = 3;
 		    break;
-		case 0x00:
-		    /* If we really wanted to spoof this correctly, we would */
-		    /* detect the "get scan set" command in translating mode */
-		    /* and arrange to replace the 2 with a 1 */
-		    /* f0, 00 asks for a scan set report - fa, set# */
-		    suppress_translate = (last_cmd == 0xf0) ? 2 : 1;
+		case 0x00:	/* Get scan set: f0 <ack> 00 <ack> <set#> */
+		    suppress_count = (last_cmd == 0xf0) ? 2 : 1;
 		    break;
-		case 0x01:
-		    /* f0, 01 sets the scan set to 1 */
-		    if (last_cmd == 0xf0 && translating)  /* Don't change translating for ALPS */
-			translating = 1;
-		    suppress_translate = 1;
+		case 0x01:	/* Set scan set 1: f0 <ack> 01 <ack> */
+		    /* If we are translating from raw matrix codes, change the output scan set to 1 */
+		    /* If we are not translating, the keyboard controller will take care of it */
+		    if (last_cmd == 0xf0 && translate_set) {
+			translate_set = 1;
+		    }
+		    suppress_count = 1;
 		    break;
-		case 0x02:
-		    /* f0, 02 set the scan set to 2 */
-		    if (last_cmd == 0xf0 && translating)  /* Don't change translating for ALPS */
-			translating = 2;
-		    suppress_translate = 1;
+		case 0x02:	/* Set scan set 2: f0 <ack> 02 <ack> */
+		    /* If we are translating from raw matrix codes, change the output scan set to 2 */
+		    /* If we are not translating, the keyboard controller will take care of it */
+		    if (last_cmd == 0xf0 && translate_set) {  /* Don't change translate_set for ALPS */
+			translate_set = 2;
+		    }
+		    suppress_count = 1;
 		    break;
 //		case 0xf0: /* Set/get scan set - fa */
 //		case 0xf1: /* Send nak - fe */
@@ -543,8 +621,8 @@ void do_command() {
 //		case 0xfd: /* Set key make - fa */
 //		case 0xfe: /* Resend - ?? */
 //		case 0xff: /* Reset - fa */
-		default:   /* Probably argument to set typematic rate/delay or set key type */
-		    suppress_translate = 1;
+		default:
+		    suppress_count = 1;
 		    break;
 		}
 		last_cmd = data;
@@ -558,7 +636,8 @@ void do_command() {
 	    /* Schedule a timer interrupt for 60 us from now */
 	    *TIMER20_FREEZE = 1;    /* Latch count */
 	    s->timestamp = *TIMER20;
-	    TMR2_MATCH00[port] = s->timestamp + 780;  /* 60 us */
+	    /* 60 us should suffice, but is on the hairy edge for the EnE kbd controller */
+	    TMR2_MATCH00[port] = s->timestamp + 1500;  /* about 110 us */
 	    *TMR2_IER0 |= (1 << port);
 
 	    s->clk_gpio[GPIO_CFER_INDEX] = s->clk_mask; // Turn off falling edge interrupts
@@ -592,11 +671,13 @@ void irq_handler()
     int timers;
 
     if (*SP_INTERRUPT_SET & 2) {
-	while (*SP_CONTROL & 1) {
-	    do_command();
+        *SP_INTERRUPT_RESET = 2;
+	if (*SP_CONTROL & 1) {
 	    *SP_CONTROL = 0;
-	}	
-	*SP_INTERRUPT_RESET = 2;
+	    do_command(*SP_COMMAND);
+	} else {
+	    tx('*');
+	}
     }
 
     if ((timers = *TMR2_SR0) & 3) {
@@ -629,6 +710,8 @@ void irq_handler()
 	    if (++rxlevel == 1) {
 		*SP_INTERRUPT_MASK |= 2;  /* Avoid command interrupts while receiving */
 	    }
+	    // XXX should set a timer to reset the state to 0 if the reception
+	    // doesn't complete within a couple of milliseconds
 	    break;
 	case 1: case 2: case 3: case 4:
 	case 5:	case 6:	case 7:	case 8:
@@ -649,8 +732,7 @@ void irq_handler()
 	    }
 	    s->bit_number = 0;
 	    s->byte = 0;
-	    if (ok_to_send)
-		run_queue();
+	    run_queue();
 	    break;
 
 	    /* States 20-31 are for sending */
