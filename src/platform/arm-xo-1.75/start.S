@@ -48,11 +48,21 @@ dorestart:
 
 #if STALLER1
 stall:
-        mov r2, #2
-        str r2, [r3, #0x30]
-        str r2, [r3, #0x34]
-        b stall
+    mov r2, #2
+    str r2, [r3, #0x30]
+    str r2, [r3, #0x34]
+    b stall
 #endif
+
+clear_bss:	
+    ldr     r0,.LBSS
+    ldr	    r1,.LBSSEND
+    mov     r2,#0
+clear_bss_loop:
+    str     r2,[r0],#4
+    cmp	    r0,r1
+    blo     clear_bss_loop
+
     bl      main
 
 doirq:
@@ -132,6 +142,10 @@ bye:
 
 .L1:
     .word   reset_reason
+.LBSS:
+    .word   __bss_start__
+.LBSSEND:
+    .word   __bss_end__
 
 	// Some variables to help debug unexpected exceptions and resets
     .bss
