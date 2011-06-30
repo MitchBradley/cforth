@@ -606,6 +606,9 @@ void do_command(unsigned int data) {
 		    }
 		    suppress_count = 1;
 		    break;
+		case 0xff: /* Reset - fa aa */
+		    suppress_count = 2;
+		    break;
 //		case 0xf0: /* Set/get scan set - fa */
 //		case 0xf1: /* Send nak - fe */
 //		case 0xf3: /* Set typematic rate/delay - fa */
@@ -620,7 +623,6 @@ void do_command(unsigned int data) {
 //		case 0xfc: /* Set key make/break - fa */
 //		case 0xfd: /* Set key make - fa */
 //		case 0xfe: /* Resend - ?? */
-//		case 0xff: /* Reset - fa */
 		default:
 		    suppress_count = 1;
 		    break;
