@@ -119,6 +119,12 @@ h# 1000.0000 value memtest-length
    then
 ;
 
+: fix-v7  ( -- )
+   h# d4282c08 l@  2 and  0=  if
+      ." Processor is fused in V6 mode - switching to V7" cr
+      h# d4282c08 l@  2 or  h# d4282c08 l!
+   then
+;
 : rotate-button?  ( -- flag )
    [ifdef] cl2-a1  d# 20  [else]  d# 15  [then]
    gpio-pin@  0=
@@ -216,8 +222,9 @@ h# 1000.0000 value memtest-length
    clk-fast
    init-dram
 \   fix-fuses
+   fix-v7
    init-spi
-d# 300 ms
+   d# 300 ms
    enable-ps2
 ;
 
