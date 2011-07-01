@@ -308,7 +308,7 @@ const struct {
        0x00,        0x00,     // 80    No key
        0x0f,        0x0f,     // 81    Function shift
 PREFIX(0x70),PREFIX(0x70),    // 82    Insert
-PREFIX(0x78),PREFIX(0x78),    // 83    Delete
+PREFIX(0x71),PREFIX(0x71),    // 83    Delete
        0x51,        0x6D,     // 84    Language,       2nd Language
        0x59, PREFIX(0x70),    // 85    R Shift,        Insert
        0x29, PREFIX(0x61),    // 86    Space,          kbd Light
