@@ -151,7 +151,7 @@ REG(SP_RETURN,         0xd4290080); /* 17 registers from 80..c4 inclusive */
 REG(PJ_RST_INTERRUPT,  0xd42900c8); /* 17 registers from 80..c4 inclusive */
 REG(SP_INTERRUPT_SET,  0xd4290210); /* 02 bit means cmd reg occupied */
 REG(SP_INTERRUPT_RESET,0xd4290218); /* 02 bit means cmd reg occupied - write 02 to ack irq */
-REG(SP_INTERRUPT_MASK, 0xd429021c); /* 02 bit means cmd reg occupied - clear 02 to allow irq */
+REG(SP_INTERRUPT_MASK, 0xd429021c); /* 02 bit means cmd reg irq blocked - clear 02 to allow irq */
 REG(SP_CONTROL,        0xd4290220); /* 01 bit means cmd reg occupied - write 0 to cycle to next cmd */
 REG(PJ_INTERRUPT_SET,  0xd4290234); /* write 01 to send interrupt upstream */
 REG(TMR2_SR0,          0xd4080034); /* 3 low bits are for comparators 2,1,0 */
@@ -168,13 +168,14 @@ REG(TMR2_MATCH02,      0xd408000c);
 #define KBDCLK_MASK GPIO71_MASK
 #define KBDDAT_MASK GPIO72_MASK
 
+// QUEUE_LEN must be a power of two
+#define QUEUE_LEN 64
+#define QUEUE_MASK QUEUE_LEN-1
 struct queue {
     int put;
     int get;
-    unsigned short data[16];
+    unsigned char data[64];
 };
-
-struct queue ps2_queue;
 
 struct ps2_state {
     int bit_number;
@@ -185,6 +186,8 @@ struct ps2_state {
     reg_t clk_gpio;
     unsigned long dat_mask;
     unsigned long clk_mask;
+    int quenched;
+    struct queue queue; 
 };
 
 #define GPIO_PLR_INDEX  0x00   /* Pin level */
@@ -229,16 +232,24 @@ struct ps2_state tpd_state = {
 struct ps2_state *ps2_devices[] = { &kbd_state, &tpd_state };
 #define NUM_PS2_DEVICES (sizeof (ps2_devices) / sizeof (ps2_devices[0]))
 
-// Silently drops from the head if the queue is full
-// It's better to lose down events than subsequent up events
-void enque(unsigned short w, struct queue *q)
+int queue_nearly_full(struct queue *q)
 {
     int put = q->put;
-    if ((((put+1) - q->get) & 0xf) == 0) {
-	q->get = (q->get+1) & 0xf;
+    int get = q->get;
+    return (((put+1) - get) & QUEUE_MASK) == 0 ||
+	   (((put+2) - get) & QUEUE_MASK) == 0;
+}
+
+// Silently drops from the head if the queue is full
+// It's better to lose down events than subsequent up events
+void enque(unsigned char b, struct queue *q)
+{
+    int put = q->put;
+    if ((((put+1) - q->get) & QUEUE_MASK) == 0) {
+	q->get = (q->get+1) & QUEUE_MASK;
     }
-    q->data[put] = w;
-    q->put = (put+1) & 0xf;
+    q->data[put] = b;
+    q->put = (put+1) & QUEUE_MASK;
 }
 int deque(struct queue *q)
 {
@@ -248,7 +259,7 @@ int deque(struct queue *q)
     if (get == q->put)
 	return -1;
     ret = (int)q->data[get];
-    q->get = (get+1) & 0xf;
+    q->get = (get+1) & QUEUE_MASK;
     return ret;
 }
 
@@ -376,14 +387,25 @@ int last_cmd;
 /* used to suppress scan set translation for command responses */
 int suppress_count;
 
+#define WAIT_CLK_LOW  while ((*clk_gpio & clk_mask) != 0) {}
+#define WAIT_CLK_HIGH while ((*clk_gpio & clk_mask) == 0) {}
+#define SEND_BIT(flag,gpio,mask) gpio[(flag) ? GPIO_CDR_INDEX : GPIO_SDR_INDEX] = mask
+#define DRIVE_LOW(gpio,mask) gpio[GPIO_SDR_INDEX] = mask    /* Direction out to drive a low */
+#define DRIVE_HIGH(gpio,mask) gpio[GPIO_CDR_INDEX] = mask   /* Direction in so pullup pulls high */
+#define BIT_OUT(flag)  WAIT_CLK_LOW  SEND_BIT(flag,dat_gpio,dat_mask);  WAIT_CLK_HIGH
+
 void init_ps2()
 {
     int i;
+    struct ps2_state *s;
 
     for (i = 0; i < NUM_PS2_DEVICES; i++) {
-	ps2_devices[i]->bit_number = 0;
+	s = ps2_devices[i];
+	s->quenched = 0;
+	s->bit_number = 0;
+	s->queue.get = s->queue.put = 0;
+	DRIVE_HIGH(s->clk_gpio,s->clk_mask);    // After clk goes high, device will respond with clk pulses
     }
-    ps2_queue.get = ps2_queue.put = 0;
     translate_set = 0;
     got_break = 0;
     last_cmd = 0;
@@ -400,6 +422,7 @@ void init_ps2()
 
 void forward_event(unsigned char byte, int port) {
     unsigned char kv;
+    struct ps2_state *s;
 
     // This block passes bytes through untranslated
     if (port != 0           // Don't translate mouse events
@@ -416,7 +439,13 @@ void forward_event(unsigned char byte, int port) {
 	    --suppress_count;  // One fewer byte to pass through untranslated
 	}
 
-	enque((unsigned short)((port<<8)|byte), &ps2_queue);
+	s = ps2_devices[port];
+	enque(byte, &s->queue);
+	if (queue_nearly_full(&s->queue)) {
+	    // Flow control the sender
+	    DRIVE_LOW(s->clk_gpio,s->clk_mask);  // Set direction to out to drive clk low
+	    s->quenched = 1;
+	}
 	return;
     }
 
@@ -456,7 +485,7 @@ void forward_event(unsigned char byte, int port) {
 
 	// If the 0x80 bit is set, it means the output code sequence starts with 0xe0
 	if (kv & 0x80) {
-	    enque(0xe0, &ps2_queue);
+	    enque(0xe0, &kbd_state.queue);
 	    kv &= 0x7f;
 	}
     }
@@ -467,23 +496,16 @@ void forward_event(unsigned char byte, int port) {
         // Scan set 1 - translate scan set 2 value to set 1 and send,
 	// possibly with the 0x80 bit set (break)
 	kv = set2_to_set1[kv];
-	enque(got_break ? kv|0x80 : kv, &ps2_queue);
+	enque(got_break ? kv|0x80 : kv, &kbd_state.queue);
     } else {	            // Scan set 2
         // Scan set 2 - send code value as-is, possibly prefixed by 0xf0 (break)
 	if (got_break)
-	    enque(0xf0, &ps2_queue);
-	enque(kv, &ps2_queue);
+	    enque(0xf0, &kbd_state.queue);
+	enque(kv, &kbd_state.queue);
     }
 out:
     got_break = 0;
 }
-
-#define WAIT_CLK_LOW  while ((*clk_gpio & clk_mask) != 0) {}
-#define WAIT_CLK_HIGH while ((*clk_gpio & clk_mask) == 0) {}
-#define SEND_BIT(flag,gpio,mask) gpio[(flag) ? GPIO_CDR_INDEX : GPIO_SDR_INDEX] = mask
-#define DRIVE_LOW(gpio,mask) gpio[GPIO_SDR_INDEX] = mask    /* Direction out to drive a low */
-#define DRIVE_HIGH(gpio,mask) gpio[GPIO_CDR_INDEX] = mask   /* Direction in so pullup pulls high */
-#define BIT_OUT(flag)  WAIT_CLK_LOW  SEND_BIT(flag,dat_gpio,dat_mask);  WAIT_CLK_HIGH
 
 void ticks(int n)
 {
@@ -541,6 +563,8 @@ int ps2_out(int device_num, unsigned char byte) {
 void run_queue()
 {
     int data;
+    int i;
+    struct ps2_state *s;
 
     /*
      * The following line make it safe for the host end to send a RDY command at any time,
@@ -549,12 +573,20 @@ void run_queue()
     if ((*PJ_RST_INTERRUPT) & 1)  /* Don't overwrite data already in buffer */
 	return;
 
-    data = deque(&ps2_queue);
-    if (data == -1)
-	return;
+    for(i=0; i<2; i++) {
+	s = ps2_devices[i];
+	data = deque(&s->queue);
+        if (data != -1) {
+	    if (s->quenched) {
+		s->quenched = 0;
+		DRIVE_HIGH(s->clk_gpio, s->clk_mask);
+	    }
 //    dbgputresp((unsigned int)data);
-    SP_RETURN[0] = data;
-    *PJ_INTERRUPT_SET = 1;
+            SP_RETURN[0] = (i<<8) | data;
+            *PJ_INTERRUPT_SET = 1;
+	    return;
+	}
+    }
 }
 
 int rxlevel = 0;
@@ -700,6 +732,7 @@ void irq_handler()
 
 	if ((this_timestamp - s->timestamp) > PS2_TIMEOUT) {
 	    s->bit_number = 0;
+	    *SP_INTERRUPT_MASK &= ~2;  // Re-enable command interrupts on a botched rx
 	    s->byte = 0;
 	}
 
