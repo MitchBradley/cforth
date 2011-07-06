@@ -709,8 +709,6 @@ void irq_handler()
 	if (*SP_CONTROL & 1) {
 	    *SP_CONTROL = 0;
 	    do_command(*SP_COMMAND);
-	} else {
-	    tx('*');
 	}
     }
 
