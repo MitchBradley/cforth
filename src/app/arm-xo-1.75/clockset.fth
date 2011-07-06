@@ -1,9 +1,17 @@
 hex
+: a-stepping?  ( -- flag )  d4282c00 l@ h# ff0000 and  h# a0.0000 =  ;
+: at-least-a1?  ( -- flag )  ffe00030 l@  h# 4131 >=  ;
 : basic-setup  ( -- )
    \ Stuff from jasper.c that is not already done elsewhere
    0001ffff d42828dc l! \ PMUA_GLB_CLK_CTRL - Enable CLK66 to APB, PLL2/12/6/3/16/8/4/2/1, PLL1/12/6/3/16/8/4 
    \ Slow queue, L2 cache burst 8, bypass L2 clock gate, disable MMU xlat abort, Multi-ICE WFI, bypass clock gate
-   d4282c08 l@  00086240 or  00800000 invert and  d4282c08 l!
+   d4282c08 l@
+   a-stepping? at-least-a1? and  if
+      00082000 or
+   else
+      00086040 or
+   then
+   00800000 invert and  d4282c08 l!
 ;
 : clk-fast
    ffffffff d4050024 l!  \ PMUM_CGR_SP     \ All clocks ON
