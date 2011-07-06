@@ -45,7 +45,7 @@ h# d4282000 value ic-base  \ Interrupt controller
    then
 ;
 : wait-ack?  ( -- timeout? )
-   get-msecs  d# 30 +   ( time-limit )
+   get-msecs  d# 200 +     ( time-limit )
    begin
       event?  if           ( time-limit code port )
 	 if                ( time-limit code )
@@ -107,6 +107,7 @@ h# d4282000 value ic-base  \ Interrupt controller
    unblock-irqs
    enable-interrupts
    send-rdy
+   d# 148 gpio-clr   \ Enable power to keyboard and touchpad
    set-kbd-mode
 ;
 

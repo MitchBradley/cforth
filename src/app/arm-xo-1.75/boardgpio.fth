@@ -21,6 +21,8 @@ purpose: Board-specific setup details - pin assigments, etc.
    d# 125 gpio-set     \ EC_SPI_ACK
    d# 125 gpio-dir-out \ EC_SPI_ACK
    d# 146 gpio-dir-out \ HUB_RESET#
+   d# 148 gpio-clr     \ SOC_EN_KBD_PWR#
+   d# 148 gpio-dir-out \ SOC_EN_KBD_PWR#
    d# 155 gpio-clr
    d# 155 gpio-dir-out \ EC_SPI_CMD
 [ifdef] cl2-a1
@@ -270,7 +272,7 @@ create mfpr-table
    1 af,      \ GPIO_146 - HUB_RESET#
 
    0 af,      \ GPIO_147 - ND_WE_N
-   0 af,      \ GPIO_148 - ND_RE_N
+   1 af,      \ GPIO_148 - ND_RE_N - SOC_EN_KBD_PWR#
 [ifdef] cl2-a1
    0 af,      \ GPIO_149 - ND_CLE
    0 af,      \ GPIO_150 - ND_ALE
