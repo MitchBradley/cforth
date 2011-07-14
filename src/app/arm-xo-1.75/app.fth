@@ -214,10 +214,17 @@ h# 1000.0000 value memtest-length
 ;
 : sp-ofw  ( -- )  load-ofw  " " drop  h# 2fa0.0000 acall  ;
 
+\ Drop the voltage to the lower level for testing
+: set-voltage  ( -- )
+   ." Using lower core voltage" cr
+   d# 11 gpio-set
+;
+
 : init
    basic-setup
    init-timers
    set-gpio-directions
+   set-voltage
    init-mfprs
    clk-fast
    init-dram
@@ -245,5 +252,31 @@ h# 1000.0000 value memtest-length
 \ Run this at startup
 : app  init  ( d# 400 ms )  maybe-ofw  hex quit  ;
 \ " ../objs/tester" $chdir drop
+
+0 [if]
+\ Some test code for making it easier to play with the DRAM setup
+: init0
+   basic-setup
+   init-timers
+   set-gpio-directions
+   init-mfprs
+   clk-fast
+;
+: init1
+   init-dram
+\   fix-fuses
+   fix-v7
+   init-spi
+   d# 300 ms
+   enable-ps2
+;
+: fillit
+   'compressed h# 48000 h# ff fill
+;
+: testit
+   'compressed h# 48000 bounds do i @ dup -1 <> if i . . cr leave else drop then 4 +loop
+;
+: app  init0  ." To init DRAM, type 'init1'.  To boot, type 'ofw'" cr  hex quit ;
+[then]
 
 " app.dic" save
