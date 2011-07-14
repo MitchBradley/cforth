@@ -5,6 +5,8 @@ hex
 create dram-tablex lalign
    000d0001 , d0000100 ,   \ mmap0
    200d0001 , d0000110 ,   \ mmap1
+
+
    00222430 , d0000020 ,   \ sdram-config-type1-cs0
    00222430 , d0000030 ,   \ sdram-config-type1-cs1
    00000000 , d0000b40 ,   \ sdram-config-type2-cs0
@@ -12,22 +14,20 @@ create dram-tablex lalign
    911500ca , d0000050 ,   \ sdram-timing1
    646602c4 , d0000060 ,   \ sdram-timing2
    c2003053 , d0000190 ,   \ sdram-timing3
-   44f2a186 , d00001c0 ,   \ sdram-timing4
-   000f00f1 , d0000650 ,   \ sdram-timing5
+   34f4a187 , d00001c0 ,   \ sdram-timing4 !34f4a187
+   000f0141 , d0000650 ,   \ sdram-timing5 !f0141
    04040200 , d0000660 ,   \ sdram-timing6
-   90045000 , d0000080 ,   \ sdram-ctrl1
-\  00000000 , d0000080 ,   \ sdram-ctrl1
-   00080010 , d0000090 ,   \ sdram-ctrl2 (was 00100010)
-\  0f100000 , d0000090 ,   \ sdram-ctrl2 (was 00100010)
+\ Try to enable auto power saving!!! in the register below
+   00005000 , d0000080 ,   \ sdram-ctrl1 !90005000
+
+\  Try to enable auto-precharge in the register below
+   0f080000 , d0000090 ,   \ sdram-ctrl2 (was 00100010)!f080100
    c0000000 , d00000f0 ,   \ sdram-ctrl3
-   20c0c409 , d00001a0 ,   \ sdram-ctrl4
-\  20c08009 , d00001a0 ,   \ sdram-ctrl4
+   20c08009 , d00001a0 ,   \ sdram-ctrl4
    01010101 , d0000280 ,   \ sdram-ctrl5-arb-weights
    00000001 , d0000760 ,   \ sdram-ctrl6-odt-ctrl
-\  00000201 , d0000760 ,   \ sdram-ctrl6-odt-ctrl
    01000002 , d0000770 ,   \ sdram-ctrl7-odt-ctrl2
-\  0200000a , d0000770 ,   \ sdram-ctrl7-odt-ctrl2
-   00000133 , d0000780 ,   \ sdram-ctrl8-odt-ctrl2
+   00000033 , d0000780 ,   \ sdram-ctrl8-odt-ctrl2
    01010101 , d00007b0 ,   \ sdram-ctrl11-arb-weights-fast-q
    00000001 , d00007d0 ,   \ sdram-ctrl13
    00000000 , d00007e0 ,   \ sdram-ctrl14
@@ -38,36 +38,25 @@ create dram-tablex lalign
    00000000 , d00005a0 ,   \ mcb-slfst-ctrl2
    00000000 , d00005b0 ,   \ mcb-slfst-ctrl3
    00000000 , d0000180 ,   \ cm-write-protection
-   00000000 , d0000210 ,   \ phy-ctrl11
-   80000000 , d0000240 ,   \ phy-ctrl14
-   a0000000 , d0000240 ,   \ phy-ctrl14
-   80000000 , d0000240 ,   \ phy-ctrl14
-   0011311c , d0000200 ,   \ phy-ctrl10
-   0010311c , d0000200 ,   \ phy-ctrl10
-   20004044 , d0000140 ,   \ phy-ctrl3
-   1ff84849 , d00001d0 ,   \ phy-ctrl7
-\  17784349 , d00001d0 ,   \ phy-ctrl7
-   0ff00840 , d00001e0 ,   \ phy-ctrl8
-\  03400340 , d00001e0 ,   \ phy-ctrl8
-   00000084 , d00001f0 ,   \ phy-ctrl9
-\  00000012 , d00001f0 ,   \ phy-ctrl9
-   20100088 , d0000230 ,   \ phy-ctrl13
-\  20100100 , d0000230 ,   \ phy-ctrl13
-   00100080 , d0000e10 ,   \ phy-dll-ctrl1
-\  00107101 , d0000e10 ,   \ phy-dll-ctrl1
-   00100080 , d0000e20 ,   \ phy-dll-ctrl2
-\  00107101 , d0000e20 ,   \ phy-dll-ctrl2
-   00100080 , d0000e30 ,   \ phy-dll-ctrl3
-\  00107101 , d0000e30 ,   \ phy-dll-ctrl3
+
+\   00000000 , d0000210 ,   \ phy-ctrl11
+\   80000000 , d0000240 ,   \ phy-ctrl14
+\   0011ce00 , d0000200 ,   \ phy-ctrl10
+\   0010311c , d0000200 ,   \ phy-ctrl10
+   20004033 , d0000140 ,   \ phy-ctrl3
+   17784799 , d00001d0 ,   \ phy-ctrl7
+   07700790 , d00001e0 ,   \ phy-ctrl8
+   00000077 , d00001f0 ,   \ phy-ctrl9
+   d0000040 , d0000230 ,   \ phy-ctrl13 
+   00000040 , d0000e10 ,   \ phy-dll-ctrl1
+   00000040 , d0000e20 ,   \ phy-dll-ctrl2
+   00000040 , d0000e30 ,   \ phy-dll-ctrl3
+
+   20000000 , d0000240 ,   \ phy-ctrl14
+   40000000 , d0000240 ,   \ phy-ctrl14
    00000000 , d0000e40 ,   \ phy-ctrl-wl-select
    00000000 , d0000e50 ,   \ phy-ctrl-wl-ctrl0
-
-\ new
-\  20000000 , d0000240 ,   \ phy-ctrl14 (DLL reset)
-\  a0000000 , d0000240 ,   \ phy-ctrl14 (DLL reset)
-\ new
-
-   01000001 , d0000120 ,   \ user-initiated-command0
+   01000001 , d0000120 ,   \ user-initiated-command0 - start init
 here dram-tablex laligned - constant /dram-table
 : dram-table  dram-tablex laligned  ;
 : .table  ( -- )
