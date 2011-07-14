@@ -75,30 +75,53 @@ h# d4282000 value ic-base  \ Interrupt controller
    drop true               ( true )
 ;
 
-: sk  0 send-ps2 wait-ack?  if  ." No ACK"  then  ;
-: set-scan-set  h# f0 sk  sk  ;
+: kbd-cmd-ack  ( -- error? )   0 send-ps2  wait-ack?  ;
+: sk  kbd-cmd-ack  if  ." No ACK"  then  ;
 : ss?  h# f0 sk  0 sk  wait-data?  if  ." No data"  else  .  then  ;
 
-: set-kbd-mode  ( -- )
-   h# f2 0 send-ps2          \ Identify command   
-   wait-ack?  if  exit  then
+: set-scan-set  ( -- )
+   h# f0 kbd-cmd-ack  if  exit  then
+   kbd-cmd-ack  drop
+;
+
+: (set-kbd-mode)  ( -- )
+   h# f2 kbd-cmd-ack  if  exit  then        \ Identify command   
+
    wait-data?  if  exit  then        ( data1 )
    h# ab <>  if  exit  then          ( )
+
    wait-data?  if  exit  then        ( data2 )
    \ Use matrix mode for EnE
    h# 41 =  if  matrix-mode  then
+
    \ We default to scan set 1 because our Linux driver pretends to be
    \ controller type SERIO_8042_XL, meaning a scan-set 2 keyboard that is
    \ translated to scan set 1 by an 8042.
    1 set-scan-set
-   d# 40 ms
+;
+: set-kbd-mode  ( -- )
+   h# f5 kbd-cmd-ack drop    \ Tell the keyboard to stop sending
+   (set-kbd-mode)
+   h# f4 kbd-cmd-ack drop    \ Tell the keyboard to start sending
+;
+: ps2-xoff  ( -- )
+   d#  71 gpio-dir-out  \ Hold down keyboard clock
+   d# 160 gpio-dir-out  \ Hold down touchpad clock
+;   
+: ps2-xon  ( -- )
+   d#  71 gpio-dir-in  \ Release keyboard clock
+   d# 160 gpio-dir-in  \ Release touchpad clock
+;   
+: keyboard-power-on  ( -- )
+   ps2-xoff
+   d# 148 gpio-clr   \ Enable power to keyboard and touchpad
 ;
 : enable-ps2
-   init-timer-2s
    init-ps2
-   setup-interrupts
+   init-timer-2s
    d#  71 gpio-set-fer  \ Keyboard clock
    d# 160 gpio-set-fer  \ Touchpad clock
+   setup-interrupts
    d#  71 >gpio-pin  h# 9c +  tuck l@ or  swap l!  \ Unmask edge detect
    d# 160 >gpio-pin  h# 9c +  tuck l@ or  swap l!  \ Unmask edge detect
    d# 49 enable-irq  \ GPIO IRQ
@@ -106,8 +129,8 @@ h# d4282000 value ic-base  \ Interrupt controller
    enable-spcmd-irq
    unblock-irqs
    enable-interrupts
+   ps2-xon   
    send-rdy
-   d# 148 gpio-clr   \ Enable power to keyboard and touchpad
    set-kbd-mode
 ;
 

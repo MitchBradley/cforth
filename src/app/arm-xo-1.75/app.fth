@@ -135,7 +135,6 @@ h# 1000.0000 value memtest-length
    ." Resuming CForth on Security Processor" cr
 ;
 : ofw-go-slow  ( -- )
-   ." releasing" cr
 
    \ If the ITCM is on, we must turn it off so we can write to RAM at 0
    control@  itcm-off   ( old-value )
@@ -147,7 +146,7 @@ h# 1000.0000 value memtest-length
 
    control!             \ Turn the ITCM back on if necessary
 
-   d# 20 ms
+   ." releasing" cr
    0 h# d4050020 l!  \ Release reset for PJ4
 ;
 
@@ -165,14 +164,13 @@ h# 1000.0000 value memtest-length
    blank-display-lowres
    load-ofw-slow
    ofw-go-slow
+   enable-ps2
 \   cforth-wait
    begin wfi again
 ;
 
 0 value reset-offset
 : ofw-go  ( -- )
-   ." releasing" cr
-
    \ If the ITCM is on, we must turn it off so we can write to RAM at 0
    psr@ disable-interrupts ( old-psr )
    control@  itcm-off      ( old-psr old-ctl )
@@ -185,7 +183,7 @@ h# 1000.0000 value memtest-length
    control!             \ Turn the ITCM back on if necessary
    psr!
 
-   d# 20 ms
+   ." releasing" cr
    0 h# d4050020 l!  \ Release reset for PJ4
 ;
 
@@ -204,6 +202,7 @@ h# 1000.0000 value memtest-length
    blank-display-lowres
    load-ofw
    ofw-go
+   enable-ps2
    'one-uart @  0=  if
       begin wfi again
    then
@@ -231,8 +230,7 @@ h# 1000.0000 value memtest-length
 \   fix-fuses
    fix-v7
    init-spi
-   d# 300 ms
-   enable-ps2
+   keyboard-power-on  \ Early to give the keyboard time to wake up
 ;
 
 0 [if]

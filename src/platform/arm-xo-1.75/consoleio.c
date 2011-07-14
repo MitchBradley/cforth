@@ -401,10 +401,11 @@ void init_ps2()
 
     for (i = 0; i < NUM_PS2_DEVICES; i++) {
 	s = ps2_devices[i];
+        DRIVE_LOW(s->clk_gpio,s->clk_mask);    // Start with clock low to flow-control the devices
 	s->quenched = 0;
 	s->bit_number = 0;
 	s->queue.get = s->queue.put = 0;
-	DRIVE_HIGH(s->clk_gpio,s->clk_mask);    // After clk goes high, device will respond with clk pulses
+//	DRIVE_HIGH(s->clk_gpio,s->clk_mask);    // After clk goes high, device will respond with clk pulses
     }
     translate_set = 0;
     got_break = 0;
