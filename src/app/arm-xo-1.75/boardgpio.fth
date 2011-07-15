@@ -111,8 +111,8 @@ create mfpr-table
    3 af,      \ GPIO_44 - SPI_MOSI
    3 af,      \ GPIO_45 - SPI_CLK
    3 af,      \ GPIO_46 - SPI_FRM
-   3 af,      \ GPIO_47 - G_SENSOR_SDL (TWSI6)
-   3 af,      \ GPIO_48 - G_SENSOR_SDA
+   3 pull-up, \ GPIO_47 - G_SENSOR_SDL (TWSI6)
+   3 pull-up, \ GPIO_48 - G_SENSOR_SDA
    no-update, \ GPIO_49 - Not connected (TP62)
    no-update, \ GPIO_50 - Not connected (TP114)
    no-update, \ GPIO_51 - Not connected (TP59)
