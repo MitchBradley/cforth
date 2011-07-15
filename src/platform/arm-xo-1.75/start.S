@@ -66,12 +66,13 @@ clear_bss_loop:
     bl      main
 
 doirq:
+    ldr     sp, =IRQSTACKTOP
     subs    lr, lr, #4  // Adjust the return address and
     stmfd   sp!, {lr}   // save it on the stack.
     mrs     r14, SPSR   // Save SPSR
-    stmfd   sp!, {r0,r1,r2,r3,r14}  // on the stack.
+    stmfd   sp!, {r0-r3,r12,r14}  // on the stack.
     bl      irq_handler // Call the high level handler.
-    ldmfd   sp!, {r0,r1,r2,r3,r14}  // Unstack and
+    ldmfd   sp!, {r0-r3,r12,r14}  // Unstack and
     msr     spsr, r14   // restore SPSR.
     ldmfd   sp!, {pc}^  // Return.
         
@@ -89,6 +90,9 @@ doundef:
     b   dorestart
 
 dopabt:
+    ldr   sp, .L1
+    add   sp, sp, #12         // Point to old_r0
+    stmia sp!, {r0-r12}
     mov r2, #2          // Code indicating how we got to main
     b   dorestart
 
@@ -148,7 +152,7 @@ bye:
     .word   __bss_end__
 
 	// Some variables to help debug unexpected exceptions and resets
-    .bss
+    .data
     .align 2
     .global reset_reason
     .type   reset_reason,object
@@ -164,6 +168,20 @@ reset_reason:
 old_pc:
     .space 4
 old_cpsr:       
+    .space 4
+old_r0:
+    .space 4
+    .space 4
+    .space 4
+    .space 4
+    .space 4
+    .space 4
+    .space 4
+    .space 4
+    .space 4
+    .space 4
+    .space 4
+    .space 4
     .space 4
 	
     .global first_to_clear

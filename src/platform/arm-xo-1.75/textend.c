@@ -325,6 +325,11 @@ cell one_uart_adr(void)
 {
     return (cell)&uart4_only;
 }
+cell reset_reason_val(void)
+{
+    extern cell reset_reason;
+    return reset_reason;
+}
 
 
 cell ((* const ccalls[])()) = {
@@ -356,6 +361,7 @@ cell ((* const ccalls[])()) = {
     (cell (*)())init_ps2,        // Entry # 24
     (cell (*)())ps2_out,         // Entry # 25
     (cell (*)())one_uart_adr,    // Entry # 26
+    (cell (*)())reset_reason_val,// Entry # 27
 };
 
 

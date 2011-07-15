@@ -28,10 +28,12 @@ SHIM_OBJS = shimmain.o spiread.o
 # Recipe for linking the final image
 
 RAMBASE  = 0xd1000000
-RAMTOP   = 0xd1020000
+IRQSTACKTOP = 0xd1020000
+RAMTOP   = 0xd101f000
 SHIMBASE = 0xd1018000
 
 TSFLAGS += -DRAMTOP=${RAMTOP}
+TSFLAGS += -DIRQSTACKTOP=${IRQSTACKTOP}
 
 LIBGCC= -lgcc
 

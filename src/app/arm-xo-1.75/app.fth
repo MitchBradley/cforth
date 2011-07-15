@@ -64,6 +64,7 @@ d# 23 ccall: ps2-devices   { -- a.value }
 d# 24 ccall: init-ps2      { -- }
 d# 25 ccall: ps2-out       { i.byte i.device# -- i.ack? }
 d# 26 ccall: 'one-uart     { -- a.value }
+d# 27 ccall: reset-reason  { -- i.value }
 
 : enable-interrupts  ( -- )  psr@ h# 80 invert and psr!  ;
 : disable-interrupts  ( -- )  psr@ h# 80 or psr!  ;
@@ -215,6 +216,13 @@ h# 1000.0000 value memtest-length
 
 \ Drop the voltage to the lower level for testing
 : set-voltage  ( -- )
+[ifdef] notdef
+   d# 11 gpio-pin@  if
+      cr ." APPARENT CRASH RESET - INTERACTING - reset reason = "
+      reset-reason . cr cr
+      hex quit
+   then
+[then]
    ." Using lower core voltage" cr
    d# 11 gpio-set
 ;
