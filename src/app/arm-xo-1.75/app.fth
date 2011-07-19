@@ -69,14 +69,32 @@ d# 27 ccall: reset-reason  { -- i.value }
 : enable-interrupts  ( -- )  psr@ h# 80 invert and psr!  ;
 : disable-interrupts  ( -- )  psr@ h# 80 or psr!  ;
 
+fl keypad.fth
+
+: rotate-button?  ( -- flag )
+   [ifdef] cl2-a1  d# 20  [else]  d# 15  [then]
+   gpio-pin@  0=
+;
+: check-button?  ( -- flag )  scan-keypad 2 and   0=  ;
+
+h# 8009.1100 constant fb-on-value
+: show-fb  ( -- )  fb-on-value h# 190 lcd!  ;
+: ?visible  ( -- )   check-button?  if  show-fb  then  ;
+
 h# 2fc0.0000 constant sp-fb-pa
 
+[ifdef] notdef
 d# 4 constant hdisp-lowres
 d# 3 constant vdisp-lowres
+[then]
+
+sp-fb-pa constant display-pa
+fl fbnums.fth
 : blank-display-lowres  ( -- )
    \ Setup the panel path with the normal resolution
    init-lcd
 
+[ifdef] notdef
    \ This trick uses the hardware scaler so we can display a blank
    \ white screen very quickly, without spending a lot of time
    \ filling the frame buffer with a constant value.
@@ -93,6 +111,25 @@ d# 3 constant vdisp-lowres
 
    \ Set the depth to 8 bpp
    h# 800a1100 h# 190 lcd!
+[else]
+   \ Start with all display data sources off
+   0 h# 190 lcd!
+
+   \ Set the source resolution to 12x9
+   h# 9000c h# 104 lcd!
+
+   \ Set the pitch to 6 (12 pixels * 4 bits/pixel / 8 bits/byte )
+   6 h# fc lcd!
+
+   \ Set the no-display-source background color to white
+   h# ffffffff h# 124 lcd!
+
+   \ Fill the rudimentary frame buffer with white
+   sp-fb-pa 6 9 *  h# ff fill
+
+   \ Turn on the display if the user presses the check key
+   ?visible
+[then]
 
    \ Turn on the dcon
    init-xo-display
@@ -125,10 +162,6 @@ h# 1000.0000 value memtest-length
       ." Processor is fused in V6 mode - switching to V7" cr
       h# d4282c08 l@  2 or  h# d4282c08 l!
    then
-;
-: rotate-button?  ( -- flag )
-   [ifdef] cl2-a1  d# 20  [else]  d# 15  [then]
-   gpio-pin@  0=
 ;
 
 : cforth-wait  ( -- )
@@ -199,11 +232,28 @@ h# 1000.0000 value memtest-length
    ." CForth stays active on second serial port" cr
    'one-uart on
 ;
+: ?ofw-up  ( -- )
+   \ Check to see if OFW took over the display
+   h# fc lcd@ 6  =  if
+      show-fb
+      ." CForth says: OFW seems not to have booted all the way" cr
+   then
+;
 : ofw  ( -- )
    blank-display-lowres
+   h# 00 puthex  ?visible
    load-ofw
+   h# 01 puthex  ?visible
    ofw-go
    enable-ps2
+
+   d# 80 0 do
+      ?visible
+      d# 100 ms
+   loop
+
+   ?ofw-up
+
    'one-uart @  0=  if
       begin wfi again
    then
@@ -239,6 +289,8 @@ h# 1000.0000 value memtest-length
    fix-v7
    init-spi
    keyboard-power-on  \ Early to give the keyboard time to wake up
+   keypad-on
+   8 keypad-direct-mode
 ;
 
 0 [if]
