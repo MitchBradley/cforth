@@ -18,7 +18,7 @@ create dram-tablex lalign
    000f0141 , d0000650 ,   \ sdram-timing5 !f0141
    04040200 , d0000660 ,   \ sdram-timing6
 \ Try to enable auto power saving!!! in the register below
-   00005000 , d0000080 ,   \ sdram-ctrl1 !90005000
+   90045000 , d0000080 ,   \ sdram-ctrl1 !90005000
 
 \  Try to enable auto-precharge in the register below
    0f080000 , d0000090 ,   \ sdram-ctrl2 (was 00100010)!f080100
