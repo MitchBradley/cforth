@@ -77,9 +77,15 @@ fl keypad.fth
 ;
 : check-button?  ( -- flag )  scan-keypad 2 and   0=  ;
 
+false value fb-shown?
 h# 8009.1100 constant fb-on-value
 : show-fb  ( -- )  fb-on-value h# 190 lcd!  ;
-: ?visible  ( -- )   check-button?  if  show-fb  then  ;
+: ?visible  ( -- )
+   \ Stop polling after the check button is seen for the first time,
+   \ thus avoiding conflicts with OFW's use of the check button
+   fb-shown?  if  exit  then
+   check-button?  if  show-fb  true to fb-shown?  then
+;
 
 h# 2fc0.0000 constant sp-fb-pa
 
