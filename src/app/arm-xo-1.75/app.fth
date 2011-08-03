@@ -238,9 +238,16 @@ h# 1000.0000 value memtest-length
    ." CForth stays active on second serial port" cr
    'one-uart on
 ;
+: ofw-up?  ( -- flag )  h# fc lcd@  6 <>  ;
 : ?ofw-up  ( -- )
+   d# 80 0 do
+      ofw-up?  if  leave  then
+      ?visible
+      d# 100 ms
+   loop
+
    \ Check to see if OFW took over the display
-   h# fc lcd@ 6  =  if
+   ofw-up?  0=  if
       show-fb
       ." CForth says: OFW seems not to have booted all the way" cr
    then
@@ -252,11 +259,6 @@ h# 1000.0000 value memtest-length
    h# 01 puthex  ?visible
    ofw-go
    enable-ps2
-
-   d# 80 0 do
-      ?visible
-      d# 100 ms
-   loop
 
    ?ofw-up
 
