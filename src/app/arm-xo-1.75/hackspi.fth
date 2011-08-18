@@ -15,15 +15,15 @@
    h# 87 h# d4035000 l!  \ SPI mode, 8 bits, enabled
 ;
 
-h# 10 buffer: cmdbuf
+h# 10 buffer: spi-cmdbuf
 
 : [[ d# 46 gpio-clr  ;
 : ]] d# 46 gpio-set  ;
 
 0 value bufp
 : spi-out  ( n -- )  bufp c!  bufp 1+ to bufp  ;
-: spi-cmd  ( n -- )  cmdbuf to bufp  spi-out  ;
-: spi-cs-off  ( -- )  cmdbuf bufp over - [[ spi-send-only ]]  ;
+: spi-cmd  ( n -- )  spi-cmdbuf to bufp  spi-out  ;
+: spi-cs-off  ( -- )  spi-cmdbuf bufp over - [[ spi-send-only ]]  ;
 
 : spi-adr  ( offset -- )  lbsplit drop  spi-out spi-out spi-out  ;
 

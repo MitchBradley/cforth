@@ -145,6 +145,7 @@ fl hackspi.fth
 fl dropin.fth
 
 fl ps2.fth
+fl spicmd.fth
 
 0 value memtest-start
 h# 1000.0000 value memtest-length
@@ -281,6 +282,7 @@ h# 1000.0000 value memtest-length
       hex quit
    then
 [then]
+   board-id@ h# 1b1 <  if  exit  then
    ." Using lower core voltage" cr
    d# 11 gpio-set
 ;
@@ -289,8 +291,9 @@ h# 1000.0000 value memtest-length
    basic-setup
    init-timers
    set-gpio-directions
-   set-voltage
    init-mfprs
+   init-ec-cmd
+   set-voltage
    clk-fast
    init-dram
 \   fix-fuses
