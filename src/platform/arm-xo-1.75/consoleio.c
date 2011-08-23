@@ -1,6 +1,13 @@
 #include "forth.h"
 #include "compiler.h"
 
+
+void gamekey_init();
+void gamekey_handle();
+void rotate_init();
+void rotate_handle();
+void rotate_handle_debounce();
+
 // Character I/O stubs
 
 #define UART4REG ((unsigned int volatile *)0xd4016000)  // UART4 - main board lower
@@ -142,6 +149,12 @@ void init_io()
 
 typedef volatile unsigned long *reg_t;
 #define REG(name, address) volatile reg_t name = (reg_t)address
+
+/* a note on timers:  2 of the match registers are used for keyboard
+ * and touchpad protocol timing.  the third is used to debounce the
+ * rotate button.
+ */
+
 REG(TIMER20_FREEZE, 0xd40800a4);
 REG(TIMER20, 0xd4080028);
 
@@ -412,6 +425,9 @@ void init_ps2()
     last_cmd = 0;
     suppress_count = 0;
     function_shift = 0;
+
+    gamekey_init();
+    rotate_init();
 }
 
 // Keyboard translation.
@@ -696,6 +712,15 @@ void do_timer(int channels) {
 	    s->clk_gpio[GPIO_SFER_INDEX] = s->clk_mask; // Turn on falling edge interrupts
 	}
     }
+
+    if (channels & (1<<2)) {
+        rotate_handle_debounce();
+    }
+
+    // hack alert -- linux reinits all the GPIO edge detection
+    //  when it boots.  this call ensures we always get our rotate
+    //  button interrupts.
+    rotate_init(); 
 }
 
 void irq_handler()
@@ -713,7 +738,7 @@ void irq_handler()
 	}
     }
 
-    if ((timers = *TMR2_SR0) & 3) {
+    if ((timers = *TMR2_SR0) & 7) {
 	do_timer(timers);
 	*TMR2_IER0 &= ~timers;   // Disable timer interrupt
 	*TMR2_ICR0 = timers;     // Clear timer interrupt
@@ -799,6 +824,9 @@ void irq_handler()
 	    s->byte = 0;
 	}
     }
+
+    gamekey_handle();
+    rotate_handle();
 }
 
 #else
@@ -836,4 +864,129 @@ void swi_handler()
 
 void raise()  /* In case __div and friends need it */
 {
+}
+
+
+//
+// keypad controller, conveniently handles debounce
+
+int gamekeys[] = { // bit 8 implies 0xe0 prefix is needed
+    0x067, // left
+    0x066, // down
+    0x068, // right
+    0x065, // up
+    0x167, // square
+    0x166, // x
+    0x168, // check
+    0x165, // o
+#define GK_ROTATE 8  // handled separately
+    0x069, // rotate
+};
+
+#define DEBOUNCE_MS 50 // msec of debounce
+
+REG(KPC_PC,     0xd4012000);  // control reg
+REG(KPC_DK,     0xd4012008);  // direct key reg
+REG(KPC_KDI,    0xd4012048);  // debounce interval reg
+
+
+void gamekey_init()
+{
+    *KPC_KDI = (DEBOUNCE_MS/2) << 8;  // debounce
+    *KPC_PC  = 0x200003c3;  // ASACT, DK_DEB_SEL, DN=8 keys, DE, DIE
+}
+
+gamekey_send(int key, int release)
+{
+    int e0, scode;
+    e0 = gamekeys[key] & 0x100;
+    scode = gamekeys[key] & 0xff;
+
+    if (e0)
+	enque(0xe0, &kbd_state.queue);
+
+    if (release) {
+        enque(0x80 | scode, &kbd_state.queue);
+        // dbgputresp(0x80|scode);
+    } else {
+        enque(scode, &kbd_state.queue);
+        // dbgputresp(scode);
+    }
+
+
+    run_queue();
+}
+
+void gamekey_handle()
+{
+    unsigned int keys, changed;
+    static unsigned int okeys = 0xff;
+    int i, b;
+
+    if (*KPC_PC & 0x20) {
+
+        keys = *KPC_DK & 0xff;
+        changed = keys ^ okeys;
+        okeys = keys;
+
+        i = 0;
+        b = 0x80;
+        while (b) {
+            if (changed & b)
+                gamekey_send(i, (keys & b));
+            b >>= 1;
+            i++;
+        }
+    }
+}
+
+//
+// the rotate button appears on gpio 15
+
+REG(rotate_gpio,   0xd4019000); // GPIO0-31
+#define GPIO15_MASK 0x8000
+#define ROTATE_MASK GPIO15_MASK
+
+void rotate_init()
+{
+    rotate_gpio[GPIO_CDR_INDEX] = ROTATE_MASK;   // direction == input
+    rotate_gpio[GPIO_SRER_INDEX] = ROTATE_MASK;  // enable rising edge
+    rotate_gpio[GPIO_SFER_INDEX] = ROTATE_MASK;  // enable falling edge
+    rotate_gpio[GPIO_APMASK_INDEX] |= ROTATE_MASK;  // unmask irq
+}
+
+
+static unsigned int rotate_emit = 1;
+static unsigned int prev_rotate_emit = 1;
+
+void rotate_handle_debounce()
+{
+    int rotate_cur;
+
+    rotate_cur = !!(rotate_gpio[GPIO_PLR_INDEX] & ROTATE_MASK);
+    if ((rotate_cur == rotate_emit) && (rotate_cur == !prev_rotate_emit)) {
+        gamekey_send(GK_ROTATE, rotate_emit);
+        prev_rotate_emit = rotate_emit;
+    }
+}
+
+void sched_rotate_debounce()
+{
+    unsigned int now;
+    *TIMER20_FREEZE = 1;    /* Latch count */
+    now = *TIMER20;
+    *TMR2_MATCH02 = now + (DEBOUNCE_MS * 6500); // 6.5 clk/usec
+    *TMR2_IER0 |= (1<<2);
+}
+
+void rotate_handle()
+{
+    if (rotate_gpio[GPIO_EDR_INDEX] & ROTATE_MASK) {
+
+        rotate_emit = !!(rotate_gpio[GPIO_PLR_INDEX] & ROTATE_MASK);
+        sched_rotate_debounce();
+        // dbgputcmd(rotate_emit);
+
+        rotate_gpio[GPIO_EDR_INDEX] = ROTATE_MASK;  // clear the int
+    }
 }
