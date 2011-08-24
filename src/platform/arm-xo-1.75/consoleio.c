@@ -885,6 +885,7 @@ int gamekeys[] = { // bit 8 implies 0xe0 prefix is needed
 
 #define DEBOUNCE_MS 50 // msec of debounce
 
+REG(PMUA_WAKE_CLR_MASK, 0xd428287c);  // write-1-to-clear bits including the keypad IRQ
 REG(KPC_PC,     0xd4012000);  // control reg
 REG(KPC_DK,     0xd4012008);  // direct key reg
 REG(KPC_KDI,    0xd4012048);  // debounce interval reg
@@ -892,7 +893,10 @@ REG(KPC_KDI,    0xd4012048);  // debounce interval reg
 
 void gamekey_init()
 {
+    reg_t temp;	
     *KPC_KDI = (DEBOUNCE_MS/2) << 8;  // debounce
+    temp = *KPC_PC;                   // read to clear any pending indication
+    *PMUA_WAKE_CLR_MASK = 0x20;       // Clear the KBC interrupt latch
     *KPC_PC  = 0x200003c3;  // ASACT, DK_DEB_SEL, DN=8 keys, DE, DIE
 }
 
@@ -924,7 +928,7 @@ void gamekey_handle()
     int i, b;
 
     if (*KPC_PC & 0x20) {
-
+        *PMUA_WAKE_CLR_MASK = 0x20;  // Clear the KBC interrupt
         keys = *KPC_DK & 0xff;
         changed = keys ^ okeys;
         okeys = keys;
@@ -975,7 +979,7 @@ void sched_rotate_debounce()
     unsigned int now;
     *TIMER20_FREEZE = 1;    /* Latch count */
     now = *TIMER20;
-    *TMR2_MATCH02 = now + (DEBOUNCE_MS * 6500); // 6.5 clk/usec
+    *TMR2_MATCH02 = now + (DEBOUNCE_MS * 13000); // 6.5 clk/usec
     *TMR2_IER0 |= (1<<2);
 }
 
