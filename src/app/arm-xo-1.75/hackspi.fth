@@ -53,7 +53,8 @@ h# 10 buffer: spi-cmdbuf
    flush-ssp
    cs0
    h# 9f p  g drop
-   ." ID: " p0 g .  p0 g .  p0 g .  cr
+\   ." ID: " p0 g .  p0 g .  p0 g .  cr
+   p0 g drop  p0 g drop  p0 g drop
    cs1
 ;
 
