@@ -15,7 +15,12 @@ hex
 ;
 : clk-fast
    ffffffff d4050024 l!  \ PMUM_CGR_SP     \ All clocks ON
-   00061808 d4282888 l!  \ PMUA_DEBUG      \ Reserved bits, but supposed to "allow freq"
+
+\ Setting the 1800 bits causes immediate hangs when AXISD and DDRCORSD are both set
+\ in PMUM_PCR_SP and PMUM_PCR_PJ, instead of waiting for core idle before stopping the clocks.
+\ This setting of PMUA_DEBUG was cribbed from some undocumented Marvell code, so I don't know
+\ its intention.  Empirically, it's not good.
+\  00061808 d4282888 l!  \ PMUA_DEBUG      \ Reserved bits, but supposed to "allow freq"
 
    00000000 d4050008 l!  \ Startup operation point
    08fd96d9 d4282800 l!  \ PMUA_CC_SP      \ speed change voting, ACLK:7, DCLK:5, BACLK1:1, PCLK:0
