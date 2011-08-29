@@ -11,6 +11,7 @@ fl ../../lib/random.fth
 fl ../../lib/ilog2.fth
 
 fl hwaddrs.fth
+fl addrs.fth
 
 defer ms  defer get-msecs
 fl timer.fth
@@ -28,7 +29,7 @@ fl clockset.fth
 fl initdram.fth
 fl fuse.fth
 fl smbus.fth
-h# 1fc0.0000 constant fb-pa
+
 : wljoin  ( w w -- l )  d# 16 lshift or  ;
 : third  ( a b c -- a b c a )  2 pick  ;
 fl lcdcfg.fth
@@ -87,14 +88,11 @@ h# 8009.1100 constant fb-on-value
    check-button?  if  show-fb  true to fb-shown?  then
 ;
 
-h# 2fc0.0000 constant sp-fb-pa
-
 [ifdef] notdef
 d# 4 constant hdisp-lowres
 d# 3 constant vdisp-lowres
 [then]
 
-sp-fb-pa constant display-pa
 fl fbnums.fth
 : blank-display-lowres  ( -- )
    \ Setup the panel path with the normal resolution
@@ -113,7 +111,7 @@ fl fbnums.fth
 
    \ Fill one line of the screen
    \ Since hdisp-lowres is 4, one line is a single longword!
-   sp-fb-pa  hdisp-lowres  h# ffffffff lfill
+   display-pa  hdisp-lowres  h# ffffffff lfill
 
    \ Set the depth to 8 bpp
    h# 800a1100 h# 190 lcd!
@@ -131,7 +129,7 @@ fl fbnums.fth
    h# ffffffff h# 124 lcd!
 
    \ Fill the rudimentary frame buffer with white
-   sp-fb-pa 6 9 *  h# ff fill
+   diagfb-pa 6 9 *  h# ff fill
 
    \ Turn on the display if the user presses the check key
    ?visible
@@ -175,54 +173,28 @@ h# 1000.0000 value memtest-length
    begin  d# 50 ms  rotate-button?  until  \ Wait until KEY_5 GPIO pressed
    ." Resuming CForth on Security Processor" cr
 ;
-: ofw-go-slow  ( -- )
 
-   \ If the ITCM is on, we must turn it off so we can write to RAM at 0
-   control@  itcm-off   ( old-value )
+\ The SP and PJ4's address maps for memory differ, apparently for the purpose
+\ of accomodating the "Tightly Coupled Memory" (TCM).
+\ DDR/PJ-addr   SP-addr
+\ 0x0xxx.xxxx   0x1xxx.xxxx
+\ 0x1xxx.xxxx   0x2xxx.xxxx
+\ ...
+\ 0x6xxx.xxxx   0x7xxx.xxxx
+\ 0x7xxx.xxxx   inaccessible?
+\
+\ When TCM is on,  SP-addr 0x0xxx.xxxx goes to TCM
+\ When TCM is off, SP-addr 0x0xxx.xxxx goes to main memory 0x0xxx.xxxx (alias of 0x1xxx.xxxx)
 
-   h# ea000000 h# 0 l!  \ b 8
-   h# 1fa00000 h# 4 l!  \ OFW load address
-   h# e51f000c h# 8 l!  \ ldr r0,[pc,#-0xc]
-   h# e1a0f000 h# c l!  \ mov pc,r0
-
-   control!             \ Turn the ITCM back on if necessary
-
-   ." releasing" cr
-   0 h# d4050020 l!  \ Release reset for PJ4
-;
-
-: load-ofw-slow  ( -- )
-   init-spi
-   .spi-id
-
-   h# 2fa0.0000 " firmware" load-drop-in
-;
-: ofw-slow  ( -- )
-\   0 h# e0000 h# 20000 spi-read
-\   spi-go
-   rotate-button?  if  ." Skipping OFW" cr  exit  then
-
-   blank-display-lowres
-   load-ofw-slow
-   ofw-go-slow
-   enable-ps2
-\   cforth-wait
-   begin wfi again
-;
+: pj4>sp-adr  ( pj4-adr -- sp-adr )  h# 1000.0000 +  ;
+: pj4-l!  ( l pj4-adr -- )  pj4>sp-adr l!  ;
 
 0 value reset-offset
 : ofw-go  ( -- )
-   \ If the ITCM is on, we must turn it off so we can write to RAM at 0
-   psr@ disable-interrupts ( old-psr )
-   control@  itcm-off      ( old-psr old-ctl )
-
-   h# ea000000 h# 0 l!  \ b 8
-   'compressed reset-offset +  h# 4 l!  \ reset vector address
-   h# e51f000c h# 8 l!  \ ldr r0,[pc,#-0xc]
-   h# e1a0f000 h# c l!  \ mov pc,r0
-
-   control!             \ Turn the ITCM back on if necessary
-   psr!
+   h# ea000000 h# 0 pj4-l!  \ b 8
+   'compressed reset-offset +  h# 4 pj4-l!  \ reset vector address
+   h# e51f000c h# 8 pj4-l!  \ ldr r0,[pc,#-0xc]
+   h# e1a0f000 h# c pj4-l!  \ mov pc,r0
 
    ." releasing" cr
    0 h# d4050020 l!  \ Release reset for PJ4
@@ -271,7 +243,49 @@ h# 1000.0000 value memtest-length
    rotate-button?  if  ." Skipping OFW" cr  exit  then
    ofw
 ;
-: sp-ofw  ( -- )  load-ofw  " " drop  h# 2fa0.0000 acall  ;
+
+\ Start of alternative boot code.  This is used only for recovery/debugging purposes.
+\ It is slower than the normal boot code.  This code performs the decompression
+\ of the OFW image on the SP, whereas the normal boot code lets the PJ4 processor
+\ do the decompression.
+
+h# 1fa0.0000 constant ofw-pa
+
+: ofw-go-slow  ( -- )
+   h# ea000000 h# 0 pj4-l!  \ b 8
+   ofw-pa      h# 4 pj4-l!  \ OFW load address
+   h# e51f000c h# 8 pj4-l!  \ ldr r0,[pc,#-0xc]
+   h# e1a0f000 h# c pj4-l!  \ mov pc,r0
+
+   ." releasing" cr
+   0 h# d4050020 l!  \ Release reset for PJ4
+;
+
+: load-ofw-slow  ( -- )
+   init-spi
+   .spi-id
+
+   ofw-pa pj4>sp-adr " firmware" load-drop-in
+;
+: ofw-slow  ( -- )
+\   0 h# e0000 h# 20000 spi-read
+\   spi-go
+   rotate-button?  if  ." Skipping OFW" cr  exit  then
+
+   blank-display-lowres
+   load-ofw-slow
+   ofw-go-slow
+   enable-ps2
+\   cforth-wait
+   begin wfi again
+;
+
+\ Run OFW on the security processor
+\ This won't work on OFW builds that use virtual != physical addressing,
+\ because the SP has no MMU.
+: sp-ofw  ( -- )  load-ofw-slow  " " drop  ofw-pa pj4>sp-adr acall  ;
+
+\ End of alternative boot code.
 
 \ Drop the voltage to the lower level for testing
 : set-voltage  ( -- )
@@ -287,14 +301,15 @@ h# 1000.0000 value memtest-length
    d# 11 gpio-set
 ;
 
-: init
+: init0
    basic-setup
    init-timers
    set-gpio-directions
    init-mfprs
    init-ec-cmd
    set-voltage
-   clk-fast
+;
+: init1
    init-dram
 \   fix-fuses
    fix-v7
@@ -302,6 +317,11 @@ h# 1000.0000 value memtest-length
    keyboard-power-on  \ Early to give the keyboard time to wake up
    keypad-on
    8 keypad-direct-mode
+;
+: init
+   init0
+   clk-fast
+   init1
 ;
 
 0 [if]
@@ -323,29 +343,13 @@ h# 1000.0000 value memtest-length
 \ " ../objs/tester" $chdir drop
 
 0 [if]
-\ Some test code for making it easier to play with the DRAM setup
-: init0
-   basic-setup
-   init-timers
-   set-gpio-directions
-   init-mfprs
-   clk-fast
-;
-: init1
-   init-dram
-\   fix-fuses
-   fix-v7
-   init-spi
-   d# 300 ms
-   enable-ps2
-;
 : fillit
    'compressed h# 48000 h# ff fill
 ;
 : testit
    'compressed h# 48000 bounds do i @ dup -1 <> if i . . cr leave else drop then 4 +loop
 ;
-: app  init0  ." To init DRAM, type 'init1'.  To boot, type 'ofw'" cr  hex quit ;
+: app  init0 clk-fast ." To init DRAM, type 'init1'.  To boot, type 'ofw'" cr  hex quit ;
 [then]
 
 " app.dic" save

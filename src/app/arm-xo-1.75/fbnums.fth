@@ -51,7 +51,7 @@ hex
 : putdig  ( n pos -- )
    numerals rot wa+ w@                ( pos glyph )
    \ Vertical offset by 2 lines (fb-pitch 2*), horizontal by pos character cells
-   display-pa fb-pitch 2* +  rot wa+  ( glyph fb-adr )
+   diagfb-pa fb-pitch 2* +  rot wa+   ( glyph fb-adr )
    5 0  do                            ( glyph fb-adr )
       over 3 and                      ( glyph fb-adr pattern# )
       patterns swap wa+ w@            ( glyph fb-adr pattern )

@@ -10,3 +10,4 @@ h# d420.ba00 constant dsi2-pa \ 3-lane controller
 h# d420.b000 constant lcd-pa
 h# d401.4000 constant timer-pa
 h# d408.0000 constant timer-2-pa
+h# d100.0000 constant sram-pa
