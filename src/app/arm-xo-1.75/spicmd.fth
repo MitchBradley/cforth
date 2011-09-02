@@ -15,11 +15,6 @@ d# 125 constant ack-gpio#
 \ 5              Event
 \ 6              EC Debug
 
-: io!  ( l offset -- )  h# d4000000 +  l!  ;
-: io@  ( offset l -- )  h# d4000000 +  l!  ;
-: rl!  l!  ;
-: rl@  l@  ;
-
 -1 value ec-byte
 : enque  ( data channel# -- )  2 =  if  to ec-byte  then  ;
 : deque?  ( channel# -- false | data true )

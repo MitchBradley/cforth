@@ -65,7 +65,10 @@ here dram-tablex laligned - constant /dram-table
    8 +loop
 ;
 
+false value dram-on?
 : init-dram
+   dram-on?  if  exit  then
+   true to dram-on? 
 
    dram-table /dram-table bounds  ?do
       i @  i na1+ @ l!
