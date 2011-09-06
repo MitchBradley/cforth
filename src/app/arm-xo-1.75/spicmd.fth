@@ -151,7 +151,7 @@ defer upstream
    endcase
 ;
 ' (upstream) to upstream
-: init-ec-cmd  ( -- )
+: open-ec  ( -- )
    init-gpios
    init-ssp-in-slave-mode
    rxflush
@@ -161,6 +161,7 @@ defer upstream
    clr-ack  \ Tell EC that it is okay to send
    enter-upstream-state
 ;
+: close-ec  ( -- )  set-ack  ;
 
 : poll  ( -- )
    ssp-ready?  if  do-state  then

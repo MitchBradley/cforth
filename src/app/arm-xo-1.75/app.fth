@@ -176,7 +176,8 @@ h# 1000.0000 value memtest-length
       hex quit
    then
 [then]
-   board-id@ h# 1b1 <  if  exit  then
+   open-ec  board-id@  close-ec  ( id )
+   h# 1b1 <  if  exit  then
    ." Using lower core voltage" cr
    d# 11 gpio-set
 ;
@@ -186,10 +187,9 @@ h# 1000.0000 value memtest-length
    init-timers
    set-gpio-directions
    init-mfprs
-   init-ec-cmd
-   set-voltage
    keypad-on
    8 keypad-direct-mode
+   set-voltage
    clk-fast
 ;
 : fix-v7  ( -- )
