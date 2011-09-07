@@ -9,7 +9,7 @@
 # The name of the final output file. The rule for making this is in
 # $(PLATPATH)/targets.mk
 
-NAME=app
+NAME=cforth
 EXT=img
 
 
@@ -74,4 +74,3 @@ include $(SRC)/cforth/embed/targets.mk       # Probably won't need to change thi
 include $(PLATPATH)/targets.mk
 
 default: $(NAME).$(EXT) shim.img
-

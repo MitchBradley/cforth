@@ -21,7 +21,7 @@ PLAT_OBJS = start.o
 # Object files for the Forth system and application-specific extensions
 
 # FORTH_OBJS = tmain.o embed.o textend.o  spiread.o consoleio.o
-FORTH_OBJS = tmain.o embed.o textend.o  spiread-simpler.o consoleio.o inflate.o
+FORTH_OBJS = tmain.o embed.o textend.o  spiread-simpler.o consoleio.o inflate.o cforth_version.o
 
 SHIM_OBJS = shimmain.o spiread.o
 
@@ -37,7 +37,12 @@ TSFLAGS += -DIRQSTACKTOP=${IRQSTACKTOP}
 
 LIBGCC= -lgcc
 
-app.elf: $(PLAT_OBJS) $(FORTH_OBJS)
+cforth_version.c:
+	@echo -n 'char cforth_version[] = "' >cforth_version.c
+	@git log -1 --format=format:"%H" >>cforth_version.c 2>/dev/null || echo UNKNOWN >>cforth_version.c
+	@echo '";' >>cforth_version.c
+
+cforth.elf: cforth_version.c $(PLAT_OBJS) $(FORTH_OBJS)
 	@echo Linking $@ ... 
 	$(TLD) -N  -o $@  $(TLFLAGS) -Ttext $(RAMBASE) \
 	    $(PLAT_OBJS) $(FORTH_OBJS) \
