@@ -21,7 +21,7 @@ PLAT_OBJS = start.o
 # Object files for the Forth system and application-specific extensions
 
 # FORTH_OBJS = tmain.o embed.o textend.o  spiread.o consoleio.o
-FORTH_OBJS = tmain.o embed.o textend.o  spiread-simpler.o consoleio.o inflate.o cforth_version.o
+FORTH_OBJS = tmain.o embed.o textend.o  spiread-simpler.o consoleio.o inflate.o
 
 SHIM_OBJS = shimmain.o spiread.o
 
@@ -37,22 +37,23 @@ TSFLAGS += -DIRQSTACKTOP=${IRQSTACKTOP}
 
 LIBGCC= -lgcc
 
-cforth_version.c:
-	@echo -n 'char cforth_version[] = "' >cforth_version.c
-	@git log -1 --format=format:"%H" >>cforth_version.c 2>/dev/null || echo UNKNOWN >>cforth_version.c
-	@echo '";' >>cforth_version.c
+version:
+	git log -1 --format=format:"%H" >>$@ 2>/dev/null || echo UNKNOWN >>$@
 
-cforth.elf: cforth_version.c $(PLAT_OBJS) $(FORTH_OBJS)
+cforth.elf: version $(PLAT_OBJS) $(FORTH_OBJS)
+	@echo 'const char version[] = "'`cat version`'" ;' >date.c
+	@echo 'const char build_date[] = "'`date --utc +%F\ %R`'" ;' >>date.c
+	@$(TCC) -c date.c -o $@
 	@echo Linking $@ ... 
-	$(TLD) -N  -o $@  $(TLFLAGS) -Ttext $(RAMBASE) \
-	    $(PLAT_OBJS) $(FORTH_OBJS) \
+	@$(TLD) -N  -o $@  $(TLFLAGS) -Ttext $(RAMBASE) \
+	    $(PLAT_OBJS) $(FORTH_OBJS) date.o \
 	    $(LIBDIRS) $(LIBGCC)
 	@$(TOBJDUMP) $(DUMPFLAGS) $@ >$(@:.elf=.dump)
 	@nm -n $@ >$(@:.elf=.nm)
 
 shim.elf: $(PLAT_OBJS) $(SHIM_OBJS)
 	@echo Linking $@ ... 
-	$(TLD) -N  -o $@  $(TLFLAGS) -Ttext $(SHIMBASE) \
+	@$(TLD) -N  -o $@  $(TLFLAGS) -Ttext $(SHIMBASE) \
 	    $(PLAT_OBJS) $(SHIM_OBJS) \
 	    $(LIBDIRS) $(LIBGCC)
 	@$(TOBJDUMP) $(DUMPFLAGS) $@ >$(@:.elf=.dump)
@@ -63,18 +64,7 @@ shim.elf: $(PLAT_OBJS) $(SHIM_OBJS)
 
 %.img: %.elf
 	@$(TOBJCOPY) -O binary $< $@
-	date  "+%F %H:%M" >>$@
+	@date  "+%F %H:%M" >>$@
 	@ls -l $@
-
-# This rule builds a date stamp object that you can include in the image
-# if you wish.
-
-.PHONY: date.o
-
-date.o:
-	echo 'const char version[] = "'`cat version`'" ;' >date.c
-	echo 'const char build_date[] = "'`date  --iso-8601=minutes`'" ;' >>date.c
-	echo "const unsigned char sw_version[] = {" `cut -d . --output-delimiter=, -f 1,2 version` "};" >>date.c
-	$(TCC) -c date.c -o $@
 
 EXTRA_CLEAN += *.elf *.dump *.nm *.img date.c $(FORTH_OBJS) $(PLAT_OBJS)

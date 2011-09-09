@@ -26,7 +26,6 @@ BUILDDIR=build/arm-xo-1.75
 OBJPATH=../../../$(BUILDDIR)
 
 # APPPATH is where your application code lives.
-# !!CHANGE!!
 APPPATH=$(TOPDIR)/src/app/arm-xo-1.75
 
 # APPLOADFILE is the top-level "Forth load file" for your application code.
@@ -36,8 +35,7 @@ APPLOADFILE = app.fth
 
 # APPSRCS is a list of Forth source files that your application uses,
 # i.e. the list of files that app.fth floads.  It's for dependency checking.
-# !!CHANGE!!
-APPSRCS =
+APPSRCS = $(wildcard $(APPPATH)/*.fth)
 
 # OBJPATH2 is relative to APPPATH; don't change unless your APPPATH
 # is at a different tree level

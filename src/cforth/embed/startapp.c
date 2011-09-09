@@ -11,7 +11,6 @@ init_forth()
     extern cell *prepare_builtin_dictionary(int);
     cell *up;
     up = prepare_builtin_dictionary(MAXDICT);
-    title(up);
     return up;
 }
 

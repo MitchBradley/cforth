@@ -331,6 +331,17 @@ cell reset_reason_val(void)
     return reset_reason;
 }
 
+cell version_adr(void)
+{
+    extern char version[];
+    return (cell)version;
+}
+
+cell build_date_adr(void)
+{
+    extern char build_date[];
+    return (cell)build_date;
+}
 
 cell ((* const ccalls[])()) = {
 // Add your own routines here
@@ -362,6 +373,8 @@ cell ((* const ccalls[])()) = {
     (cell (*)())ps2_out,         // Entry # 25
     (cell (*)())one_uart_adr,    // Entry # 26
     (cell (*)())reset_reason_val,// Entry # 27
+    (cell (*)())version_adr,     // Entry # 28
+    (cell (*)())build_date_adr,  // Entry # 29
 };
 
 

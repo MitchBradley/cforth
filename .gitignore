@@ -16,3 +16,5 @@ dicthdr.h
 prims.h
 userarea.h
 vars.h
+date.c
+version

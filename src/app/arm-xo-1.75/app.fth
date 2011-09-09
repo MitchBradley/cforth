@@ -66,6 +66,24 @@ d# 24 ccall: init-ps2      { -- }
 d# 25 ccall: ps2-out       { i.byte i.device# -- i.ack? }
 d# 26 ccall: 'one-uart     { -- a.value }
 d# 27 ccall: reset-reason  { -- i.value }
+d# 28 ccall: 'version      { -- a.value }
+d# 29 ccall: 'build-date   { -- a.value }
+
+: .commit  ( -- )
+   'version cscount 
+   dup d# 8 >  if
+      drop 8 type  ." ..."
+   else 
+      type
+   then
+;
+: .built  ( -- )  
+;
+: banner  ( -- )
+   cr ." CForth built " 'build-date cscount type
+   ."  from commit " .commit
+   cr
+;
 
 : enable-interrupts  ( -- )  psr@ h# 80 invert and psr!  ;
 : disable-interrupts  ( -- )  psr@ h# 80 or psr!  ;
@@ -183,6 +201,7 @@ h# 1000.0000 value memtest-length
 ;
 
 : init
+   banner
    basic-setup
    init-timers
    set-gpio-directions
