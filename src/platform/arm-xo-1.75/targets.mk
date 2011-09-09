@@ -43,7 +43,7 @@ version:
 cforth.elf: version $(PLAT_OBJS) $(FORTH_OBJS)
 	@echo 'const char version[] = "'`cat version`'" ;' >date.c
 	@echo 'const char build_date[] = "'`date --utc +%F\ %R`'" ;' >>date.c
-	@$(TCC) -c date.c -o $@
+	@$(TCC) -c date.c
 	@echo Linking $@ ... 
 	@$(TLD) -N  -o $@  $(TLFLAGS) -Ttext $(RAMBASE) \
 	    $(PLAT_OBJS) $(FORTH_OBJS) date.o \
