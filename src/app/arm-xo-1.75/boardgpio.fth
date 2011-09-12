@@ -16,7 +16,8 @@ purpose: Board-specific setup details - pin assigments, etc.
    d# 57 gpio-dir-out  \ WLAN_PD#
    d# 58 gpio-set      \ WLAN_RESET#
    d# 58 gpio-dir-out  \ WLAN_RESET#
-   d# 73 gpio-dir-out  \ CAM_RST
+   d# 73 gpio-clr      \ SEC_TRG
+   d# 73 gpio-dir-out  \ SEC_TRG
 
    d# 125 gpio-set     \ EC_SPI_ACK
    d# 125 gpio-dir-out \ EC_SPI_ACK
@@ -35,6 +36,8 @@ purpose: Board-specific setup details - pin assigments, etc.
 [else]
    d#  53 gpio-set     \ RTC_SCK
    d#  53 gpio-dir-out \ RTC_SCK
+   d# 102 gpio-clr     \ CAM_RST
+   d# 102 gpio-dir-out \ CAM_RST
    d# 104 gpio-set     \ EC_EDI_CS#
    d# 104 gpio-dir-out \ EC_EDI_CS#
    d# 105 gpio-dir-out \ EC_EDI_MOSI
@@ -150,7 +153,7 @@ create mfpr-table
 
    0 af,      \ GPIO_71 - SOC_KBD_CLK  \ Was EC_SCL (TWSI3)
    0 af,      \ GPIO_72 - SOC_KBD_DAT  \ Was EC_SDA 
-   0 af,      \ GPIO_73 - CAM_RST (use as GPIO out)
+   0 af,      \ GPIO_73 - SEC_TRG (use as GPIO out)  \ Was CAM_RST (on A3)
 
    1 af,      \ GPIO_74 - GFVSYNC
    1 af,      \ GPIO_75 - GFHSYNC
@@ -199,7 +202,7 @@ create mfpr-table
    0 af,      \ GPIO_105 - ND_IO[6]
    0 af,      \ GPIO_106 - ND_IO[5]
 [else]
-   1 af,      \ GPIO_102 - reserved
+   0 af,      \ GPIO_102 - (USIM_CLK) - CAM_RST  \ B1 and later
    1 af,      \ GPIO_103 - EC_EDI_DO
    1 af,      \ GPIO_104 - EC_EDI_CS#
    1 af,      \ GPIO_105 - EC_EDI_DI
