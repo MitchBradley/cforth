@@ -1,10 +1,11 @@
-ARCH=/usr/local/arm
-UTILS=$(ARCH)/arm-linux/bin
-TCC=$(UTILS)/gcc
-TLD=$(UTILS)/ld
-LIBDIRS=-L$(dir $(shell $(TCC) -print-libgcc-file-name))
-
-TOBJDUMP=$(ARCH)/bin/arm-linux-objdump
-TOBJCOPY=$(ARCH)/bin/arm-linux-objcopy
-
+# allow override of default cross location
+ifeq ($(CROSS),)
+    CROSS=/usr/local/arm/arm-linux/bin/
+endif
+TCC=$(CROSS)gcc
+TLD=$(CROSS)ld
+TOBJDUMP=$(CROSS)objdump
+TOBJCOPY=$(CROSS)objcopy
 TCFLAGS += -marm
+
+LIBDIRS=-L$(dir $(shell $(TCC) -print-libgcc-file-name))
