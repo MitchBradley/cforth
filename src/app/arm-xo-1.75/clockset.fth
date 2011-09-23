@@ -13,40 +13,36 @@ hex
    then
    00800000 invert and  d4282c08 l!
 ;
-: clk-fast
-   ffffffff d4050024 l!  \ PMUM_CGR_SP     \ All clocks ON
-
-\ Setting the 1800 bits causes immediate hangs when AXISD and DDRCORSD are both set
-\ in PMUM_PCR_SP and PMUM_PCR_PJ, instead of waiting for core idle before stopping the clocks.
-\ This setting of PMUA_DEBUG was cribbed from some undocumented Marvell code, so I don't know
-\ its intention.  Empirically, it's not good.
-\  00061808 d4282888 l!  \ PMUA_DEBUG      \ Reserved bits, but supposed to "allow freq"
-
-   00000000 d4050008 l!  \ Startup operation point
-   08fd96d9 d4282800 l!  \ PMUA_CC_SP      \ speed change voting, ACLK:7, DCLK:5, BACLK1:1, PCLK:0
-   78fd96d9 d4282804 l!  \ PMUA_CC_PJ      \ 
-
+0 [if]
+: set-pll2  ( -- )
    \ select PLL2 frequency, 520MHz
-   08600322 d4050414 l!  \ PMUM_PLL2_CTRL1 \ Bandgap+charge pump+VCO loading+regulator defaults, 486.3-528.55 PLL2 (bits 10:6)
-   00FFFE00 d4050034 l!  \ PMUM_PLL2_CTRL2 \ refclk divisor and feedback divisors at max, software controls activation
-   0021da00 d4050034 l!  \ PMUM_PLL2_CTRL1 \ refclk divisor=4, feedback divisor=0x76=118, software controls activation
-   0021db00 d4050034 l!  \ PMUM_PLL2_CTRL2 \ same plus enable
-   28600322 d4050414 l!  \ PMUM_PLL2_CTRL1 \ same as above plus release PLL loop filter
-   \ select clock source, PJ4-PLL1, SP-PLL1/2, AXI/DDR-PLL1
-\   20800000 d4050008 l!  \ PMUM_FCCR        PLL1 > PJ4 (bits 31:29), PLL1/2 > SP (bits 28:26), PLL1 > AXI&DDR (bits 25:23)
-   24800000 d4050008 l!  \ PMUM_FCCR        PLL1 > PJ4 (bits 31:29), PLL1 > SP (bits 28:26), PLL1 > AXI&DDR (bits 25:23)
-   \ divider setting and frequency change request, core-800, ddr-400, axi-200
-   \   08fd824b d4282800 l!  \ PMUA_CC_SP      \ speed change voting, ACLK:7, DCLK:5, BACLK1:1, PCLK:3 (200 MHz)
-   78fd8241 d4282800 l!  \ PMUA_CC_SP      \ speed change voting, ACLK:7, DCLK:5, BACLK1:1, PCLK:7 (100 MHz)
-   78fd8248 d4282804 l!  \ PMUA_CC_PJ      \ speed change voting, ACLK:7, DCLK:5, BACLK1:1, PCLK:0 (800 MHz)
-\  \ divider setting and frequency change request, core-400, ddr-400, axi-200
-\   08fd8249 d4282800 l!  \ PMUA_CC_SP      \ speed change voting, ACLK:7, DCLK:5, BACLK1:1, PCLK:0
-\   78fd8249 d4282804 l!  \ PMUA_CC_PJ      \ 
-\  ." Running at 400 MHz" cr
+\   08600322 d4050414 l!  \ PMUM_PLL2_CTRL1 \ Bandgap+charge pump+VCO loading+regulator defaults, 486.3-528.55 PLL2 (bits 10:6)
+\   00FFFE00 d4050034 l!  \ PMUM_PLL2_CTRL2 \ refclk divisor and feedback divisors at max, software controls activation
+\   0021da00 d4050034 l!  \ PMUM_PLL2_CTRL1 \ refclk divisor=4, feedback divisor=0x76=118, software controls activation
+\   0021db00 d4050034 l!  \ PMUM_PLL2_CTRL2 \ same plus enable
+\   28600322 d4050414 l!  \ PMUM_PLL2_CTRL1 \ same as above plus release PLL loop filter
+;
+[then]
+
+: mpmu! d4050000 + l! ; : mpmu@ d4050000 + l@ ;
+: pmua! d4282800 + l! ; : pmua@ d4282800 + l@ ;
+: .3bits  ( n shift -- n )  over swap  rshift 7 and .  ;
+: .divisors  ( n -- )
+   ." A" d# 15 .3bits
+   ." D" d# 12 .3bits
+   ." X"     9 .3bits
+   ." B"     6 .3bits
+   ." C"     3 .3bits
+   ." P"     0 .3bits
+   drop cr
+;
+: .clocks  ( -- )
+   ." SP: "  8 pmua@ .divisors
+   ." PJ: "  c pmua@ .divisors
 ;
 
-: fccr@    ( -- n )  h# d405.0008 l@  ;
-: fccr!    ( n -- )  h# d405.0008 l!  ;
+: fccr@    ( -- n )  8 mpmu@  ;
+: fccr!    ( n -- )  8 mpmu!  ;
 : pj4-clksel  ( n -- )
    d# 29 lshift                               ( field )
    fccr@  h# e000.0000 invert and  or  fccr!  ( )
@@ -55,18 +51,29 @@ hex
    d# 26 lshift                               ( field )
    fccr@  h# 1c00.0000 invert and  or  fccr!  ( )
 ;
-: pj4-cc!  ( n -- )  h# d428.2804 l!  ;
+: pj4-cc!  ( n -- )  4 pmua!  ;
+: sp-cc!   ( n -- )  0 pmua!  ;
 
-: sp-cc!     ( n -- )  h# d428.2800 l!  ;
-\                                     cfraaADXBpP
-: sp-100mhz  ( -- )  0 sp-clksel   o# 37077703303 sp-cc!  ;  \ A 100, D 400, XP 100, B 100, P 100
-: sp-200mhz  ( -- )  0 sp-clksel   o# 37077301101 sp-cc!  ;  \ A 200, D 400, XP 200, B 200, P 200
-: sp-400mhz1 ( -- )  0 sp-clksel   o# 37077301100 sp-cc!  ;  \ A 200, D 400, XP 200, B 200, P 400
-: sp-400mhz2 ( -- )  0 sp-clksel   o# 37077300000 sp-cc!  ;  \ A 200, D 400, XP 400, B 400, P 400
-: sp-original        1 sp-clksel   o# 37077301101 sp-cc!  ;  \ A 200, D 400, XP 400, B 400, P 400
+\ Undocumented bits in CC regs:
+\ 1000.0000 forces immediate (non-voting) change of (XPCLK), BACLK, (CSCLK), and PCLK on this processor
+\ 2000.0000 forces immediate (non-voting) change of DCLK (for both processors)
+\ 4000.0000 forces immediate (non-voting) change of ACLK (for both processors)
 
-\                                     cfr52ADXBCP
-: pj4-100mhz ( -- )  0 pj4-clksel  o# 37042703303 pj4-cc!  ;  \ A 100, D 400, XP 100, B 100, P 100
-: pj4-200mhz ( -- )  0 pj4-clksel  o# 37042301101 pj4-cc!  ;  \ A 200, D 400, XP 200, B 200, P 200
-: pj4-400mhz ( -- )  0 pj4-clksel  o# 37042301100 pj4-cc!  ;  \ A 200, D 400, XP 200, B 200, P 400
-: pj4-800mhz ( -- )  1 pj4-clksel  o# 37042201100 pj4-cc!  ;  \ A 266, D 400, XP 400, B 400, P 800
+\                 PSD                 cfvaaADXBCP            cfvaaADXBCP
+
+\ A100 D400  PJ: X100 B100 C100 P100  SP: B100 C200
+: op1  ( -- )  h# 00800000 fccr!   o# 36042700301 sp-cc!  o# 36042703333 pj4-cc!  ;
+
+\ A200 D400  PJ: X200 B200 C200 P200  SP: B100 C200
+: op2  ( -- )  h# 00800000 fccr!   o# 36042300301 sp-cc!  o# 36042301111 pj4-cc!  ;
+
+\ A200 D400  PJ: X400 B400 C400 P400  SP: B100 C200
+: op3  ( -- )  h# 00800000 fccr!   o# 36042300301 sp-cc!  o# 36042300000 pj4-cc!  ;
+
+\ A266 D400  PJ: X400 B400 C400 P800  SP: B100 C200
+: op4  ( -- )  h# 20800000 fccr!   o# 36042200301 sp-cc!  o# 36042201110 pj4-cc!  ;
+
+: clk-fast  ( -- )
+   ffffffff 24 mpmu!  \ PMUM_CGR_SP     \ All clocks ON
+   op4
+;

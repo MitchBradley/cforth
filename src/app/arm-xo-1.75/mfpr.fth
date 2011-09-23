@@ -48,7 +48,19 @@ h# d401.e000 constant mfpr-base
 : no-update,  ( -- )  8 w,  ;  \ 8 is a reserved bit; the code skips these
 : af@  ( gpio# -- function# )  gpio>mfpr l@  ;
 : af!  ( function# gpio# -- )  gpio>mfpr l!  ;
-: af,   ( n -- )  h# c0 + w,  ;
-: +fast     ( n -- n' )  h# 1800 or  ;
-: pull-up,  ( n -- )  h# c0c0 + w,  ;
-: pull-dn,  ( n -- )  h# a0c0 + w,  ;
+
+\ We always start with edge detection off (40); it can be set later as needed
+: af,   ( n -- )  h# 40 + w,  ;
+
+: +medium       ( n -- n' )  h# 1000 or  ;
+: +fast         ( n -- n' )  h# 1800 or  ;
+: +twsi         ( n -- n' )  h#  400 or  ;
+: +pull-up      ( n -- n' )  h# c000 or  ;
+: +pull-dn      ( n -- n' )  h# a000 or  ;
+: +pull-up-alt  ( n -- n' )  h# 4000 or  ;
+: +pull-dn-alt  ( n -- n' )  h# 2000 or  ;
+
+: sleep-    ( n -- n' )  h# 0200 or  ;
+: sleep0    ( n -- n' )  h# 0000 or  ;
+: sleep1    ( n -- n' )  h# 0100 or  ;
+: sleepi    ( n -- n' )  h# 0080 or  ;

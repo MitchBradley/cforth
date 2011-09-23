@@ -209,7 +209,6 @@ h# 1000.0000 value memtest-length
    keypad-on
    8 keypad-direct-mode
    set-voltage
-   clk-fast
 ;
 : fix-v7  ( -- )
    h# d4282c08 l@  2 and  0=  if
@@ -219,6 +218,7 @@ h# 1000.0000 value memtest-length
 ;
 
 : init1
+   clk-fast
    init-dram
 \   fix-fuses
    fix-v7
@@ -392,10 +392,10 @@ h# 1fa0.0000 constant ofw-pa
    ." VRCR       " h#   18 m.8  ." PRR_SP   " h#   20 m.8  ." CGR_SP     " h#   24 m.8  cr
    ." RSR_SP     " h#   28 m.8  ." RET_TM   " h#   2c m.8  ." GPCP       " h#   30 m.8  cr
    ." PLL2CR     " h#   34 m.8  ." SCCR     " h#   38 m.8  ." ISCCR0     " h#   40 m.8  cr
-   ." ISCCR1     " h#   44 m.8  ." WUCCS_SP " h#   48 m.8  ." WUCRM_SP   " h#   4c m.8  cr
+   ." ISCCR1     " h#   44 m.8  ." WUCRS_SP " h#   48 m.8  ." WUCRM_SP   " h#   4c m.8  cr
    ." WDTPCR     " h#  200 m.8  cr
    ." PLL2_CTRL  " h#  414 m.8  ." PLL1_CTRL" h#  418 m.8  ." SRAM_PD    " h#  420 m.8  cr
-   ." PCR_PJ     " h# 1000 m.8  ." PSR_PJ   " h#  418 m.8  ." PRR_PJ     " h# 1020 m.8  cr
+   ." PCR_PJ     " h# 1000 m.8  ." PSR_PJ   " h# 1004 m.8  ." PRR_PJ     " h# 1020 m.8  cr
    ." RSR_PJ     " h# 1028 m.8  ." WUCRS_PJ " h# 1048 m.8  ." WUCRM_PJ   " h# 104c m.8  cr
 ;
 : .pmua  ( -- )
