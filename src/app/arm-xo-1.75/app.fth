@@ -167,6 +167,7 @@ fl dropin.fth
 
 fl ps2.fth
 fl spicmd.fth
+fl thermal.fth
 
 0 value memtest-start
 h# 1000.0000 value memtest-length
@@ -299,6 +300,7 @@ h# 1000.0000 value memtest-length
 ;
 : maybe-ofw  ( -- )
    rotate-button?  if  ." Skipping OFW" cr  exit  then
+   thermal
    ofw
 ;
 
