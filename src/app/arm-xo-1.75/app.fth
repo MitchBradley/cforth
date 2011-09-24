@@ -228,8 +228,9 @@ h# 1000.0000 value memtest-length
 ;
 
 : cforth-wait  ( -- )
-   begin  d# 50 ms  rotate-button?  until  \ Wait until KEY_5 GPIO pressed
-   ." Resuming CForth on Security Processor" cr
+   begin  wfi  rotate-button?  until  \ Wait until KEY_5 GPIO pressed
+   ." Resuming CForth on Security Processor, second UART" cr
+   1 'one-uart !
 ;
 
 \ The SP and PJ4's address maps for memory differ, apparently for the purpose
@@ -295,7 +296,9 @@ h# 1000.0000 value memtest-length
    ?ofw-up
 
    'one-uart @  0=  if
-      begin wfi again
+\      begin wfi again
+       d# 4000 ms
+       cforth-wait
    then
 ;
 : maybe-ofw  ( -- )
@@ -336,8 +339,9 @@ h# 1fa0.0000 constant ofw-pa
    load-ofw-slow
    ofw-go-slow
    enable-ps2
-\   cforth-wait
-   begin wfi again
+   
+   cforth-wait
+\   begin wfi again
 ;
 
 \ Run OFW on the security processor
@@ -393,12 +397,13 @@ h# 1fa0.0000 constant ofw-pa
    ." POCR       " h#    c m.8  ." POSR     " h#   10 m.8  ." SUCCR      " h#   14 m.8  cr
    ." VRCR       " h#   18 m.8  ." PRR_SP   " h#   20 m.8  ." CGR_SP     " h#   24 m.8  cr
    ." RSR_SP     " h#   28 m.8  ." RET_TM   " h#   2c m.8  ." GPCP       " h#   30 m.8  cr
-   ." PLL2CR     " h#   34 m.8  ." SCCR     " h#   38 m.8  ." ISCCR0     " h#   40 m.8  cr
-   ." ISCCR1     " h#   44 m.8  ." WUCRS_SP " h#   48 m.8  ." WUCRM_SP   " h#   4c m.8  cr
+   ." PLL2CR     " h#   34 m.8  ." SCCR     " h#   38 m.8  ." ISCCR1     " h#   40 m.8  cr
+   ." ISCCR2     " h#   44 m.8  ." WUCRS_SP " h#   48 m.8  ." WUCRM_SP   " h#   4c m.8  cr
    ." WDTPCR     " h#  200 m.8  cr
    ." PLL2_CTRL  " h#  414 m.8  ." PLL1_CTRL" h#  418 m.8  ." SRAM_PD    " h#  420 m.8  cr
    ." PCR_PJ     " h# 1000 m.8  ." PSR_PJ   " h# 1004 m.8  ." PRR_PJ     " h# 1020 m.8  cr
-   ." RSR_PJ     " h# 1028 m.8  ." WUCRS_PJ " h# 1048 m.8  ." WUCRM_PJ   " h# 104c m.8  cr
+   ." CGR_PJ     " h# 1024 m.8  ." RSR_PJ   " h# 1028 m.8  ." WUCRS_PJ   " h# 1048 m.8  cr
+   ." WUCRM_PJ   " h# 104c m.8  cr
 ;
 : .pmua  ( -- )
    ." ==PMUA Misc==" cr
@@ -428,7 +433,7 @@ h# 1fa0.0000 constant ofw-pa
    ." UART1 " h# 2c a.4  ." UART2 " h# 30 a.4  ." UART3 " h# 34 a.4  ." GPIO  " h# 38 a.4  ." PWM1  " h# 3c a.4 cr
    ." PWM2  " h# 40 a.4  ." PWM3  " h# 44 a.4  ." PWM4  " h# 48 a.4  ." SSP1  " h# 50 a.4  ." SSP2  " h# 54 a.4 cr
    ." SSP3  " h# 58 a.4  ." SSP4  " h# 5c a.4  ." AIB   " h# 64 a.4  ." USIM  " h# 70 a.4  ." MPMU  " h# 74 a.4 cr
-   ." IPC   " h# 78 a.4  ." TWSI5 " h# 7c a.4  ." TWSI6 " h# 7c a.4  ." UART4 " h# 88 a.4  ." RIPC  " h# 8c a.4 cr
+   ." IPC   " h# 78 a.4  ." TWSI5 " h# 7c a.4  ." TWSI6 " h# 80 a.4  ." UART4 " h# 88 a.4  ." RIPC  " h# 8c a.4 cr
    ." THSENS" h# 90 a.4  ." COREST" h# 94 a.4  cr
    ." ==APB Clock Misc==" cr
    ." TWSI_INT" h# 84 a.4  ." THSENS_INT" h# a4 a.4  cr
