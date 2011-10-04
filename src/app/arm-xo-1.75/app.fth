@@ -199,6 +199,7 @@ h# 1000.0000 value memtest-length
    h# 1b1 <  if  exit  then
    ." Using lower core voltage" cr
    d# 11 gpio-set
+   0 sleep1 +edge-clr  d# 11  af!  \ This is VID2 - we want it to stay high during suspend
 ;
 
 : init
