@@ -297,9 +297,8 @@ h# 1000.0000 value memtest-length
    ?ofw-up
 
    'one-uart @  0=  if
-\      begin wfi again
-       d# 4000 ms
-       cforth-wait
+      begin wfi again
+\     d# 4000 ms  cforth-wait
    then
 ;
 : maybe-ofw  ( -- )
