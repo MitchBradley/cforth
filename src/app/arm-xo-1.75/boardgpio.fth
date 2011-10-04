@@ -42,6 +42,8 @@ purpose: Board-specific setup details - pin assigments, etc.
    d# 104 gpio-dir-out \ EC_EDI_CS#
    d# 105 gpio-dir-out \ EC_EDI_MOSI
    d# 106 gpio-dir-out \ EC_EDI_CLK
+   d# 108 gpio-dir-out \ CAM_SDL
+   d# 109 gpio-dir-out \ CAM_SDA
    d# 110 gpio-dir-out \ DCON_SDA
    d# 142 gpio-dir-out \ DCONLOAD
    d# 143 gpio-clr     \ MIC_AC#/DC
@@ -66,7 +68,7 @@ create mfpr-table
    0 sleep0 af,      \ GPIO_08 - AUDIO_RESET#
    0 sleepi af,      \ GPIO_09 - COMPASS_INT
    0 sleep0 af,      \ GPIO_10 - LED_STORAGE
-   0 sleep- af,      \ GPIO_11 - VID2
+   0 sleep0 af,      \ GPIO_11 - VID2
    no-update, \ GPIO_12 - Not connected (TP52)
    no-update, \ GPIO_13 - Not connected (TP116)
    no-update, \ GPIO_14 - Not connected (TP64)
@@ -101,15 +103,15 @@ create mfpr-table
    0 sleepi af,      \ GPIO_31 - SD_CD# AKA SD2_CD# (via GPIO)
    no-update,        \ GPIO_32 - Not connected (TP58)
    0 sleep0 af,      \ GPIO_33 - EN_MSD_PWR AKA EN_SD1_PWR
-   0 sleep- af,      \ GPIO_34 - EN_WLAN_PWR
-   0 sleep- af,      \ GPIO_35 - EN_SD_PWR AKA EN_SD2_PWR
+   0 sleep0 af,      \ GPIO_34 - EN_WLAN_PWR
+   0 sleep0 af,      \ GPIO_35 - EN_SD_PWR AKA EN_SD2_PWR
    no-update,        \ GPIO_36 - Not connected (TP115)
-   1 sleep- af,      \ GPIO_37 - SDDA_D3
-   1 sleep- af,      \ GPIO_38 - SDDA_D2
-   1 sleep- af,      \ GPIO_39 - SDDA_D1
-   1 sleep- af,      \ GPIO_40 - SDDA_D0
-   1 sleep- af,      \ GPIO_41 - SDDA_CMD
-   1 sleep- af,      \ GPIO_42 - SDDA_CLK
+   1 sleepi af,      \ GPIO_37 - SDDA_D3
+   1 sleepi af,      \ GPIO_38 - SDDA_D2
+   1 sleepi af,      \ GPIO_39 - SDDA_D1
+   1 sleepi af,      \ GPIO_40 - SDDA_D0
+   1 sleep0 af,      \ GPIO_41 - SDDA_CMD
+   1 sleep0 af,      \ GPIO_42 - SDDA_CLK
    3 sleepi +pull-up-alt         af,   \ GPIO_43 - SPI_MISO  (SSP1) (OFW Boot FLASH)
    3 sleep0 +pull-up-alt +medium af,   \ GPIO_44 - SPI_MOSI
    3 sleep1 +pull-up-alt +medium af,   \ GPIO_45 - SPI_CLK
@@ -135,8 +137,8 @@ create mfpr-table
 [else]
    0 sleepi af,      \ GPIO_56 - BOOT_DEV_SEL
 [then]
-   0 sleep- af,      \ GPIO_57 - WLAN_PD#
-   0 sleep- af,      \ GPIO_58 - WLAN_RESET#
+   0 sleep0 af,      \ GPIO_57 - WLAN_PD#
+   0 sleep0 af,      \ GPIO_58 - WLAN_RESET#
 
    1 sleep0 af,      \ GPIO_59 - PIXDATA7 \ Each wastes ~15 mW if S1
    1 sleep0 af,      \ GPIO_60 - PIXDATA6
@@ -234,7 +236,7 @@ create mfpr-table
    3 sleep0 af,      \ GPIO_121 - SDI_MOSI w80 S1
    3 sleepi af,      \ GPIO_122 - SDI_MISO
 
-   3 sleep- af,      \ GPIO_123 - 32 KHz_CLK_OUT - Not connected (TP92)
+   1 sleep- af,      \ GPIO_123 - SLEEP_IND
 
    0 sleepi af,          \ GPIO_124 - DCONIRQ
 \  0 af,                 \ GPIO_125 - EC_SPI_ACK
@@ -281,11 +283,10 @@ create mfpr-table
    0 sleep0 af,      \ GPIO_150 - ND_ALE
    1 sleep0 af,      \ GPIO_151 - DCONLOAD
 [else]
-   1 sleep- af,       \ GPIO_149 - eMMC_RST#
+   1 sleep0 af,       \ GPIO_149 - eMMC_RST#
    1 sleep0 af,       \ GPIO_150 - EN_CAM_PWR - Must be 0 in sleep state for camera off
    2 sleep0 +fast af, \ GPIO_151 - eMMC_CLK
 [then]
-\ XXX to here
    1 sleep0 af,       \ GPIO_152 - (SM_BELn) - Not connected (TP40)
    1 sleep0 af,       \ GPIO_153 - (SM_BEHn) - Not connected (TP105)
    0 sleepi af,       \ GPIO_154 - (SM_INT) - EC_IRQ#
