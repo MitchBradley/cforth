@@ -291,8 +291,8 @@ h# 1000.0000 value memtest-length
    h# 00 puthex  ?visible
    load-ofw
    h# 01 puthex  ?visible
-   ofw-go
    enable-ps2
+   ofw-go
 
    ?ofw-up
 
