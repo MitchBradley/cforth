@@ -8,8 +8,8 @@ main-pmu-pa h# 200 + constant wdtpcr
 
    wdtpcr l@  dup  h# 7 or wdtpcr l!  h# 3 or wdtpcr l!
    0  h# 84 timer-2-pa + l!      \ TMR_CER  - count enable
-   begin  h# 84 timer-2-pa + l@  7 and  0=  until
-   h# 24  h# 00 timer-2-pa +!@   \ TMR_CCR  - clock control
+   begin  h# 84 timer-2@  7 and  0=  until
+   h# 24  h# 00 timer-2!   \ TMR_CCR  - clock control
    h# 200 0 do loop
    0  h# 88 timer-2!       \ count mode - periodic
    0  h# 4c timer-2!       \ preload value timer-2 0
