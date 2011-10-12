@@ -203,7 +203,7 @@ h# 1000.0000 value memtest-length
       0 sleep1 +edge-clr  d# 11  af!  \ This is VID2 - we want it to stay high during suspend
    then                          ( id )
 
-   dup h# 1c0 >=  if             ( id )
+   dup h# 1c1 >=  if             ( id )
        \ Rev C has pullups/downs for the memory config inputs, so we turn off
        \ the pulldowns to avoid unnecessary current.  The MPFRs are initially
        \ configured for pulldowns so A and B boards will report 512 MiB memory.
