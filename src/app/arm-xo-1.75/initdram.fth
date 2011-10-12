@@ -3,14 +3,9 @@
 
 hex
 create dram-tablex lalign
-   000d0001 , d0000100 ,   \ mmap0
-   200d0001 , d0000110 ,   \ mmap1
+   00000000 , d0000b40 ,   \ sdram-config-type2-cs0 (for LPDDR2)
+   00000000 , d0000b50 ,   \ sdram-config-type2-cs1 (for LPDDR2)
 
-
-   00222430 , d0000020 ,   \ sdram-config-type1-cs0
-   00222430 , d0000030 ,   \ sdram-config-type1-cs1
-   00000000 , d0000b40 ,   \ sdram-config-type2-cs0
-   00000000 , d0000b50 ,   \ sdram-config-type2-cs1
    911500ca , d0000050 ,   \ sdram-timing1
    646602c4 , d0000060 ,   \ sdram-timing2
    c2003053 , d0000190 ,   \ sdram-timing3
@@ -65,10 +60,24 @@ here dram-tablex laligned - constant /dram-table
    8 +loop
 ;
 
+\                    mmap-cs0        mmap-cs1     cfg-type1-cs0    cfg-type1-cs1
+create dram-512m  h# 000d0001 l,            0 l,  h# 00222430 l,            0 l,
+create dram-1g    h# 000e0001 l,            0 l,  h# 00222530 l,            0 l,
+
+: l@+  ( adr -- adr' value )  dup la1+ swap l@  ;
+: set-mem-size  ( adr -- )
+   l@+ h# d0000100 l!   \ mmap0
+   l@+ h# d0000110 l!   \ mmap1
+   l@+ h# d0000020 l!   \ sdram-config-type1-cs0
+   l@+ h# d0000030 l!   \ sdram-config-type1-cs1
+   drop
+;
 false value dram-on?
 : init-dram
    dram-on?  if  exit  then
    true to dram-on? 
+
+   0 gpio-pin@  if  dram-1g  else  dram-512m  then  set-mem-size
 
    dram-table /dram-table bounds  ?do
       i @  i na1+ @ l!

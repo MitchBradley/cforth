@@ -57,8 +57,8 @@ purpose: Board-specific setup details - pin assigments, etc.
 ;
 
 create mfpr-table
-   no-update, \ GPIO_00 - Not connected (TP57)
-   0 sleep0 af,      \ GPIO_01 - EN_USB_PWR
+   0 sleepi +pull-dn af,   \ GPIO_00 - Memsize0 (TP201 on B) (start with them pulled down for A and B revs)
+   0 sleepi +pull-dn af,   \ GPIO_01 - Memsize1 (TP199 on B)
    no-update,        \ GPIO_02 - Not connected (TP54)
    no-update,        \ GPIO_03 - Not connected (TP53)
    0 sleep1 af,      \ GPIO_04 - COMPASS_SCL (bitbang)

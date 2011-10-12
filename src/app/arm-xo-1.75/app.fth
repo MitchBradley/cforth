@@ -187,7 +187,7 @@ h# 1000.0000 value memtest-length
 ;
 
 \ Drop the voltage to the lower level for testing
-: set-voltage  ( -- )
+: board-config
 [ifdef] notdef
    d# 11 gpio-pin@  if
       cr ." APPARENT CRASH RESET - INTERACTING - reset reason = "
@@ -196,10 +196,22 @@ h# 1000.0000 value memtest-length
    then
 [then]
    open-ec  board-id@  close-ec  ( id )
-   h# 1b1 <  if  exit  then
-   ." Using lower core voltage" cr
-   d# 11 gpio-set
-   0 sleep1 +edge-clr  d# 11  af!  \ This is VID2 - we want it to stay high during suspend
+
+   dup h# 1b1 >=  if             ( id )
+      ." Using lower core voltage" cr
+      d# 11 gpio-set
+      0 sleep1 +edge-clr  d# 11  af!  \ This is VID2 - we want it to stay high during suspend
+   then                          ( id )
+
+   dup h# 1c0 >=  if             ( id )
+       \ Rev C has pullups/downs for the memory config inputs, so we turn off
+       \ the pulldowns to avoid unnecessary current.  The MPFRs are initially
+       \ configured for pulldowns so A and B boards will report 512 MiB memory.
+       0 sleepi 0 af!
+       0 sleepi 1 af!
+   then                          ( id )
+
+   drop                          ( )
 ;
 
 : init
@@ -210,7 +222,7 @@ h# 1000.0000 value memtest-length
    init-mfprs
    keypad-on
    8 keypad-direct-mode
-   set-voltage
+   board-config
 ;
 : fix-v7  ( -- )
    h# d4282c08 l@  2 and  0=  if
