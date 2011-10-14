@@ -283,7 +283,7 @@ h# 1000.0000 value memtest-length
    ." CForth stays active on second serial port" cr
    'one-uart on
 ;
-: ofw-up?  ( -- flag )  h# fc lcd@  6 <>  ;
+: ofw-up?  ( -- flag )  h# 190 lcd@  0<>  ;
 : ?ofw-up  ( -- )
    d# 80 0 do
       ofw-up?  if  leave  then
