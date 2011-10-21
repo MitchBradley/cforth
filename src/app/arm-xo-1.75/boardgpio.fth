@@ -48,6 +48,8 @@ purpose: Board-specific setup details - pin assigments, etc.
    d# 142 gpio-dir-out \ DCONLOAD
    d# 143 gpio-clr     \ MIC_AC#/DC
    d# 143 gpio-dir-out \ MIC_AC#/DC
+   d# 144 gpio-dir-out \ CAM_PWRDN
+   d# 144 gpio-clr     \ CAM_PWRDN
    d# 149 gpio-clr     \ eMMC_RST#
    d# 149 gpio-dir-out \ eMMC_RST#
    d# 150 gpio-clr     \ EN_CAM_PWR
@@ -268,7 +270,7 @@ create mfpr-table
    1 sleep0 af,      \ GPIO_142 - DCONLOAD
    1 sleep0 af,      \ GPIO_143 - MIC_AC#/DC
 [then]
-   0 sleep1 af,      \ GPIO_144 - (ND_CS1#) - Not connected (TP108)
+   1 sleep1 af,      \ GPIO_144 - (ND_CS1#) - CAM_PWRDN (not connected until C1)
 [ifdef] cl2-a1
    1 sleep0 af,      \ GPIO_145 - EN_CAM_PWR
 [else]
