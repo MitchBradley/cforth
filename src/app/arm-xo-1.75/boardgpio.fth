@@ -291,7 +291,7 @@ create mfpr-table
 [then]
    1 sleep0 af,       \ GPIO_152 - (SM_BELn) - Not connected (TP40)
    1 sleep0 af,       \ GPIO_153 - (SM_BEHn) - Not connected (TP105)
-   0 sleepi af,       \ GPIO_154 - (SM_INT) - EC_IRQ#
+   1 sleepi af,       \ GPIO_154 - (SM_INT) - EC_IRQ#
    1 sleep0 +pull-dn af, \ GPIO_155 - (EXT_DMA_REQ0) - EC_SPI_CMD
    no-update,         \ GPIO_156 - PRI_TDI (JTAG)
    no-update,         \ GPIO_157 - PRI_TDS (JTAG)
