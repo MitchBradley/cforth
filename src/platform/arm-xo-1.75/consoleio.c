@@ -7,6 +7,10 @@ void gamekey_handle();
 void rotate_init();
 void rotate_handle();
 void rotate_handle_debounce();
+void ebook_init();
+int  ebook_mode();
+
+#define NO_EBOOK_CHECK
 
 // Character I/O stubs
 
@@ -262,7 +266,7 @@ int queue_nearly_full(struct queue *q)
 
 // Silently drops from the head if the queue is full
 // It's better to lose down events than subsequent up events
-void enque(unsigned char b, struct queue *q)
+void always_enque(unsigned char b, struct queue *q)
 {
     int put = q->put;
     if ((((put+1) - q->get) & QUEUE_MASK) == 0) {
@@ -271,6 +275,13 @@ void enque(unsigned char b, struct queue *q)
     q->data[put] = b;
     q->put = (put+1) & QUEUE_MASK;
 }
+
+void enque(unsigned char b, struct queue *q)
+{
+    if (!ebook_mode())
+	always_enque(b, q);
+}
+
 int deque(struct queue *q)
 {
     int get = q->get;
@@ -435,6 +446,8 @@ void init_ps2()
 
     gamekey_init();
     rotate_init();
+
+    ebook_init();
 }
 
 // Keyboard translation.
@@ -1001,3 +1014,29 @@ void rotate_handle()
         rotate_gpio[GPIO_EDR_INDEX] = ROTATE_MASK;  // clear the int
     }
 }
+
+#ifdef NO_EBOOK_CHECK
+void ebook_init() { }
+int ebook_mode() { return 0; }
+#else
+
+//
+// the ebook switch appears on gpio128
+// we check it to suppress keyboard and mouse events
+
+REG(ebook_gpio, GPIO_128_159);
+#define GPIO128_MASK 0x0001
+#define EBOOK_MASK GPIO128_MASK
+
+void ebook_init()
+{
+    ebook_gpio[GPIO_CDR_INDEX] = EBOOK_MASK;   // direction == input
+}
+
+int ebook_mode()
+{
+    return !(ebook_gpio[GPIO_PLR_INDEX] & EBOOK_MASK);
+}
+
+
+#endif
