@@ -149,7 +149,6 @@ void init_io()
     uart4_only = 0;
 }
 
-#if 1
 
 typedef volatile unsigned long *reg_t;
 #define REG(name, address) volatile reg_t name = (reg_t)address
@@ -849,34 +848,6 @@ void irq_handler()
     rotate_handle();
 }
 
-#else
-cell irq_dstack[PSSIZE];
-cell irq_rstack[RSSIZE];
-
-#define IRQ_BLOCK (0x10c/sizeof(unsigned long))
-void irq_handler()
-{
-    unsigned long *icbase = (unsigned long *)0xd4282000;
-    cell spsave;
-    cell rpsave;
-    extern u_char variables[];
-    cell *up = (cell *)(&variables[0]);
-
-    icbase[IRQ_BLOCK] = 1;
-//    putchar('I');
-    
-    spsave = V(XSP);
-    rpsave = V(XRP);
-
-    V(XSP) = (cell)&irq_dstack[PSSIZE];
-    V(XRP) = (cell)&irq_rstack[RSSIZE];
-   
-    (void) execute_word("do-irq", up);
-
-    V(XSP) = spsave;
-    V(XRP) = rpsave;
-}
-#endif
 
 void swi_handler()
 {
