@@ -85,6 +85,7 @@ create mfpr-table
    no-update, \ GPIO_22 - Not connected (TP118)
    no-update, \ GPIO_23 - Not connected (TP61)
 [else]
+[ifdef] use_mmp2_keypad_control
    0 sleepi af,      \ GPIO_15 - KEY_ROTATE
    1 sleepi af,      \ GPIO_16 - KEY_R_UP (using KP_DKIN0)
    1 sleepi af,      \ GPIO_17 - KEY_R_RT (using KP_DKIN1)
@@ -94,6 +95,17 @@ create mfpr-table
    1 sleepi af,      \ GPIO_21 - KEY_L_RT (using KP_DKIN5)
    1 sleepi af,      \ GPIO_22 - KEY_L_DN (using KP_DKIN6)
    1 sleepi af,      \ GPIO_23 - KEY_L_LF (using KP_DKIN7)
+[else]
+   0 sleepi af,      \ GPIO_15 - KEY_ROTATE
+   0 sleepi af,      \ GPIO_16 - KEY_R_UP (using gpio)
+   0 sleepi af,      \ GPIO_17 - KEY_R_RT (using gpio)
+   0 sleepi af,      \ GPIO_18 - KEY_R_DN (using gpio)
+   0 sleepi af,      \ GPIO_19 - KEY_R_UP (using gpio)
+   0 sleepi af,      \ GPIO_20 - KEY_L_UP (using gpio)
+   0 sleepi af,      \ GPIO_21 - KEY_L_RT (using gpio)
+   0 sleepi af,      \ GPIO_22 - KEY_L_DN (using gpio)
+   0 sleepi af,      \ GPIO_23 - KEY_L_LF (using gpio)
+[then]
 [then]
    1 sleep1 af,      \ GPIO_24 - I2S_SYSCLK   (Codec) \ wastes 40 mW if S0
    1 sleep1 af,      \ GPIO_25 - I2S_BITCLK   (Codec) \ wastes 2 mW if S0
