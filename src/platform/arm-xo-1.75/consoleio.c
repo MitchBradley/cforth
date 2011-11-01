@@ -4,9 +4,6 @@
 
 void gamekey_init();
 void gamekey_handle();
-void rotate_init();
-void rotate_handle();
-void rotate_handle_debounce();
 void ebook_init();
 int  ebook_mode();
 
@@ -155,7 +152,7 @@ typedef volatile unsigned long *reg_t;
 
 /* a note on timers:  2 of the match registers are used for keyboard
  * and touchpad protocol timing.  the third is used to debounce the
- * rotate button.
+ * game keys.
  */
 
 REG(TIMER20_FREEZE, 0xd40800a4);
@@ -444,7 +441,6 @@ void init_ps2()
     function_shift = 0;
 
     gamekey_init();
-    rotate_init();
 
     ebook_init();
 }
@@ -733,13 +729,13 @@ void do_timer(int channels) {
     }
 
     if (channels & (1<<2)) {
-        rotate_handle_debounce();
+        gamekey_handle(1);
     }
 
     // hack alert -- linux reinits all the GPIO edge detection
-    //  when it boots.  this call ensures we always get our rotate
+    //  when it boots.  this call ensures we always get our
     //  button interrupts.
-    rotate_init(); 
+    gamekey_init();
 }
 
 void irq_handler()
@@ -844,8 +840,7 @@ void irq_handler()
 	}
     }
 
-    gamekey_handle();
-    rotate_handle();
+    gamekey_handle(0);
 }
 
 
@@ -857,7 +852,7 @@ void raise()  /* In case __div and friends need it */
 {
 }
 
-
+#ifdef BEFORE
 //
 // keypad controller, conveniently handles debounce
 
@@ -985,6 +980,7 @@ void rotate_handle()
         rotate_gpio[GPIO_EDR_INDEX] = ROTATE_MASK;  // clear the int
     }
 }
+#endif
 
 #ifdef NO_EBOOK_CHECK
 void ebook_init() { }
@@ -1009,5 +1005,152 @@ int ebook_mode()
     return !(ebook_gpio[GPIO_PLR_INDEX] & EBOOK_MASK);
 }
 
-
 #endif
+
+
+
+//   ----------------
+
+/* the rotate, o, check, x, square, up, right, left, down keys
+ * appear on gpio 15 through 23, conveniently in single gpio
+ * register.
+ */
+
+REG(game_gpio, GPIO_0_31);
+#define GAMEBITS 0x00ff8000
+
+void gamekey_init()
+{
+    game_gpio[GPIO_CDR_INDEX] = GAMEBITS;   // direction == input
+    game_gpio[GPIO_SRER_INDEX] = GAMEBITS;  // enable rising edge
+    game_gpio[GPIO_SFER_INDEX] = GAMEBITS;  // enable falling edge
+    game_gpio[GPIO_APMASK_INDEX] |= GAMEBITS;  // unmask irq
+}
+
+int gamekeys[] = { // bit 8 implies 0xe0 prefix is needed
+    0x069, // rotate
+    0x165, // o
+    0x168, // check
+    0x166, // x
+    0x167, // square
+    0x065, // up
+    0x068, // right
+    0x066, // down
+    0x067, // left
+};
+
+gamekey_send(int key, int release)
+{
+    int e0, scode;
+
+    e0 = gamekeys[key] & 0x100;
+    scode = gamekeys[key] & 0xff;
+    if (release) scode |= 0x80;
+
+    if (e0) {
+	always_enque(0xe0, &kbd_state.queue);
+        // dbgputresp(0xe0);
+    }
+
+    always_enque(scode, &kbd_state.queue);
+    // dbgputresp(scode);
+
+    run_queue();
+}
+
+gamekey_sendbits(unsigned int keybits, int down)
+{
+    unsigned int bit;
+    int i;
+
+    /* "rotate" is bit 15, "left" is bit 23 */
+    for (bit = 0x8000, i = 0; i < 9; bit <<= 1, i++) {
+	if (keybits & bit) {
+	    gamekey_send(i, down);
+	}
+    }
+}
+
+#define DEBOUNCE_MS 60   // msec of debounce
+
+void sched_debounce()
+{
+    unsigned int now;
+    *TIMER20_FREEZE = 1;    /* Latch count */
+    now = *TIMER20;
+    *TMR2_MATCH02 = now + (DEBOUNCE_MS/3 * 13000); // 6.5 clk/usec
+    *TMR2_IER0 |= (1<<2);
+}
+
+
+/*
+void dbgputbits(unsigned int c)
+{
+	char *digits = "0123456789abcdef";
+	tx4(digits[(c>>20)&0x0f]);
+	tx4(digits[(c>>16)&0x0f]);
+	tx4(digits[(c>>12)&0x0f]);
+	tx4(' ');
+}
+*/
+
+static unsigned int chgb, downb;
+static unsigned int t1b, t1b_down;
+static unsigned int t2b, t2b_down;
+
+/* the keys that have been pressed (or released) are moved
+ * through a three stage debouncing "pipeline".  keys that make
+ * it to the end of the pipeline intact are sent upstream.
+ */
+void gamekey_handle(int is_timer)
+{
+    unsigned int curb, t3b, t3b_down;
+
+    if (is_timer) {
+
+	curb = ~game_gpio[GPIO_PLR_INDEX] & GAMEBITS;
+
+	t3b = t2b & curb;
+	t3b_down = t2b_down & ~curb;
+
+	// t3b and t3b_down are the keys that made it all the way through...
+	gamekey_sendbits(t3b_down, 1);
+	gamekey_sendbits(t3b, 0);
+
+	downb &= ~t3b_down;
+	downb |= t3b;
+
+	t2b = t1b & curb;
+	t2b_down = t1b_down & ~curb;
+
+	// chgb is the keys whose states have changed "recently"
+	t1b = chgb & curb;
+	t1b_down = chgb & ~curb;
+	chgb = 0;
+
+	/*
+	tx4('T'); dbgputb(curbits);
+	    dbgputbits(t1b); dbgputbits(t2b); dbgputbits(t3b);
+	tx4('t'); dbgputbits(~curb);
+	    dbgputbits(t1b_down); dbgputbits(t2b_down); dbgputbits(t3b_down);
+	 */
+
+    } else {
+	unsigned int changes;
+	
+	changes = game_gpio[GPIO_EDR_INDEX] & GAMEBITS;
+	if (changes) {
+	    chgb |= changes;
+            game_gpio[GPIO_EDR_INDEX] = chgb;  // clear the int
+
+	    /*
+	    tx4('g'); dbgputbits(chgb);
+	    */
+	}
+    }
+
+    if (chgb || t1b || t1b_down || t2b || t2b_down ) {
+	sched_debounce();
+    }
+}
+
