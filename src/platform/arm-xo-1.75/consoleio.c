@@ -174,6 +174,13 @@ REG(TMR2_MATCH00,      0xd4080004);
 REG(TMR2_MATCH01,      0xd4080008);
 REG(TMR2_MATCH02,      0xd408000c);
 
+#define GPIO_0_31      0xd4019000
+#define GPIO_32_63     0xd4019004
+#define GPIO_64_95     0xd4019008
+#define GPIO_96_127    0xd4019100
+#define GPIO_128_159   0xd4019104
+#define GPIO_160_191   0xd4019108
+
 #define PS2_TIMEOUT 260000   /* 20 ms at 13 MHz */
 
 #define GPIO71_MASK 0x80
@@ -223,8 +230,8 @@ struct ps2_state kbd_state = {
     .bit_number = 0,
     .timestamp = 0,
     .byte = 0,
-    .dat_gpio = (reg_t)0xd4019008, // GPIO64-95
-    .clk_gpio = (reg_t)0xd4019008, // GPIO64-95
+    .dat_gpio = (reg_t)GPIO_64_95,
+    .clk_gpio = (reg_t)GPIO_64_95,
     .dat_mask = GPIO72_MASK,
     .clk_mask = GPIO71_MASK,
 };    
@@ -236,8 +243,8 @@ struct ps2_state tpd_state = {
     .timestamp = 0,
     .byte = 0,
     .parity = 0,
-    .dat_gpio = (reg_t)0xd4019100, // GPIO96-111
-    .clk_gpio = (reg_t)0xd4019108, // GPIO160-181
+    .dat_gpio = (reg_t)GPIO_96_127,
+    .clk_gpio = (reg_t)GPIO_160_191,
     .dat_mask = GPIO107_MASK,
     .clk_mask = GPIO160_MASK,
 };
@@ -893,7 +900,7 @@ REG(KPC_KDI,    0xd4012048);  // debounce interval reg
 
 void gamekey_init()
 {
-    reg_t temp;	
+    unsigned long temp;	
     *KPC_KDI = (DEBOUNCE_MS/2) << 8;  // debounce
     temp = *KPC_PC;                   // read to clear any pending indication
     *PMUA_WAKE_CLR_MASK = 0x20;       // Clear the KBC interrupt latch
@@ -947,7 +954,7 @@ void gamekey_handle()
 //
 // the rotate button appears on gpio 15
 
-REG(rotate_gpio,   0xd4019000); // GPIO0-31
+REG(rotate_gpio, GPIO_0_31);
 #define GPIO15_MASK 0x8000
 #define ROTATE_MASK GPIO15_MASK
 
