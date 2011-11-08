@@ -42,7 +42,7 @@ create dram-tablex lalign
    17784799 , d00001d0 ,   \ phy-ctrl7
    07700790 , d00001e0 ,   \ phy-ctrl8
    00000077 , d00001f0 ,   \ phy-ctrl9
-   d0000040 , d0000230 ,   \ phy-ctrl13 
+   f0000040 , d0000230 ,   \ phy-ctrl13 
    00000040 , d0000e10 ,   \ phy-dll-ctrl1
    00000040 , d0000e20 ,   \ phy-dll-ctrl2
    00000040 , d0000e30 ,   \ phy-dll-ctrl3
