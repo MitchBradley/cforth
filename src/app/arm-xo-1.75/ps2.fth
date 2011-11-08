@@ -20,10 +20,12 @@ h# d4282000 value ic-base  \ Interrupt controller
    d# 50 enable-irq         \ IRQ from command transfer block
    h# 100 h# d429.00c4 l!   \ Indicate that it's okay to send commands
 ;
+[ifdef] use_mmp2_keypad_control
 : setup-keypad ( -- )
    h# 017c ic@ 1 invert and h# 017c ic! \ unmask keypad irq
    d# 9 enable-irq  \ Keypad controller IRQ
 ;
+[then]
 
 : send-rdy  ( -- )  h# ff00 h# d429.0040 l!  ;  \ Send downstream ready
 : send-ps2  ( byte channel -- )  bwjoin h# d4290040 l!  ;
@@ -132,7 +134,9 @@ h# d4282000 value ic-base  \ Interrupt controller
    d# 49 enable-irq  \ GPIO IRQ
    d# 31 enable-irq  \ first timer in second block
    enable-spcmd-irq
+[ifdef] use_mmp2_keypad_control
    setup-keypad
+[then]
    unblock-irqs
    enable-interrupts
    ps2-xon   

@@ -100,7 +100,13 @@ fl keypad.fth
    [ifdef] cl2-a1  d# 20  [else]  d# 15  [then]
    gpio-pin@  0=
 ;
-: check-button?  ( -- flag )  scan-keypad 2 and   0=  ;
+: check-button?  ( -- flag )
+[ifdef] use_mmp2_keypad_control
+   scan-keypad 2 and   0=
+[else]
+   d# 17 gpio-pin@  0=
+[then]
+;
 
 false value fb-shown?
 h# 8009.1100 constant fb-on-value
@@ -221,8 +227,10 @@ h# 1000.0000 value memtest-length
    init-timers
    set-gpio-directions
    init-mfprs
+[ifdef] use_mmp2_keypad_control
    keypad-on
    8 keypad-direct-mode
+[then]
    board-config
 ;
 : fix-v7  ( -- )
@@ -238,7 +246,9 @@ h# 1000.0000 value memtest-length
 \   fix-fuses
    fix-v7
    init-spi
+[ifdef] SP_controls_kbd_power
    keyboard-power-on  \ Early to give the keyboard time to wake up
+[then]
 ;
 
 : cforth-wait  ( -- )
