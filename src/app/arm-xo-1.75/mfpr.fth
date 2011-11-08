@@ -37,7 +37,7 @@ h# d401.e000 constant mfpr-base
 : gpio>mfpr  ( gpio# -- mfpr-pa )
    mfpr-offsets swap wa+ w@
    mfpr-base +
-;                                                                
+;
 
 : dump-mfprs  ( -- )
    base @
