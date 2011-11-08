@@ -68,6 +68,7 @@ d# 26 ccall: 'one-uart     { -- a.value }
 d# 27 ccall: reset-reason  { -- i.value }
 d# 28 ccall: 'version      { -- a.value }
 d# 29 ccall: 'build-date   { -- a.value }
+d# 30 ccall: wfi-loop      { -- }
 
 : .commit  ( -- )
    'version cscount 
@@ -309,7 +310,7 @@ h# 1000.0000 value memtest-length
    ?ofw-up
 
    'one-uart @  0=  if
-      begin wfi again
+      wfi-loop
 \     d# 4000 ms  cforth-wait
    then
 ;

@@ -260,6 +260,17 @@ cell wfi()
     return 0;
 }
 
+cell wfi_loop()
+{
+    while (1) {
+        __asm__ __volatile__ (" mcr  p15, 0, r0, c7, c0, 4");
+//        "wfi\n\t"
+//	    ".long 0xe320f003\n\t"  // wfi - which older assemblers don't support
+    }
+
+    return 0;
+}
+
 cell rdpsr()
 {
     cell psrval;
@@ -375,6 +386,7 @@ cell ((* const ccalls[])()) = {
     (cell (*)())reset_reason_val,// Entry # 27
     (cell (*)())version_adr,     // Entry # 28
     (cell (*)())build_date_adr,  // Entry # 29
+    (cell (*)())wfi_loop,        // Entry # 30
 };
 
 
