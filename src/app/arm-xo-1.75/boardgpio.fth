@@ -169,7 +169,7 @@ create mfpr-table
 
    0 sleep- af,      \ GPIO_71 - SOC_KBD_CLK  \ Was EC_SCL (TWSI3) w6 S0
    0 sleep- af,      \ GPIO_72 - SOC_KBD_DAT  \ Was EC_SDA         w6 S0
-   0 sleep1 af,      \ GPIO_73 - CAM_RST (use as GPIO out)
+   0 sleep0 af,      \ GPIO_73 - SEC_TRG      \ Was CAM_RST on A3
 
    1 sleep0 af,      \ GPIO_74 - GFVSYNC 
    1 sleep0 af,      \ GPIO_75 - GFHSYNC
