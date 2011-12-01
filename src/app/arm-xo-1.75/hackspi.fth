@@ -72,12 +72,8 @@ h# 10 buffer: spi-cmdbuf
    \ want to use that command
 
    d# 100000 0  do  \ 1 second at 10 us/loop
+      [[ spi-read-status ]]  1 and 0=  if  unloop exit  then  \ Test WIP bit
       d# 10 us
-      [[ spi-read-status ]]  dup  1 and 0=  if  ( stat )  \ Test WIP bit
-         h# 3c and  abort" SPI FLASH Write Protect Bits came back on!"
-         unloop exit
-      then 
-      drop
    loop
    true abort" SPI FLASH write timed out"
 ;
