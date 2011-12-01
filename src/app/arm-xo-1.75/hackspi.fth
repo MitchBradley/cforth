@@ -193,3 +193,19 @@ h# 10000 constant /spi-block
 ;
 : reflash0  ( -- )  0 h# 100000 0 reflash  ;
 
+2 buffer: wp-buf
+: secure?  ( -- flag )
+   init-spi
+   .spi-id
+   wp-buf 2 e.fffe spi-read
+   wp-buf c@ [char] w = if
+      wp-buf 1+ c@ [char] p = if
+	 true exit
+      then
+   then
+   false
+;
+
+: sec-trg  ( -- )  d# 73 gpio-set  ;
+
+: protect-fw  ( -- )  secure?  if  spi-protect sec-trg  then  ;
