@@ -101,9 +101,19 @@ h# 10 buffer: spi-cmdbuf
 : spi-write-status  ( b -- )
    spi-write-enable  1 spi-cmd  ( b ) spi-out  stop-writing
 ;
-
-\ "0 spi-write-status" turns off write protect bits
-: clear-spi-flash-write-protect  ( -- )  0 spi-write-status  ;
+: spi-protect  ( -- )  h# 9c spi-write-status  ;
+: spi-unprotect  ( -- )  h# 0 spi-write-status  ;
+: spi-protected?  ( -- flag )
+    spi-read-status h# 80 and if
+	spi-read-status                ( status )
+	spi-unprotect                  ( status )
+	spi-read-status h# 80 and if   ( status )
+	    drop true exit             ( status )
+	then                           ( status )
+	spi-write-status
+    then
+    false
+;
 
 : write-spi-page  ( adr len offset -- )
    spi-write-enable     ( adr len offset )
@@ -162,7 +172,7 @@ h# 10000 constant /spi-block
    wakeup-spi-flash
    .spi-id
    d# 40 us
-   clear-spi-flash-write-protect   ( adr len offset )
+   spi-unprotect           ( adr len offset )
 ;
 : erase-dance  ( len offset -- )
    ." Erasing" cr
