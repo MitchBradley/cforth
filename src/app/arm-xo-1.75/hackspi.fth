@@ -104,15 +104,15 @@ h# 10 buffer: spi-cmdbuf
 : spi-protect  ( -- )  h# 9c spi-write-status  ;
 : spi-unprotect  ( -- )  h# 0 spi-write-status  ;
 : spi-protected?  ( -- flag )
-    spi-read-status h# 80 and if
-	spi-read-status                ( status )
-	spi-unprotect                  ( status )
-	spi-read-status h# 80 and if   ( status )
-	    drop true exit             ( status )
-	then                           ( status )
-	spi-write-status
-    then
-    false
+   [[ spi-read-status ]] h# 80 and if
+      [[ spi-read-status ]]                     ( status )
+      spi-unprotect                             ( status )
+      [[ spi-read-status ]] h# 80 and if        ( status )
+         drop true exit                         ( status )
+      then                                      ( status )
+      spi-write-status
+   then
+   false
 ;
 
 : write-spi-page  ( adr len offset -- )
