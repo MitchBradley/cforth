@@ -167,7 +167,7 @@ create mfpr-table
    1 sleep0 af,      \ GPIO_69 - PIXMCLK
    1 sleep0 af,      \ GPIO_70 - PIXCLK     \ Wastes 40 mW if S1
 
-   0 sleep- af,      \ GPIO_71 - SOC_KBD_CLK  \ Was EC_SCL (TWSI3) w6 S0
+   0 sleepi af,      \ GPIO_71 - SOC_KBD_CLK  \ Was EC_SCL (TWSI3) w6 S0
    0 sleep- af,      \ GPIO_72 - SOC_KBD_DAT  \ Was EC_SDA         w6 S0
    0 sleep0 af,      \ GPIO_73 - SEC_TRG      \ Was CAM_RST on A3
 
@@ -309,7 +309,7 @@ create mfpr-table
    no-update,         \ GPIO_157 - PRI_TDS (JTAG)
    no-update,         \ GPIO_158 - PRI_TDK (JTAG)
    no-update,         \ GPIO_159 - PRI_TDO (JTAG)
-   1 sleep- af,       \ GPIO_160 - (ND_RDY[1]) - SOC_TPD_CLK
+   1 sleepi af,       \ GPIO_160 - (ND_RDY[1]) - SOC_TPD_CLK
 [ifdef] cl2-a1
    1 sleep0 af,       \ GPIO_161 - ND_IO[12] - Not connected (TP 44)
    1 sleep1 af,       \ GPIO_162 - (ND_IO[11]) - DCON_SCL
