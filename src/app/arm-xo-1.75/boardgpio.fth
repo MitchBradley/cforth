@@ -63,14 +63,33 @@ create mfpr-table
    0 sleepi +pull-dn af,   \ GPIO_01 - Memsize1 (TP199 on B)
    no-update,        \ GPIO_02 - Not connected (TP54)
    no-update,        \ GPIO_03 - Not connected (TP53)
-   0 sleep1 af,      \ GPIO_04 - COMPASS_SCL (bitbang)
-   0 sleep1 af,      \ GPIO_05 - COMPASS_SDA (bitbang)
+   0 sleep1 af,      \ GPIO_04 - COMPASS_SCL (bitbang) (CL2), CAM_SCL (CL3)
+   0 sleep1 af,      \ GPIO_05 - COMPASS_SDA (bitbang) (CL2), CAM_SDA (CL3)
    0 sleepi af,      \ GPIO_06 - G_SENSOR_INT
    0 sleepi af,      \ GPIO_07 - AUDIO_IRQ#
    0 sleep0 af,      \ GPIO_08 - AUDIO_RESET#
+[ifdef] cl3
+   0 sleep1 af,      \ GPIO_09 - CAM_PWRDN
+   0 sleep1 af,      \ GPIO_10 - CAM_RST
+[else]
    0 sleepi af,      \ GPIO_09 - COMPASS_INT
    0 sleep0 af,      \ GPIO_10 - LED_STORAGE
+[then]
    0 sleep0 af,      \ GPIO_11 - VID2
+[ifdef] cl3
+   3 sleepi af,      \ GPIO_12 - PIXDATA7
+   3 sleepi af,      \ GPIO_13 - PIXDATA6
+   3 sleepi af,      \ GPIO_14 - PIXDATA5
+   3 sleepi af,      \ GPIO_15 - PIXDATA4
+   3 sleepi af,      \ GPIO_16 - PIXDATA3
+   3 sleepi af,      \ GPIO_17 - PIXDATA2
+   3 sleepi af,      \ GPIO_18 - PIXDATA1
+   3 sleepi af,      \ GPIO_19 - PIXDATA0
+   3 sleepi af,      \ GPIO_20 - CAM_HSYNC
+   3 sleepi af,      \ GPIO_21 - CAM_VSYNC
+   3 sleepi af,      \ GPIO_22 - PIXMCLK
+   3 sleepi af,      \ GPIO_23 - PIXCLK
+[else] \ !cl3
    no-update, \ GPIO_12 - Not connected (TP52)
    no-update, \ GPIO_13 - Not connected (TP116)
    no-update, \ GPIO_14 - Not connected (TP64)
@@ -84,7 +103,7 @@ create mfpr-table
    no-update, \ GPIO_21 - Not connected (TP63)
    no-update, \ GPIO_22 - Not connected (TP118)
    no-update, \ GPIO_23 - Not connected (TP61)
-[else]
+[else] \ !cl2-a1
 [ifdef] use_mmp2_keypad_control
    0 sleepi af,      \ GPIO_15 - KEY_ROTATE
    1 sleepi af,      \ GPIO_16 - KEY_R_UP (using KP_DKIN0)
@@ -95,7 +114,7 @@ create mfpr-table
    1 sleepi af,      \ GPIO_21 - KEY_L_RT (using KP_DKIN5)
    1 sleepi af,      \ GPIO_22 - KEY_L_DN (using KP_DKIN6)
    1 sleepi af,      \ GPIO_23 - KEY_L_LF (using KP_DKIN7)
-[else]
+[else] \ !use_mmp2_keypad_control
    0 sleepi af,      \ GPIO_15 - KEY_ROTATE
    0 sleepi af,      \ GPIO_16 - KEY_R_UP (using gpio)
    0 sleepi af,      \ GPIO_17 - KEY_R_RT (using gpio)
@@ -105,8 +124,9 @@ create mfpr-table
    0 sleepi af,      \ GPIO_21 - KEY_L_RT (using gpio)
    0 sleepi af,      \ GPIO_22 - KEY_L_DN (using gpio)
    0 sleepi af,      \ GPIO_23 - KEY_L_LF (using gpio)
-[then]
-[then]
+[then] \ use_mmp2_keypad_control
+[then] \ cl2-a1
+[then] \ cl3
    1 sleep1 af,      \ GPIO_24 - I2S_SYSCLK   (Codec) \ wastes 40 mW if S0
    1 sleep1 af,      \ GPIO_25 - I2S_BITCLK   (Codec) \ wastes 2 mW if S0
    1 sleep0 af,      \ GPIO_26 - I2S_SYNC     (Codec)
@@ -132,7 +152,11 @@ create mfpr-table
    3 sleep1 +pull-up-alt +medium af,   \ GPIO_46 - SPI_FRM
    3 sleep1 +pull-up af, \ GPIO_47 - G_SENSOR_SDL (TWSI6)
    3 sleep1 +pull-up af, \ GPIO_48 - G_SENSOR_SDA
+[ifdef] cl3
+   3 sleep0 af,      \ GPIO_49 - (PWM2) DBC
+[else]
    no-update, \ GPIO_49 - Not connected (TP62)
+[then]
    no-update, \ GPIO_50 - Not connected (TP114)
    no-update, \ GPIO_51 - Not connected (TP59)
    no-update, \ GPIO_52 - Not connected (TP113)
@@ -154,6 +178,20 @@ create mfpr-table
    0 sleep0 af,      \ GPIO_57 - WLAN_PD#
    0 sleep0 af,      \ GPIO_58 - WLAN_RESET#
 
+[ifdef] cl3
+   3 sleep0 af,      \ GPIO_59 - ULPI_D7
+   3 sleep0 af,      \ GPIO_60 - ULPI_D6
+   3 sleep0 af,      \ GPIO_61 - ULPI_D5
+   3 sleep0 af,      \ GPIO_62 - ULPI_D4
+   3 sleep0 af,      \ GPIO_63 - ULPI_D3
+   3 sleep0 af,      \ GPIO_64 - ULPI_D2
+   3 sleep0 af,      \ GPIO_65 - ULPI_D1
+   3 sleep0 af,      \ GPIO_66 - ULPI_D0
+   3 sleep0 af,      \ GPIO_67 - ULPI_STP
+   3 sleep0 af,      \ GPIO_68 - ULPI_NXT
+   3 sleep0 af,      \ GPIO_69 - ULPI_DIR
+   3 sleep0 af,      \ GPIO_70 - ULPI_CLK
+[else]
    1 sleep0 af,      \ GPIO_59 - PIXDATA7 \ Each wastes ~15 mW if S1
    1 sleep0 af,      \ GPIO_60 - PIXDATA6
    1 sleep0 af,      \ GPIO_61 - PIXDATA5
@@ -166,6 +204,7 @@ create mfpr-table
    1 sleepi af,      \ GPIO_68 - CAM_VSYNC  \ Wastes 40 mW if S1
    1 sleep0 af,      \ GPIO_69 - PIXMCLK
    1 sleep0 af,      \ GPIO_70 - PIXCLK     \ Wastes 40 mW if S1
+[then]
 
    0 sleepi af,      \ GPIO_71 - SOC_KBD_CLK  \ Was EC_SCL (TWSI3) w6 S0
    0 sleep- af,      \ GPIO_72 - SOC_KBD_DAT  \ Was EC_SDA         w6 S0
@@ -226,19 +265,19 @@ create mfpr-table
 [then]
    1 sleep- af,      \ GPIO_107 - (ND_IO[4]) - SOC_TPD_DAT
 
-   1 sleep1 af,      \ GPIO_108 - CAM_SDL - Use as GPIO, bitbang w5 S0
-   1 sleep1 af,      \ GPIO_109 - CAM_SDA - Use as GPIO, bitbang w5 S0
+   1 sleep1 af,      \ GPIO_108 - CAM_SDL - Use as GPIO, bitbang w5 S0 (CL2), CHG_SDA (CL3)
+   1 sleep1 af,      \ GPIO_109 - CAM_SDA - Use as GPIO, bitbang w5 S0 (CL2), CHG_SCL (CL3)
 
 [ifdef] cl2-a1
    1 sleep0 af,      \ GPIO_110 - (ND_IO[13]) - Not connected (TP43)
    1 sleep0 af,      \ GPIO_111 - (ND_IO[8])  - Not connected (TP108)
    0 sleepi af,      \ GPIO_112 - ND_RDY[0]
 [else]
-   1 sleep1 +pull-up af, \ GPIO_110 - DCON_SDA w5 S0
+   1 sleep1 +pull-up af, \ GPIO_110 - DCON_SDA w5 S0 (CL2), CHRG_AC_OK (CL3)
    2 sleep0 +fast af,    \ GPIO_111 - eMMC_D0
    2 sleep0 +fast af,    \ GPIO_112 - eMMC_CMD
 [then]
-   3 sleep1 +fast af,      \ GPIO_113 - (SM_RDY)  - MSD_CMD aka SD1_CMD (externally pulled up)
+   3 sleep1 +fast af,      \ GPIO_113 - (SM_RDY)  - MSD_CMD aka SD1_CMD (externally pulled up) (CL2), N/C (CL3)
    1 sleep- af,      \ GPIO_114 - G_CLK_OUT - Not connected (TP93)
 
    4 sleep- af,      \ GPIO_115 - UART3_TXD (J4)
@@ -252,13 +291,33 @@ create mfpr-table
 
    1 sleep- af,      \ GPIO_123 - SLEEP_IND
 
-   0 sleepi af,          \ GPIO_124 - DCONIRQ
+   0 sleepi af,          \ GPIO_124 - DCONIRQ (CL2), USB_OTG_OC# (CL3)
 \  0 af,                 \ GPIO_125 - EC_SPI_ACK
    0 sleep1 +pull-up af, \ GPIO_125 - EC_SPI_ACK
 
+[ifdef] cl3
+   0 sleep1 af,       \ GPIO_126 - EN_+5V_USB_OTG#
+   0 sleep1 af,       \ GPIO_127 - EN_+5V_USB#
+[else]
    3 sleep0 +fast af, \ GPIO_126 - MSD_DATA2 AKA SD1_DATA2
    3 sleep0 +fast af, \ GPIO_127 - MSD_DATA0 AKA SD1_DATA0
+[then]
    0 sleepi af,       \ GPIO_128 - EB_MODE#
+[ifdef] cl3
+   0 sleep1 af,       \ GPIO_129 - EN_LCD_PWR
+   0 sleep1 af,       \ GPIO_130 - LCD_RESET#
+   0 sleep1 af,       \ GPIO_131 - STBY#
+   0 sleep1 af,       \ GPIO_132 - LCDVCC_EN
+   0 sleepi af,       \ GPIO_133 - Not connected
+   0 sleepi af,       \ GPIO_134 - Not connected
+   0 sleepi af,       \ GPIO_135 - Not connected
+   0 sleepi af,       \ GPIO_136 - Not connected
+   0 sleepi af,       \ GPIO_137 - Not connected (TP111)
+   0 sleepi af,       \ GPIO_138 - Not connected
+   0 sleepi af,       \ GPIO_139 - Not connected
+   0 sleepi af,       \ GPIO_140 - Not connected
+   0 sleepi af,       \ GPIO_141 - Not connected
+[else]
    0 sleepi af,       \ GPIO_129 - LID_SW#
    3 sleep0 +fast af, \ GPIO_130 - MSD_DATA3 AKA SD1_DATA3
    1 sleep0 +fast af, \ GPIO_131 - SD_DATA3 AKA SD2_DATA3
@@ -274,24 +333,25 @@ create mfpr-table
    no-update,         \ GPIO_140 - Not connected if R130 is nopop
 \  1 sleep1 af,       \ GPIO_140 - (SD_CD# if R130 is populated)
    1 sleepi af,       \ GPIO_141 - SD_WP# AKA SD2_WP#
+[then]
 
 [ifdef] cl2-a1
    no-update, \ GPIO_142 - (USIM_RSTn) - Not connected (TP49)
    0 sleep1 af,      \ GPIO_143 - ND_CS0#
 [else]
-   1 sleep0 af,      \ GPIO_142 - DCONLOAD
+   1 sleep0 af,      \ GPIO_142 - DCONLOAD (CL2), SEC_TRG (CL3)
    1 sleep0 af,      \ GPIO_143 - MIC_AC#/DC
 [then]
-   1 sleep1 af,      \ GPIO_144 - (ND_CS1#) - CAM_PWRDN (not connected until C1)
+   1 sleep1 af,      \ GPIO_144 - (ND_CS1#) - CAM_PWRDN (not connected until C1) (not connected on CL3)
 [ifdef] cl2-a1
    1 sleep0 af,      \ GPIO_145 - EN_CAM_PWR
 [else]
    no-update, \ GPIO_145 - Not connected
 [then]
-   1 sleep- af,      \ GPIO_146 - HUB_RESET#
+   1 sleep- af,      \ GPIO_146 - HUB_RESET# (CL2), ULPI_HUB_RESET# (CL3)
 
    0 sleep0 af,      \ GPIO_147 - ND_WE_N - Not connected (TP122)
-   1 sleep- af,      \ GPIO_148 - ND_RE_N - SOC_EN_KBD_PWR#
+   1 sleep- af,      \ GPIO_148 - ND_RE_N - SOC_EN_KBD_PWR# (CL2) (N/C on CL3)
 [ifdef] cl2-a1
    0 sleep0 af,      \ GPIO_149 - ND_CLE
    0 sleep0 af,      \ GPIO_150 - ND_ALE
@@ -309,7 +369,7 @@ create mfpr-table
    no-update,         \ GPIO_157 - PRI_TDS (JTAG)
    no-update,         \ GPIO_158 - PRI_TDK (JTAG)
    no-update,         \ GPIO_159 - PRI_TDO (JTAG)
-   1 sleepi af,       \ GPIO_160 - (ND_RDY[1]) - SOC_TPD_CLK
+   1 sleepi af,       \ GPIO_160 - (ND_RDY[1]) - SOC_TPD_CLK (CL2) (N/C on CL3)
 [ifdef] cl2-a1
    1 sleep0 af,       \ GPIO_161 - ND_IO[12] - Not connected (TP 44)
    1 sleep1 af,       \ GPIO_162 - (ND_IO[11]) - DCON_SCL
@@ -320,7 +380,7 @@ create mfpr-table
    0 sleep0 af,       \ GPIO_167 - ND_IO[1]
    0 sleep0 af,       \ GPIO_168 - ND_IO[0]
 [else]
-   1 sleep1 af,       \ GPIO_161 - DCON_SCL
+   1 sleep1 af,       \ GPIO_161 - DCON_SCL (CL2), PWR_LMT_ON# (CL3)
    2 sleep0 +fast af, \ GPIO_162 - eMMC_D6
    2 sleep0 +fast af, \ GPIO_163 - eMMC_D4
    2 sleep0 +fast af, \ GPIO_164 - eMMC_D2
