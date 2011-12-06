@@ -3,15 +3,22 @@ purpose: Board-specific setup details - pin assigments, etc.
 : set-gpio-directions  ( -- )
    3  h# 38 clock-unit-pa +  l!  \ Enable clocks in GPIO clock reset register
    
-   d# 01 gpio-dir-out  \ EN_USB_PWR
-   d# 04 gpio-dir-out  \ COMPASS_SCL
-   d# 05 gpio-dir-out  \ COMPASS_SDA
+\   d# 01 gpio-dir-out  \ EN_USB_PWR
+   d# 04 gpio-dir-out  \ COMPASS_SCL (CL2), CAM_SCL (CL3)
+   d# 05 gpio-dir-out  \ COMPASS_SDA (CL2), CAM_SCL (CL3)
    d# 08 gpio-dir-out  \ AUDIO_RESET#
-   d# 10 gpio-dir-out  \ LED_STORAGE
+[ifdef] cl3
+   d# 09 gpio-dir-out  \ CAM_PWRDN (CL3)
+[then]
+   d# 10 gpio-dir-out  \ LED_STORAGE (CL2), CAM_RST (CL3)
    d# 11 gpio-dir-out  \ VID2
    d# 33 gpio-dir-out  \ EN_MSD_PWR
    d# 34 gpio-dir-out  \ EN_WLAN_PWR
    d# 35 gpio-dir-out  \ EN_SD_PWR
+[ifdef] cl3
+   d# 49 gpio-clr
+   d# 49 gpio-dir-out  \ (PWM2) DBB (CL3)
+[then]
    d# 57 gpio-set      \ WLAN_PD#
    d# 57 gpio-dir-out  \ WLAN_PD#
    d# 58 gpio-set      \ WLAN_RESET#
@@ -21,9 +28,11 @@ purpose: Board-specific setup details - pin assigments, etc.
 
    d# 125 gpio-set     \ EC_SPI_ACK
    d# 125 gpio-dir-out \ EC_SPI_ACK
-   d# 146 gpio-dir-out \ HUB_RESET#
-   d# 148 gpio-clr     \ SOC_EN_KBD_PWR#
+   d# 146 gpio-dir-out \ HUB_RESET# (CL2), ULPI_HUB_RESET# (CL3)
+[ifndef] cl3
+   d# 148 gpio-clr     \ SOC_EN_KBD_PWR# (CL2), N/C (CL3)
    d# 148 gpio-dir-out \ SOC_EN_KBD_PWR#
+[then]
    d# 155 gpio-clr
    d# 155 gpio-dir-out \ EC_SPI_CMD
 [ifdef] cl2-a1
@@ -42,19 +51,38 @@ purpose: Board-specific setup details - pin assigments, etc.
    d# 104 gpio-dir-out \ EC_EDI_CS#
    d# 105 gpio-dir-out \ EC_EDI_MOSI
    d# 106 gpio-dir-out \ EC_EDI_CLK
-   d# 108 gpio-dir-out \ CAM_SDL
-   d# 109 gpio-dir-out \ CAM_SDA
-   d# 110 gpio-dir-out \ DCON_SDA
-   d# 142 gpio-dir-out \ DCONLOAD
+   d# 108 gpio-dir-out \ CAM_SDL (CL2), CHG_SDA (CL3)
+   d# 109 gpio-dir-out \ CAM_SDA (CL2), CHG_SCL (CL3)
+[ifndef] cl3
+   d# 110 gpio-dir-out \ DCON_SDA (CL2), CHRG_AC_OK (CL3)
+[then]
+[ifdef] cl3
+   d# 126 gpio-dir-out \ EN_+5V_USB_OTG#
+   d# 127 gpio-dir-out \ EN_+5V_USB#
+   d# 129 gpio-clr     \ EN_LCD_PWR
+   d# 129 gpio-dir-out \ EN_LCD_PWR
+   d# 130 gpio-clr     \ LCD_RESET#
+   d# 130 gpio-dir-out \ LCD_RESET#
+   d# 135 gpio-clr     \ STBY#
+   d# 135 gpio-dir-out \ STBY#
+\   d# 138 gpio-clr     \ LCDVCC_EN
+\   d# 138 gpio-dir-out \ LCDVCC_EN
+[then]
+   d# 142 gpio-dir-out \ DCONLOAD (CL2), SEC_TRG (CL3)
    d# 143 gpio-clr     \ MIC_AC#/DC
    d# 143 gpio-dir-out \ MIC_AC#/DC
-   d# 144 gpio-dir-out \ CAM_PWRDN
+[ifndef] cl3
+   d# 144 gpio-dir-out \ CAM_PWRDN (CL2), N/C (CL3)
    d# 144 gpio-clr     \ CAM_PWRDN
+[then]
    d# 149 gpio-clr     \ eMMC_RST#
    d# 149 gpio-dir-out \ eMMC_RST#
    d# 150 gpio-clr     \ EN_CAM_PWR
    d# 150 gpio-dir-out \ EN_CAM_PWR
-   d# 161 gpio-dir-out \ DCON_SCL
+   d# 161 gpio-dir-out \ DCON_SCL (CL2), PWR_LMT_ON# (CL3)
+[ifdef] cl3
+   d# 161 gpio-set     \                 PWR_LMT_ON# (CL3)
+[then]
 [then]
 ;
 
@@ -136,7 +164,7 @@ create mfpr-table
    1 sleep- af,      \ GPIO_30 - UART1_TXD  (debug board)
    0 sleepi af,      \ GPIO_31 - SD_CD# AKA SD2_CD# (via GPIO)
    no-update,        \ GPIO_32 - Not connected (TP58)
-   0 sleep0 af,      \ GPIO_33 - EN_MSD_PWR AKA EN_SD1_PWR
+   0 sleep0 af,      \ GPIO_33 - EN_MSD_PWR AKA EN_SD1_PWR (CL2)  LCDVCC_EN (CL3)
    0 sleep0 af,      \ GPIO_34 - EN_WLAN_PWR
    0 sleep0 af,      \ GPIO_35 - EN_SD_PWR AKA EN_SD2_PWR
    no-update,        \ GPIO_36 - Not connected (TP115)
@@ -153,7 +181,8 @@ create mfpr-table
    3 sleep1 +pull-up af, \ GPIO_47 - G_SENSOR_SDL (TWSI6)
    3 sleep1 +pull-up af, \ GPIO_48 - G_SENSOR_SDA
 [ifdef] cl3
-   3 sleep0 af,      \ GPIO_49 - (PWM2) DBC
+\  3 sleep0 af,      \ GPIO_49 - (PWM2) DBC
+   0 sleep0 af,      \ GPIO_49 - (PWM2) DBC (as gpio, for now)
 [else]
    no-update, \ GPIO_49 - Not connected (TP62)
 [then]
@@ -179,18 +208,18 @@ create mfpr-table
    0 sleep0 af,      \ GPIO_58 - WLAN_RESET#
 
 [ifdef] cl3
-   3 sleep0 af,      \ GPIO_59 - ULPI_D7
-   3 sleep0 af,      \ GPIO_60 - ULPI_D6
-   3 sleep0 af,      \ GPIO_61 - ULPI_D5
-   3 sleep0 af,      \ GPIO_62 - ULPI_D4
-   3 sleep0 af,      \ GPIO_63 - ULPI_D3
-   3 sleep0 af,      \ GPIO_64 - ULPI_D2
-   3 sleep0 af,      \ GPIO_65 - ULPI_D1
-   3 sleep0 af,      \ GPIO_66 - ULPI_D0
-   3 sleep0 af,      \ GPIO_67 - ULPI_STP
-   3 sleep0 af,      \ GPIO_68 - ULPI_NXT
-   3 sleep0 af,      \ GPIO_69 - ULPI_DIR
-   3 sleep0 af,      \ GPIO_70 - ULPI_CLK
+   2 sleep0 af,      \ GPIO_59 - ULPI_D7
+   2 sleep0 af,      \ GPIO_60 - ULPI_D6
+   2 sleep0 af,      \ GPIO_61 - ULPI_D5
+   2 sleep0 af,      \ GPIO_62 - ULPI_D4
+   2 sleep0 af,      \ GPIO_63 - ULPI_D3
+   2 sleep0 af,      \ GPIO_64 - ULPI_D2
+   2 sleep0 af,      \ GPIO_65 - ULPI_D1
+   2 sleep0 af,      \ GPIO_66 - ULPI_D0
+   2 sleep0 af,      \ GPIO_67 - ULPI_STP
+   2 sleep0 af,      \ GPIO_68 - ULPI_NXT
+   2 sleep0 af,      \ GPIO_69 - ULPI_DIR
+   2 sleep0 af,      \ GPIO_70 - ULPI_CLK
 [else]
    1 sleep0 af,      \ GPIO_59 - PIXDATA7 \ Each wastes ~15 mW if S1
    1 sleep0 af,      \ GPIO_60 - PIXDATA6
@@ -257,7 +286,11 @@ create mfpr-table
    0 sleepi af,      \ GPIO_105 - ND_IO[6]
    0 sleepi af,      \ GPIO_106 - ND_IO[5]
 [else]
+[ifdef] cl3
+   no-update,        \ GPIO_102 - Not connected (CL3)
+[else]
    1 sleep0 af,      \ GPIO_102 - CAM_RST  \ B1 and later
+[then]
    1 sleep0 af,      \ GPIO_103 - EC_EDI_DO
    1 sleep1 af,      \ GPIO_104 - EC_EDI_CS#
    1 sleepi af,      \ GPIO_105 - EC_EDI_DI
@@ -306,14 +339,14 @@ create mfpr-table
 [ifdef] cl3
    0 sleep1 af,       \ GPIO_129 - EN_LCD_PWR
    0 sleep1 af,       \ GPIO_130 - LCD_RESET#
-   0 sleep1 af,       \ GPIO_131 - STBY#
-   0 sleep1 af,       \ GPIO_132 - LCDVCC_EN
+   0 sleepi af,       \ GPIO_131 - Not connected
+   0 sleepi af,       \ GPIO_132 - Not connected
    0 sleepi af,       \ GPIO_133 - Not connected
    0 sleepi af,       \ GPIO_134 - Not connected
-   0 sleepi af,       \ GPIO_135 - Not connected
+   0 sleep1 af,       \ GPIO_135 - STBY#
    0 sleepi af,       \ GPIO_136 - Not connected
    0 sleepi af,       \ GPIO_137 - Not connected (TP111)
-   0 sleepi af,       \ GPIO_138 - Not connected
+   0 sleep1 af,       \ GPIO_138 - LCDVCC_EN
    0 sleepi af,       \ GPIO_139 - Not connected
    0 sleepi af,       \ GPIO_140 - Not connected
    0 sleepi af,       \ GPIO_141 - Not connected
