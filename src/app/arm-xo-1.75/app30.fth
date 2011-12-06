@@ -13,6 +13,11 @@ fl ../../lib/ilog2.fth
 fl hwaddrs.fth
 fl addrs.fth
 
+: io!  ( l offset -- )  h# d4000000 +  l!  ;
+: io@  ( offset l -- )  h# d4000000 +  l@  ;
+: rl!  l!  ;
+: rl@  l@  ;
+
 defer ms  defer get-msecs
 fl timer.fth
 fl timer2.fth
@@ -34,7 +39,9 @@ fl smbus.fth
 : third  ( a b c -- a b c a )  2 pick  ;
 fl lcdcfg.fth
 fl lcd.fth
+[ifndef] cl3
 fl mmp2dcon.fth
+[then]
 
 : short-delay ;
 
@@ -89,11 +96,6 @@ d# 30 ccall: wfi-loop      { -- }
 : enable-interrupts  ( -- )  psr@ h# 80 invert and psr!  ;
 : disable-interrupts  ( -- )  psr@ h# 80 or psr!  ;
 
-: io!  ( l offset -- )  h# d4000000 +  l!  ;
-: io@  ( offset l -- )  h# d4000000 +  l@  ;
-: rl!  l!  ;
-: rl@  l@  ;
-
 fl keypad.fth
 
 false value fb-shown?
@@ -102,7 +104,7 @@ h# 8009.1100 constant fb-on-value
 : ?visible  ( -- )
    fb-shown?  if  exit  then
    \ We don't have any way to control showing the diagnostics at the moment
-   show-fb  true to fb-shown?
+\  show-fb  true to fb-shown?
 ;
 
 [ifdef] notdef
@@ -152,7 +154,7 @@ fl fbnums.fth
    ?visible
 [then]
 
-   \ Turn on the dcon
+   \ Enable the display
    init-xo-display
 ;
 
@@ -237,7 +239,8 @@ h# 1000.0000 value memtest-length
 [then]
 ;
 
-true constant activate-cforth?  \ True for debugging, off for shipping
+\ true constant activate-cforth?  \ True for debugging, off for shipping
+false constant activate-cforth?  \ True for debugging, off for shipping
 : cforth-wait  ( -- )
    begin  wfi  activate-cforth? until
    ." Resuming CForth on Security Processor, second UART" cr
