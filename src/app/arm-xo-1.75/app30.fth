@@ -231,7 +231,7 @@ h# 1000.0000 value memtest-length
 : init1
    clk-fast
    init-dram
-\   fix-fuses
+   fix-fuses
    fix-v7
    init-spi
 [ifdef] SP_controls_kbd_power

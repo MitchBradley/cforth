@@ -40,9 +40,14 @@ purpose: Program Armada610 Fuses
    otp-setup
    h# d4292904 h# 10 ldump
 ;
+[ifdef] cl3
+h# 90029410 constant wanted-fuses
+[else]
+h# 88028416 constant wanted-fuses
+[then]
 : new-fuses  ( -- )
    h# 00000000
-   h# 88028416
+   wanted-fuses
    h# c10d9720
    h# 00000080
    0 pgm-fuses
@@ -50,12 +55,12 @@ purpose: Program Armada610 Fuses
 : fix-fuses  ( -- )
    ena-fuse-module
    otp-setup
-   h# d429290c l@ h# 88028416 <> if
+   h# d429290c l@ wanted-fuses <> if
       ." Old fuse value is " h# d429290c l@ u. cr
       ." Fixing fuses" cr
       new-fuses
       otp-setup
-      h# d429290c l@ h# 88028416 <>  if
+      h# d429290c l@ wanted-fuses <>  if
          ." FUSE DID NOT REPROGRAM CORRECTLY!!!" cr
       else
          ." Fuse reprogramming succeeded" cr
