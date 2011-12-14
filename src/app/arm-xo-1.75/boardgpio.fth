@@ -208,18 +208,18 @@ create mfpr-table
    0 sleep0 af,      \ GPIO_58 - WLAN_RESET#
 
 [ifdef] cl3
-   2 sleep0 af,      \ GPIO_59 - ULPI_D7
-   2 sleep0 af,      \ GPIO_60 - ULPI_D6
-   2 sleep0 af,      \ GPIO_61 - ULPI_D5
-   2 sleep0 af,      \ GPIO_62 - ULPI_D4
-   2 sleep0 af,      \ GPIO_63 - ULPI_D3
-   2 sleep0 af,      \ GPIO_64 - ULPI_D2
-   2 sleep0 af,      \ GPIO_65 - ULPI_D1
-   2 sleep0 af,      \ GPIO_66 - ULPI_D0
-   2 sleep0 af,      \ GPIO_67 - ULPI_STP
-   2 sleep0 af,      \ GPIO_68 - ULPI_NXT
-   2 sleep0 af,      \ GPIO_69 - ULPI_DIR
-   2 sleep0 af,      \ GPIO_70 - ULPI_CLK
+   2 sleep0 +fast af,      \ GPIO_59 - ULPI_D7
+   2 sleep0 +fast af,      \ GPIO_60 - ULPI_D6
+   2 sleep0 +fast af,      \ GPIO_61 - ULPI_D5
+   2 sleep0 +fast af,      \ GPIO_62 - ULPI_D4
+   2 sleep0 +fast af,      \ GPIO_63 - ULPI_D3
+   2 sleep0 +fast af,      \ GPIO_64 - ULPI_D2
+   2 sleep0 +fast af,      \ GPIO_65 - ULPI_D1
+   2 sleep0 +fast af,      \ GPIO_66 - ULPI_D0
+   2 sleep0 +fast af,      \ GPIO_67 - ULPI_STP
+   2 sleep0 +fast af,      \ GPIO_68 - ULPI_NXT
+   2 sleep0 +fast af,      \ GPIO_69 - ULPI_DIR
+   2 sleep0 +fast af,      \ GPIO_70 - ULPI_CLK
 [else]
    1 sleep0 af,      \ GPIO_59 - PIXDATA7 \ Each wastes ~15 mW if S1
    1 sleep0 af,      \ GPIO_60 - PIXDATA6
