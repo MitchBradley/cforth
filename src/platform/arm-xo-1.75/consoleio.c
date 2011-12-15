@@ -789,6 +789,11 @@ void irq_handler()
 	switch (s->bit_number)
 	{
 	case 0:
+	    if ((s->dat_gpio)[GPIO_PLR_INDEX] & s->dat_mask) {
+		if (CDEBUG) tx4('s');
+		break;  // the start bit must be 0
+	    }
+
 	    s->bit_number++;
 	    rxlevel++;
 
