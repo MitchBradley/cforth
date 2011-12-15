@@ -1,6 +1,7 @@
 #include "forth.h"
 #include "compiler.h"
 
+#define CDEBUG 0
 
 void gamekey_init();
 void gamekey_handle();
@@ -626,19 +627,19 @@ int rxlevel = 0;
 void do_command(unsigned int data) {
     int port;
     
-//    dbgputcmd(data);
     if (data == 0xff00) {
+	if (CDEBUG) tx4('r');
 	run_queue();
     } else {
 	port = (data >> 8) & 0xff;
+	if (CDEBUG) tx4(port+'c');
 	data &= 0xff;
 	if (port < 2) {
 	    struct ps2_state *s;
 	    int ticks;
 
-	    if (++rxlevel == 1) {
-		*SP_INTERRUPT_MASK |= 2;  /* Avoid command interrupts while receiving */
-	    }
+	    rxlevel++;
+
 	    // XXX should set a timer to reset the state to 0 if the transmission
 	    // doesn't complete within a couple of milliseconds
 
@@ -744,8 +745,13 @@ void irq_handler()
     int this_timestamp;
     int i;
     int timers;
+    unsigned long spim;
 
-    if (*SP_INTERRUPT_SET & 2) {
+
+    spim = *SP_INTERRUPT_MASK;
+    *SP_INTERRUPT_MASK |= 2;  // mask for now
+
+    if (*SP_INTERRUPT_SET & ~spim & 2 ) {
         *SP_INTERRUPT_RESET = 2;
 	if (*SP_CONTROL & 1) {
 	    *SP_CONTROL = 0;
@@ -754,6 +760,7 @@ void irq_handler()
     }
 
     if ((timers = *TMR2_SR0) & 7) {
+	if (CDEBUG) tx4('t');
 	do_timer(timers);
 	*TMR2_IER0 &= ~timers;   // Disable timer interrupt
 	*TMR2_ICR0 = timers;     // Clear timer interrupt
@@ -775,15 +782,16 @@ void irq_handler()
 	    s->byte = 0;
 	}
 
+	if (CDEBUG) {  tx4(rxlevel+'A'); }
+
 	s->timestamp = this_timestamp;
 
 	switch (s->bit_number)
 	{
 	case 0:
 	    s->bit_number++;
-	    if (++rxlevel == 1) {
-		*SP_INTERRUPT_MASK |= 2;  /* Avoid command interrupts while receiving */
-	    }
+	    rxlevel++;
+
 	    // XXX should set a timer to reset the state to 0 if the reception
 	    // doesn't complete within a couple of milliseconds
 	    break;
@@ -801,9 +809,7 @@ void irq_handler()
 	    break;
 	case 10:
 	    forward_event(s->byte & 0xff, i);
-	    if (--rxlevel == 0) {
-		*SP_INTERRUPT_MASK &= ~2;  /* Allow command interrupts when receivers are idle */
-	    }
+	    rxlevel--;
 	    s->bit_number = 0;
 	    s->byte = 0;
 	    run_queue();
@@ -830,9 +836,7 @@ void irq_handler()
 	case 31:
 	    /* Could read ack here, but not sure what to do with it */
 	    s->bit_number = 0;
-	    if (--rxlevel == 0) {
-		*SP_INTERRUPT_MASK &= ~2;  /* Allow command interrupts when receivers are idle */
-	    }
+	    rxlevel--;
 	    break;
 	default:
 	    s->bit_number = 0;
@@ -841,6 +845,10 @@ void irq_handler()
     }
 
     gamekey_handle(0);
+
+    if (rxlevel == 0) {
+	*SP_INTERRUPT_MASK &= ~2;  // allow
+    }
 }
 
 
