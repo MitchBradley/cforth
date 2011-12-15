@@ -776,10 +776,14 @@ void irq_handler()
 	}
 	(s->clk_gpio)[GPIO_EDR_INDEX] = s->clk_mask;	/* Ack the interrupt */
 
-	if ((this_timestamp - s->timestamp) > PS2_TIMEOUT) {
+	if (s->timestamp != 0 && (this_timestamp - s->timestamp) > PS2_TIMEOUT) {
+	    if (CDEBUG) tx4('@');
 	    s->bit_number = 0;
 	    *SP_INTERRUPT_MASK &= ~2;  // Re-enable command interrupts on a botched rx
+	    rxlevel = 0;
 	    s->byte = 0;
+	    s->timestamp = 0;
+	    /* perhaps we should be asserting clock here, to force an abort */
 	}
 
 	if (CDEBUG) {  tx4(rxlevel+'A'); }
@@ -791,6 +795,7 @@ void irq_handler()
 	case 0:
 	    if ((s->dat_gpio)[GPIO_PLR_INDEX] & s->dat_mask) {
 		if (CDEBUG) tx4('s');
+		s->timestamp = 0;
 		break;  // the start bit must be 0
 	    }
 
@@ -817,6 +822,7 @@ void irq_handler()
 	    rxlevel--;
 	    s->bit_number = 0;
 	    s->byte = 0;
+	    s->timestamp = 0;
 	    run_queue();
 	    break;
 
@@ -841,11 +847,13 @@ void irq_handler()
 	case 31:
 	    /* Could read ack here, but not sure what to do with it */
 	    s->bit_number = 0;
+	    s->timestamp = 0;
 	    rxlevel--;
 	    break;
 	default:
 	    s->bit_number = 0;
 	    s->byte = 0;
+	    s->timestamp = 0;
 	}
     }
 
