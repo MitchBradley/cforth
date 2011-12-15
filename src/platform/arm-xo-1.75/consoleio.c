@@ -622,7 +622,7 @@ void run_queue()
     }
 }
 
-int rxlevel = 0;
+int cmdblock = 0;
 
 void do_command(unsigned int data) {
     int port;
@@ -638,7 +638,7 @@ void do_command(unsigned int data) {
 	    struct ps2_state *s;
 	    int ticks;
 
-	    rxlevel++;
+	    cmdblock++;         /* prevent commands while transmitting */
 
 	    // XXX should set a timer to reset the state to 0 if the transmission
 	    // doesn't complete within a couple of milliseconds
@@ -780,13 +780,13 @@ void irq_handler()
 	    if (CDEBUG) tx4('@');
 	    s->bit_number = 0;
 	    *SP_INTERRUPT_MASK &= ~2;  // Re-enable command interrupts on a botched rx
-	    rxlevel = 0;
+	    cmdblock = 0;
 	    s->byte = 0;
 	    s->timestamp = 0;
 	    /* perhaps we should be asserting clock here, to force an abort */
 	}
 
-	if (CDEBUG) {  tx4(rxlevel+'A'); }
+	if (CDEBUG) {  tx4(cmdblock+'A'); }
 
 	s->timestamp = this_timestamp;
 
@@ -800,7 +800,7 @@ void irq_handler()
 	    }
 
 	    s->bit_number++;
-	    rxlevel++;
+	    cmdblock++;         /* prevent commands while receiving */
 
 	    // XXX should set a timer to reset the state to 0 if the reception
 	    // doesn't complete within a couple of milliseconds
@@ -819,7 +819,7 @@ void irq_handler()
 	    break;
 	case 10:
 	    forward_event(s->byte & 0xff, i);
-	    rxlevel--;
+	    cmdblock--;
 	    s->bit_number = 0;
 	    s->byte = 0;
 	    s->timestamp = 0;
@@ -848,7 +848,7 @@ void irq_handler()
 	    /* Could read ack here, but not sure what to do with it */
 	    s->bit_number = 0;
 	    s->timestamp = 0;
-	    rxlevel--;
+	    cmdblock--;
 	    break;
 	default:
 	    s->bit_number = 0;
@@ -859,7 +859,7 @@ void irq_handler()
 
     gamekey_handle(0);
 
-    if (rxlevel == 0) {
+    if (!cmdblock) {
 	*SP_INTERRUPT_MASK &= ~2;  // allow
     }
 }
