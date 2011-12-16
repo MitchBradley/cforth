@@ -1,7 +1,8 @@
 #include "forth.h"
 #include "compiler.h"
 
-#define CDEBUG 0
+#define DDEBUG 0    // enable for command/response debug
+#define CDEBUG 0    // enable for bit-level debug
 
 void gamekey_init();
 void gamekey_handle();
@@ -614,7 +615,7 @@ void run_queue()
 		s->quenched = 0;
 		DRIVE_HIGH(s->clk_gpio, s->clk_mask);
 	    }
-//    dbgputresp((unsigned int)data);
+	    if (DDEBUG) dbgputresp((unsigned int)data);
             SP_RETURN[0] = (i<<8) | data;
             *PJ_INTERRUPT_SET = 1;
 	    return;
@@ -639,6 +640,8 @@ void do_command(unsigned int data) {
 	    int ticks;
 
 	    cmdblock++;         /* prevent commands while transmitting */
+
+	    if (DDEBUG) dbgputcmd(data);
 
 	    // XXX should set a timer to reset the state to 0 if the transmission
 	    // doesn't complete within a couple of milliseconds
@@ -754,8 +757,8 @@ void irq_handler()
     if (*SP_INTERRUPT_SET & ~spim & 2 ) {
         *SP_INTERRUPT_RESET = 2;
 	if (*SP_CONTROL & 1) {
-	    *SP_CONTROL = 0;
 	    do_command(*SP_COMMAND);
+	    *SP_CONTROL = 0;
 	}
     }
 
