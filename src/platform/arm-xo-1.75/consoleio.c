@@ -419,7 +419,10 @@ int suppress_count;
 #define WAIT_CLK_LOW  while ((*clk_gpio & clk_mask) != 0) {}
 #define WAIT_CLK_HIGH while ((*clk_gpio & clk_mask) == 0) {}
 #define SEND_BIT(flag,gpio,mask) gpio[(flag) ? GPIO_CDR_INDEX : GPIO_SDR_INDEX] = mask
-#define DRIVE_LOW(gpio,mask) gpio[GPIO_SDR_INDEX] = mask    /* Direction out to drive a low */
+#define DRIVE_LOW(gpio,mask) do { \
+		gpio[GPIO_PCR_INDEX] = mask; /* force 0 */ \
+		gpio[GPIO_SDR_INDEX] = mask; /* set output, to drive a low */ \
+	    } while(0)    
 #define DRIVE_HIGH(gpio,mask) gpio[GPIO_CDR_INDEX] = mask   /* Direction in so pullup pulls high */
 #define BIT_OUT(flag)  WAIT_CLK_LOW  SEND_BIT(flag,dat_gpio,dat_mask);  WAIT_CLK_HIGH
 
