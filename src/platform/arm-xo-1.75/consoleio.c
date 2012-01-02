@@ -1,8 +1,8 @@
 #include "forth.h"
 #include "compiler.h"
 
-
-#define CDEBUG 0
+#define DDEBUG 0    // enable for command/response debug
+#define CDEBUG 0    // enable for bit-level debug
 
 void gamekey_init();
 void gamekey_handle();
@@ -51,9 +51,9 @@ void tx(char c)
     tx3(c);
 }
 
-char *digits = "0123456789abcdef";
 void dbgputn(unsigned int c)
 {
+	char *digits = "0123456789abcdef";
 	tx4(digits[(c>>4)&0x0f]);
 	tx4(digits[c&0x0f]);
 }
@@ -66,11 +66,6 @@ void dbgputresp(unsigned int c)
 {
 	dbgputn(c);
 	tx4(' ');
-}
-void dbgputb(unsigned int c, int x)
-{
-	tx4(digits[c&0x0f]);
-	tx4(x);
 }
 
 int putchar(int c)
@@ -424,11 +419,13 @@ int suppress_count;
 #define WAIT_CLK_LOW  while ((*clk_gpio & clk_mask) != 0) {}
 #define WAIT_CLK_HIGH while ((*clk_gpio & clk_mask) == 0) {}
 #define SEND_BIT(flag,gpio,mask) gpio[(flag) ? GPIO_CDR_INDEX : GPIO_SDR_INDEX] = mask
-#define DRIVE_LOW(gpio,mask) gpio[GPIO_SDR_INDEX] = mask    /* Direction out to drive a low */
+#define DRIVE_LOW(gpio,mask) do { \
+		gpio[GPIO_PCR_INDEX] = mask; /* force 0 */ \
+		gpio[GPIO_SDR_INDEX] = mask; /* set output, to drive a low */ \
+	    } while(0)    
 #define DRIVE_HIGH(gpio,mask) gpio[GPIO_CDR_INDEX] = mask   /* Direction in so pullup pulls high */
 #define BIT_OUT(flag)  WAIT_CLK_LOW  SEND_BIT(flag,dat_gpio,dat_mask);  WAIT_CLK_HIGH
 
-/* See enable-ps2 in ps2.fth for the rest of the initialization */
 void init_ps2()
 {
     int i;
@@ -485,7 +482,6 @@ void forward_event(unsigned char byte, int port) {
 	    // Flow control the sender
 	    DRIVE_LOW(s->clk_gpio,s->clk_mask);  // Set direction to out to drive clk low
 	    s->quenched = 1;
-	    if (CDEBUG) { tx4('Q'); tx4(port+'0'); tx4(' '); }
 	}
 	return;
     }
@@ -621,9 +617,8 @@ void run_queue()
 	    if (s->quenched) {
 		s->quenched = 0;
 		DRIVE_HIGH(s->clk_gpio, s->clk_mask);
-		if (CDEBUG) {tx4('q'); tx4(i+'0'); tx4(' ');}
 	    }
-	    if (CDEBUG) dbgputresp((unsigned int)data);
+	    if (DDEBUG) dbgputresp((unsigned int)data);
             SP_RETURN[0] = (i<<8) | data;
             *PJ_INTERRUPT_SET = 1;
 	    return;
@@ -631,37 +626,26 @@ void run_queue()
     }
 }
 
-int rxlevel = 0;
+int cmdblock = 0;
 
 void do_command(unsigned int data) {
     int port;
     
     if (data == 0xff00) {
+	if (CDEBUG) tx4('r');
 	run_queue();
     } else {
 	port = (data >> 8) & 0xff;
+	if (CDEBUG) tx4(port+'c');
 	data &= 0xff;
-	if (CDEBUG) {
-	    static int lastport = -1;
-	    if (port != lastport)
-	    {
-		tx4('\r'); tx4('\n');
-		lastport = port;
-	    }
-	    if (port == 0) {
-		tx4('p');
-		dbgputn(port);
-		tx4('-');
-		dbgputcmd(data);
-	    }
-	}
 	if (port < 2) {
 	    struct ps2_state *s;
 	    int ticks;
 
-	    if (++rxlevel == 1) {
-		*SP_INTERRUPT_MASK |= 2;  /* Avoid command interrupts while receiving */
-	    }
+	    cmdblock++;         /* prevent commands while transmitting */
+
+	    if (DDEBUG) dbgputcmd(data);
+
 	    // XXX should set a timer to reset the state to 0 if the transmission
 	    // doesn't complete within a couple of milliseconds
 
@@ -767,16 +751,22 @@ void irq_handler()
     int this_timestamp;
     int i;
     int timers;
+    unsigned long spim;
 
-    if (*SP_INTERRUPT_SET & 2) {
+
+    spim = *SP_INTERRUPT_MASK;
+    *SP_INTERRUPT_MASK |= 2;  // mask for now
+
+    if (*SP_INTERRUPT_SET & ~spim & 2 ) {
         *SP_INTERRUPT_RESET = 2;
 	if (*SP_CONTROL & 1) {
-	    *SP_CONTROL = 0;
 	    do_command(*SP_COMMAND);
+	    *SP_CONTROL = 0;
 	}
     }
 
     if ((timers = *TMR2_SR0) & 7) {
+	if (CDEBUG) tx4('t');
 	do_timer(timers);
 	*TMR2_IER0 &= ~timers;   // Disable timer interrupt
 	*TMR2_ICR0 = timers;     // Clear timer interrupt
@@ -793,29 +783,31 @@ void irq_handler()
 	(s->clk_gpio)[GPIO_EDR_INDEX] = s->clk_mask;	/* Ack the interrupt */
 
 	if (s->timestamp != 0 && (this_timestamp - s->timestamp) > PS2_TIMEOUT) {
-	    s->bit_number = 0;
 	    if (CDEBUG) tx4('@');
-	    if (--rxlevel == 0) {
+	    s->bit_number = 0;
 	    *SP_INTERRUPT_MASK &= ~2;  // Re-enable command interrupts on a botched rx
-	    }
+	    cmdblock = 0;
 	    s->byte = 0;
+	    s->timestamp = 0;
+	    /* perhaps we should be asserting clock here, to force an abort */
 	}
+
+	if (CDEBUG) {  tx4(cmdblock+'A'); }
 
 	s->timestamp = this_timestamp;
 
-	// dbgputb(s->bit_number, (s->bit_number >= 19)?':':';');
 	switch (s->bit_number)
 	{
 	case 0:
 	    if ((s->dat_gpio)[GPIO_PLR_INDEX] & s->dat_mask) {
+		if (CDEBUG) tx4('s');
 		s->timestamp = 0;
-		break;  // the startbit should be 0
+		break;  // the start bit must be 0
 	    }
 
 	    s->bit_number++;
-	    if (++rxlevel == 1) {
-		*SP_INTERRUPT_MASK |= 2;  /* Avoid command interrupts while receiving */
-	    }
+	    cmdblock++;         /* prevent commands while receiving */
+
 	    // XXX should set a timer to reset the state to 0 if the reception
 	    // doesn't complete within a couple of milliseconds
 	    break;
@@ -833,13 +825,10 @@ void irq_handler()
 	    break;
 	case 10:
 	    forward_event(s->byte & 0xff, i);
-	    if (--rxlevel == 0) {
-		*SP_INTERRUPT_MASK &= ~2;  /* Allow command interrupts when receivers are idle */
-	    }
+	    cmdblock--;
 	    s->bit_number = 0;
 	    s->byte = 0;
 	    s->timestamp = 0;
-	    if (CDEBUG) tx4('R');
 	    run_queue();
 	    break;
 
@@ -865,10 +854,7 @@ void irq_handler()
 	    /* Could read ack here, but not sure what to do with it */
 	    s->bit_number = 0;
 	    s->timestamp = 0;
-	    if (--rxlevel == 0) {
-		*SP_INTERRUPT_MASK &= ~2;  /* Allow command interrupts when receivers are idle */
-	    }
-	    if (CDEBUG) tx4('T');
+	    cmdblock--;
 	    break;
 	default:
 	    s->bit_number = 0;
@@ -878,6 +864,10 @@ void irq_handler()
     }
 
     gamekey_handle(0);
+
+    if (!cmdblock) {
+	*SP_INTERRUPT_MASK &= ~2;  // allow
+    }
 }
 
 
