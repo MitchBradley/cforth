@@ -7,6 +7,11 @@ h# 01.3200 constant thermal-base
        begin wfi again
    then
 
+   \ report but otherwise ignore a watchdog restart
+   h# d4080070 io@  1 and  if
+       ." watchdog restart" cr
+   then
+
    7 h# 015090 io!             \ reset thermal sensor
    3 h# 015090 io!             \ enable clocks to thermal sensor
    h# 10000 thermal-base io!   \ enable sensing
