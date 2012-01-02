@@ -13,10 +13,10 @@ fl ../../lib/ilog2.fth
 fl hwaddrs.fth
 fl addrs.fth
 
-: io!  ( l offset -- )  h# d4000000 +  l!  ;
-: io@  ( offset l -- )  h# d4000000 +  l@  ;
-: rl!  l!  ;
-: rl@  l@  ;
+: +io  ( offset -- adr )  h# d4000000 +  ;
+: io!  ( l offset -- )  +io  l!  ;
+: io@  ( offset l -- )  +io  l@  ;
+: +io!@     ( l offset base -- )  + tuck io! io@ drop  ;
 
 defer ms  defer get-msecs
 fl timer.fth
@@ -222,9 +222,9 @@ h# 1000.0000 value memtest-length
    board-config
 ;
 : fix-v7  ( -- )
-   h# d4282c08 l@  2 and  0=  if
+   h# 282c08 io@  2 and  0=  if
       ." Processor is fused in V6 mode - switching to V7" cr
-      h# d4282c08 l@  2 or  h# d4282c08 l!
+      h# 282c08 io@  2 or  h# 282c08 io!
    then
 ;
 
@@ -270,7 +270,7 @@ false constant activate-cforth?  \ True for debugging, off for shipping
    h# e1a0f000 h# c pj4-l!  \ mov pc,r0
 
    ." releasing" cr
-   0 h# d4050020 l!  \ Release reset for PJ4
+   0 h# 050020 io!  \ Release reset for PJ4
 ;
 
 : load-ofw  ( -- )
@@ -333,7 +333,7 @@ h# 1fa0.0000 constant ofw-pa
    h# e1a0f000 h# c pj4-l!  \ mov pc,r0
 
    ." releasing" cr
-   0 h# d4050020 l!  \ Release reset for PJ4
+   0 h# 050020 io!  \ Release reset for PJ4
 ;
 
 : load-ofw-slow  ( -- )
