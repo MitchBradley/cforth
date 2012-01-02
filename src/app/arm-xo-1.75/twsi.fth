@@ -6,19 +6,19 @@ purpose: Driver for Two Wire Serial Interface on Marvell Armada 610
 0 value clock-reg
 0 value slave-address
 
-: dbr@  ( -- n )  chip h# 08 + l@   ;
-: cr@   ( -- n )  chip h# 10 + l@   ;
-: sr@   ( -- n )  chip h# 18 + l@   ;
-: sar@  ( -- n )  chip h# 20 + l@   ;
-: lcr@  ( -- n )  chip h# 28 + l@   ;
-: dbr!  ( n -- )  chip h# 08 + l!   ;
-: cr!   ( n -- )  chip h# 10 + l!   ;
-: sr!   ( n -- )  chip h# 18 + l!   ;
-: sar!  ( n -- )  chip h# 20 + l!   ;
-: lcr!  ( n -- )  chip h# 28 + l!   ;
+: dbr@  ( -- n )  chip h# 08 + io@   ;
+: cr@   ( -- n )  chip h# 10 + io@   ;
+: sr@   ( -- n )  chip h# 18 + io@   ;
+: sar@  ( -- n )  chip h# 20 + io@   ;
+: lcr@  ( -- n )  chip h# 28 + io@   ;
+: dbr!  ( n -- )  chip h# 08 + io!   ;
+: cr!   ( n -- )  chip h# 10 + io!   ;
+: sr!   ( n -- )  chip h# 18 + io!   ;
+: sar!  ( n -- )  chip h# 20 + io!   ;
+: lcr!  ( n -- )  chip h# 28 + io!   ;
 
 create channel-bases
-h# D4011000 ,  h# D4031000 ,  h# D4032000 ,  h# D4033000 ,  h# D4033800 ,  h# D4034000 ,
+h# 011000 ,  h# 031000 ,  h# 032000 ,  h# 033000 ,  h# 033800 ,  h# 034000 ,
 
 create clock-offsets
 h# 04 c,  h# 08 c,  h# 0c c,  h# 10 c,  h# 7c c,  h# 80 c,
@@ -51,7 +51,7 @@ h# 1000 constant BBU_TWSI_TimeOut          \ TWSI bus timeout loop counter value
 bbu_ICR_IUE bbu_ICR_SCLE or constant iue+scle
 : init-twsi-channel  ( channel# -- )
    set-twsi-channel
-   7 clock-reg l!  3 clock-reg l!  \ Set then clear reset bit
+   7 clock-reg io!  3 clock-reg io!  \ Set then clear reset bit
    1 us
    iue+scle  bbu_ICR_UR or  cr!  \ Reset the unit
    iue+scle cr!                  \ Release the reset

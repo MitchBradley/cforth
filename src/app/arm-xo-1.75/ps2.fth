@@ -1,7 +1,7 @@
-h# d4282000 value ic-base  \ Interrupt controller
+h# 282000 value ic-base  \ Interrupt controller
 
-: ic@  ( offset -- l )  ic-base + l@  ;
-: ic!  ( l offset -- )  ic-base + l!  ;
+: ic@  ( offset -- l )  ic-base + io@  ;
+: ic!  ( l offset -- )  ic-base + io!  ;
 
 : block-irqs  ( -- )  1 h# 10c ic!  ;
 : unblock-irqs  ( -- )  0 h# 10c ic!  ;
@@ -16,9 +16,9 @@ h# d4282000 value ic-base  \ Interrupt controller
    control@ h# 2000 invert and control!  \ vector table at 0
 ;
 : enable-spcmd-irq  ( -- )
-   h# d429.021c l@  2 invert and  h# d429.021c l!  \ Unmask command irq
+   h# 29.021c io@  2 invert and  h# 29.021c io!  \ Unmask command irq
    d# 50 enable-irq         \ IRQ from command transfer block
-   h# 100 h# d429.00c4 l!   \ Indicate that it's okay to send commands
+   h# 100 h# 29.00c4 io!   \ Indicate that it's okay to send commands
 ;
 [ifdef] use_mmp2_keypad_control
 : setup-keypad ( -- )
@@ -27,12 +27,12 @@ h# d4282000 value ic-base  \ Interrupt controller
 ;
 [then]
 
-: send-rdy  ( -- )  h# ff00 h# d429.0040 l!  ;  \ Send downstream ready
-: send-ps2  ( byte channel -- )  bwjoin h# d4290040 l!  ;
+: send-rdy  ( -- )  h# ff00 h# 29.0040 io!  ;  \ Send downstream ready
+: send-ps2  ( byte channel -- )  bwjoin h# 290040 io!  ;
 : event?  ( -- false | data channel true )
-   h# d429.00c8 l@ 1 and  if
-      h# d429.0080 l@  wbsplit  true
-      1 h# d429.00c8 l!  \ Ack interrupt
+   h# 29.00c8 io@ 1 and  if
+      h# 29.0080 io@  wbsplit  true
+      1 h# 29.00c8 io!  \ Ack interrupt
       send-rdy
    else
       false
@@ -129,8 +129,8 @@ h# d4282000 value ic-base  \ Interrupt controller
    d#  71 gpio-set-fer  \ Keyboard clock
    d# 160 gpio-set-fer  \ Touchpad clock
    setup-interrupts
-   d#  71 >gpio-pin  h# 9c +  tuck l@ or  swap l!  \ Unmask edge detect
-   d# 160 >gpio-pin  h# 9c +  tuck l@ or  swap l!  \ Unmask edge detect
+   d#  71 >gpio-pin  h# 9c +  tuck io@ or  swap io!  \ Unmask edge detect
+   d# 160 >gpio-pin  h# 9c +  tuck io@ or  swap io!  \ Unmask edge detect
    d# 49 enable-irq  \ GPIO IRQ
    d# 31 enable-irq  \ first timer in second block
    enable-spcmd-irq

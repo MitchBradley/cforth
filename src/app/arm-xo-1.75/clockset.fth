@@ -1,31 +1,31 @@
 hex
-: a-stepping?  ( -- flag )  d4282c00 l@ h# ff0000 and  h# a0.0000 =  ;
+: a-stepping?  ( -- flag )  282c00 io@ h# ff0000 and  h# a0.0000 =  ;
 : at-least-a1?  ( -- flag )  ffe00030 l@  h# 4131 >=  ;
 : basic-setup  ( -- )
    \ Stuff from jasper.c that is not already done elsewhere
-   0001ffff d42828dc l! \ PMUA_GLB_CLK_CTRL - Enable CLK66 to APB, PLL2/12/6/3/16/8/4/2/1, PLL1/12/6/3/16/8/4 
+   0001ffff 2828dc io! \ PMUA_GLB_CLK_CTRL - Enable CLK66 to APB, PLL2/12/6/3/16/8/4/2/1, PLL1/12/6/3/16/8/4 
    \ Slow queue, L2 cache burst 8, bypass L2 clock gate, disable MMU xlat abort, Multi-ICE WFI, bypass clock gate
-   d4282c08 l@
+   282c08 io@
    a-stepping? at-least-a1? and  if
       00082000 or
    else
       00086040 or
    then
-   00800000 invert and  d4282c08 l!
+   00800000 invert and  282c08 io!
 ;
 0 [if]
 : set-pll2  ( -- )
    \ select PLL2 frequency, 520MHz
-\   08600322 d4050414 l!  \ PMUM_PLL2_CTRL1 \ Bandgap+charge pump+VCO loading+regulator defaults, 486.3-528.55 PLL2 (bits 10:6)
-\   00FFFE00 d4050034 l!  \ PMUM_PLL2_CTRL2 \ refclk divisor and feedback divisors at max, software controls activation
-\   0021da00 d4050034 l!  \ PMUM_PLL2_CTRL1 \ refclk divisor=4, feedback divisor=0x76=118, software controls activation
-\   0021db00 d4050034 l!  \ PMUM_PLL2_CTRL2 \ same plus enable
-\   28600322 d4050414 l!  \ PMUM_PLL2_CTRL1 \ same as above plus release PLL loop filter
+\   08600322 050414 io!  \ PMUM_PLL2_CTRL1 \ Bandgap+charge pump+VCO loading+regulator defaults, 486.3-528.55 PLL2 (bits 10:6)
+\   00FFFE00 050034 io!  \ PMUM_PLL2_CTRL2 \ refclk divisor and feedback divisors at max, software controls activation
+\   0021da00 050034 io!  \ PMUM_PLL2_CTRL1 \ refclk divisor=4, feedback divisor=0x76=118, software controls activation
+\   0021db00 050034 io!  \ PMUM_PLL2_CTRL2 \ same plus enable
+\   28600322 050414 io!  \ PMUM_PLL2_CTRL1 \ same as above plus release PLL loop filter
 ;
 [then]
 
-: mpmu! d4050000 + l! ; : mpmu@ d4050000 + l@ ;
-: pmua! d4282800 + l! ; : pmua@ d4282800 + l@ ;
+: mpmu! 050000 + io! ; : mpmu@ 050000 + io@ ;
+: pmua! 282800 + io! ; : pmua@ 282800 + io@ ;
 : .3bits  ( n shift -- n )  over swap  rshift 7 and .  ;
 : .divisors  ( n -- )
    ." A" d# 15 .3bits

@@ -1,13 +1,13 @@
 
-: lcd@  ( offset -- l )  lcd-pa + l@  ;
-: lcd!  ( l offset -- )  lcd-pa + l!  ;
+: lcd@  ( offset -- l )  lcd-pa + io@  ;
+: lcd!  ( l offset -- )  lcd-pa + io!  ;
 
 : init-lcd  ( -- )
    \ Turn on clocks
-   h# 08 pmua-disp-clk-sel + h# d428284c l!
-   h# 09 pmua-disp-clk-sel + h# d428284c l!
-   h# 19 pmua-disp-clk-sel + h# d428284c l!
-   h# 1b pmua-disp-clk-sel + h# d428284c l!
+   h# 08 pmua-disp-clk-sel + h# 28284c io!
+   h# 09 pmua-disp-clk-sel + h# 28284c io!
+   h# 19 pmua-disp-clk-sel + h# 28284c io!
+   h# 1b pmua-disp-clk-sel + h# 28284c io!
 
    0                  h# 190 lcd!  \ Disable LCD DMA controller
    diagfb-pa           h# f4 lcd!  \ Frame buffer area 0

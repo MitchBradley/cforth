@@ -1,11 +1,11 @@
 purpose: Pin multiplexing for ARMADA 610 chip (no board details)
 
 : aib-unlock  
-   h# baba h# d4015068 l!  \ Unlock sequence
-   h# eb10 h# d401506c l!
+   h# baba h# 015068 io!  \ Unlock sequence
+   h# eb10 h# 01506c io!
 ;
 : acgr-clocks-on  ( -- )
-   h# 0818.F33C acgr-pa l!  \ Turn on all clocks
+   h# 0818.F33C acgr-pa io!  \ Turn on all clocks
 ;
 
 hex
@@ -33,7 +33,7 @@ create mfpr-offsets                                         \  GPIOs
    250 w, 210 w, 20C w, 208 w, 204 w, 1EC w, 1E8 w, 1E4 w,  \ 160->167
    1E0 w,                                                   \ 168
 
-h# d401.e000 constant mfpr-base
+h# 01.e000 constant mfpr-base
 : gpio>mfpr  ( gpio# -- mfpr-pa )
    mfpr-offsets swap wa+ w@
    mfpr-base +
@@ -41,13 +41,13 @@ h# d401.e000 constant mfpr-base
 
 : dump-mfprs  ( -- )
    base @
-   d# 169 0 do  decimal i 3 u.r space  i gpio>mfpr l@ 4 hex u.r cr  loop
+   d# 169 0 do  decimal i 3 u.r space  i gpio>mfpr io@ 4 hex u.r cr  loop
    base !
 ;
 
 : no-update,  ( -- )  8 w,  ;  \ 8 is a reserved bit; the code skips these
-: af@  ( gpio# -- function# )  gpio>mfpr l@  ;
-: af!  ( function# gpio# -- )  gpio>mfpr l!  ;
+: af@  ( gpio# -- function# )  gpio>mfpr io@  ;
+: af!  ( function# gpio# -- )  gpio>mfpr io!  ;
 
 : +edge-clr     ( n -- n' )  h#   40 or  ;
 : +medium       ( n -- n' )  h# 1000 or  ;

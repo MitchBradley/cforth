@@ -1,7 +1,7 @@
 purpose: Board-specific setup details - pin assigments, etc.
 
 : set-gpio-directions  ( -- )
-   3  h# 38 clock-unit-pa +  l!  \ Enable clocks in GPIO clock reset register
+   3  h# 38 clock-unit-pa +  io!  \ Enable clocks in GPIO clock reset register
    
    d# 01 gpio-dir-out  \ EN_USB_PWR
    d# 04 gpio-dir-out  \ COMPASS_SCL

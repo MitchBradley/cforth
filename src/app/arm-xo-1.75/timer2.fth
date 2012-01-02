@@ -1,13 +1,12 @@
-: +!@     ( value offset base -- )  + tuck l! l@ drop  ;
-: timer-2@  ( offset -- value )  timer-2-pa + l@  ;
-: timer-2!  ( value offset -- )  timer-2-pa +!@  ;
+: timer-2@  ( offset -- value )  timer-2-pa + io@  ;
+: timer-2!  ( value offset -- )  timer-2-pa +io!@  ;
 main-pmu-pa h# 200 + constant wdtpcr
 : init-timer-2s  ( -- )
-   main-pmu-pa h# 1020 +  dup l@  h# 10 or  swap l!  \ enable wdt 2 clock  PMUM_PRR_PJ
-   h# 13  h# 24 clock-unit-pa + l!
+   main-pmu-pa h# 1020 +  dup io@  h# 10 or  swap io!  \ enable wdt 2 clock  PMUM_PRR_PJ
+   h# 13  h# 24 clock-unit-pa + io!
 
-   wdtpcr l@  dup  h# 7 or wdtpcr l!  h# 3 or wdtpcr l!
-   0  h# 84 timer-2-pa + l!      \ TMR_CER  - count enable
+   wdtpcr io@  dup  h# 7 or wdtpcr io!  h# 3 or wdtpcr io!
+   0  h# 84 timer-2-pa + io!      \ TMR_CER  - count enable
    begin  h# 84 timer-2@  7 and  0=  until
    h# 24  h# 00 timer-2!   \ TMR_CCR  - clock control
    h# 200 0 do loop
@@ -29,7 +28,7 @@ main-pmu-pa h# 200 + constant wdtpcr
 [ifdef] arm-assembler
 code timer-20@  ( -- n )  \ 6.5 MHz
    psh  tos,sp
-   set  r1,0xD4080000
+   set  r1,`timer2-pa +io #`
    mov  r0,#1
    str  r0,[r1,#0xa4]
    mov  r0,r0
@@ -38,7 +37,7 @@ c;
 
 code timer-21@  ( -- n )  \ 32.768 kHz
    psh  tos,sp
-   set  r1,0xD4080000
+   set  r1,`timer2-pa +io #`
    mov  r0,#1
    str  r0,[r1,#0xa8]
    mov  r0,r0
@@ -47,7 +46,7 @@ c;
 
 code timer-22@  ( -- n )  \ 1 kHz
    psh  tos,sp
-   set  r1,0xD4080000
+   set  r1,`timer2-pa +io #`
    mov  r0,#1
    str  r0,[r1,#0xac]
    mov  r0,r0
