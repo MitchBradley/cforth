@@ -2,8 +2,7 @@
    \ power off if this reset was caused by thermal watchdog
    main-pmu-pa h# 0028 + io@  h# 10 and  if
        ." thermal power-off" cr
-       open-ec  4c ec-cmd  close-ec
-       begin wfi again
+       power-off
    then
 
    \ report but otherwise ignore a watchdog restart

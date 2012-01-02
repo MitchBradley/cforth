@@ -249,7 +249,11 @@ d# 16 buffer: ec-respbuf
 : ec-cmd-w!  ( w cmd -- )   >r wbsplit 2 0 r> do-ec-cmd  ;
 : ec-cmd-l!  ( l cmd -- )   >r lbsplit 4 0 r> do-ec-cmd  ;
 
-: board-id@      ( -- n )  h# 19 ec-cmd-w@  ;
+: board-id@      ( -- n )  open-ec  h# 19 ec-cmd-w@  close-ec  ;
+: power-off      ( -- n )  open-ec  h# 4c ec-cmd  close-ec  begin wfi again  ;
+warning off
+: bye            ( -- n )  open-ec  h# 4b ec-cmd  close-ec  begin wfi again  ;
+warning on
 
 
 \ LICENSE_BEGIN
