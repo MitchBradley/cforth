@@ -20,6 +20,7 @@ fl addrs.fth
 
 defer ms  defer get-msecs
 fl timer.fth
+fl watchdog.fth
 fl timer2.fth
 fl gpio.fth
 fl mfpr.fth
@@ -213,6 +214,7 @@ h# 1000.0000 value memtest-length
    banner
    basic-setup
    init-timers
+   enable-wdt-clock
    set-gpio-directions
    init-mfprs
 [ifdef] use_mmp2_keypad_control

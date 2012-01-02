@@ -1,11 +1,7 @@
 : timer-2@  ( offset -- value )  timer-2-pa + io@  ;
 : timer-2!  ( value offset -- )  timer-2-pa +io!@  ;
-main-pmu-pa h# 200 + constant wdtpcr
-: init-timer-2s  ( -- )
-   main-pmu-pa h# 1020 +  dup io@  h# 10 or  swap io!  \ enable wdt 2 clock  PMUM_PRR_PJ
-   h# 13  h# 24 clock-unit-pa + io!
 
-   wdtpcr io@  dup  h# 7 or wdtpcr io!  h# 3 or wdtpcr io!
+: init-timer-2s  ( -- )
    0  h# 84 timer-2-pa + io!      \ TMR_CER  - count enable
    begin  h# 84 timer-2@  7 and  0=  until
    h# 24  h# 00 timer-2!   \ TMR_CCR  - clock control
