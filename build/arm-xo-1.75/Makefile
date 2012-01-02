@@ -31,7 +31,7 @@ APPPATH=$(TOPDIR)/src/app/arm-xo-1.75
 # APPLOADFILE is the top-level "Forth load file" for your application code.
 # It's okay to leave its name as "app.fth" and just use APPPATH to set the
 # location of your application code.
-APPLOADFILE = app.fth
+APPLOADFILE = app175.fth
 
 # APPSRCS is a list of Forth source files that your application uses,
 # i.e. the list of files that app.fth floads.  It's for dependency checking.

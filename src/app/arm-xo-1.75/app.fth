@@ -1,8 +1,5 @@
 \ Load file for application-specific Forth extensions
 
-\ create cl2-a1
-create cl2-a2
-
 alias purpose: \
 
 fl ../../lib/misc.fth
@@ -40,7 +37,9 @@ fl smbus.fth
 : third  ( a b c -- a b c a )  2 pick  ;
 fl lcdcfg.fth
 fl lcd.fth
+[ifndef] cl3
 fl mmp2dcon.fth
+[then]
 
 : short-delay ;
 
@@ -97,6 +96,10 @@ d# 30 ccall: wfi-loop      { -- }
 
 fl keypad.fth
 
+[ifdef] cl3
+false constant activate-cforth?
+false constant show-fb?
+[else]
 : rotate-button?  ( -- flag )
    [ifdef] cl2-a1  d# 20  [else]  d# 15  [then]
    gpio-pin@  0=
@@ -108,6 +111,9 @@ fl keypad.fth
    d# 17 gpio-pin@  0=
 [then]
 ;
+: activate-cforth?  ( -- flag )  rotate-button?  ;
+: show-fb?  ( -- flag )  check-button?  ;
+[then]
 
 false value fb-shown?
 h# 8009.1100 constant fb-on-value
@@ -116,7 +122,7 @@ h# 8009.1100 constant fb-on-value
    \ Stop polling after the check button is seen for the first time,
    \ thus avoiding conflicts with OFW's use of the check button
    fb-shown?  if  exit  then
-   check-button?  if  show-fb  true to fb-shown?  then
+   show-fb?  if  show-fb  true to fb-shown?  then
 ;
 
 [ifdef] notdef
@@ -166,14 +172,18 @@ fl fbnums.fth
    ?visible
 [then]
 
-   \ Turn on the dcon
+   \ Enable the display
    init-xo-display
 ;
 
 fl hackspi.fth
 fl dropin.fth
 
+[ifdef] cl3
+: enable-ps2 ;
+[else]
 fl ps2.fth
+[then]
 fl spicmd.fth
 fl thermal.fth
 
@@ -245,7 +255,9 @@ h# 1000.0000 value memtest-length
 : init1
    clk-fast
    init-dram
-\   fix-fuses
+[ifdef] cl3
+   fix-fuses
+[then]
    fix-v7
    init-spi
 [ifdef] SP_controls_kbd_power
@@ -254,7 +266,7 @@ h# 1000.0000 value memtest-length
 ;
 
 : cforth-wait  ( -- )
-   begin  wfi  rotate-button?  until  \ Wait until KEY_5 GPIO pressed
+   begin  wfi  activate-cforth?  until
    ." Resuming CForth on Security Processor, second UART" cr
    1 'one-uart !
 ;
@@ -327,7 +339,7 @@ h# 1000.0000 value memtest-length
    then
 ;
 : maybe-ofw  ( -- )
-   rotate-button?  if  ." Skipping OFW" cr  exit  then
+   activate-cforth?  if  ." Skipping OFW" cr  exit  then
    thermal
    ofw
 ;
@@ -358,13 +370,12 @@ h# 1fa0.0000 constant ofw-pa
 : ofw-slow  ( -- )
 \   0 h# e0000 h# 20000 spi-read
 \   spi-go
-   rotate-button?  if  ." Skipping OFW" cr  exit  then
+   activate-cforth?  if  ." Skipping OFW" cr  exit  then
 
    blank-display-lowres
    load-ofw-slow
    ofw-go-slow
    enable-ps2
-   
    cforth-wait
 \   begin wfi again
 ;
