@@ -8,7 +8,7 @@ h# 01.3200 constant thermal-base
    then
 
    \ report but otherwise ignore a watchdog restart
-   h# d4080070 io@  1 and  if
+   h# 080070 io@  1 and  if
        ." watchdog restart" cr
    then
 
