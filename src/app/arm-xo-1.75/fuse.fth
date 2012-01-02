@@ -1,7 +1,7 @@
 purpose: Program Armada610 Fuses
 0 value block#
-: fuse-ena!  ( n -- )  h# d4282868 l!  ;
-: fuse-ctl!  ( n -- )  block# d# 18 lshift or  h# d4292804 l!  d# 100 ms  ;
+: fuse-ena!  ( n -- )  h# 282868 io!  ;
+: fuse-ctl!  ( n -- )  block# d# 18 lshift or  h# 292804 io!  d# 100 ms  ;
 : ena-fuse-module  ( -- )
    h# 08 fuse-ena!
    h# 09 fuse-ena!
@@ -24,12 +24,12 @@ purpose: Program Armada610 Fuses
    to block#       ( v3 v2 v1 v0 )
    ena-fuse-module ( v3 v2 v1 v0 )
    otp-setup       ( v3 v2 v1 v0 )
-   h# d4292838 l!  ( v3 v2 v1 )
-   h# d429283c l!  ( v3 v2 )
-   h# d4292840 l!  ( v3 )
-   h# d4292844 l!  ( )
+   h# 292838 io!  ( v3 v2 v1 )
+   h# 29283c io!  ( v3 v2 )
+   h# 292840 io!  ( v3 )
+   h# 292844 io!  ( )
    h# 0203.4000 fuse-ctl!   \ ClkDiv +         HiV + Burn + SOFT
-   begin  h# d4292984 l@ h# 100 and  until  \ Wait for complete
+   begin  h# 292984 io@ h# 100 and  until  \ Wait for complete
    h# 0202.4000 fuse-ctl!   \ ClkDiv +         HiV +      + SOFT
    h# 0200.4000 fuse-ctl!   \ ClkDiv +                    + SOFT
    h# 0240.4000 fuse-ctl!   \ ClkDiv + SetRst             + SOFT
@@ -38,7 +38,7 @@ purpose: Program Armada610 Fuses
 : read-fuses  ( -- )
    ena-fuse-module
    otp-setup
-   h# d4292904 h# 10 ldump
+   h# 292904 +io h# 10 ldump
 ;
 [ifdef] cl3
 h# 90029410 constant wanted-fuses
@@ -55,12 +55,12 @@ h# 88028416 constant wanted-fuses
 : fix-fuses  ( -- )
    ena-fuse-module
    otp-setup
-   h# d429290c l@ wanted-fuses <> if
-      ." Old fuse value is " h# d429290c l@ u. cr
+   h# 29290c io@ wanted-fuses <>  if
+      ." Old fuse value is " h# 29290c io@ u. cr
       ." Fixing fuses" cr
       new-fuses
       otp-setup
-      h# d429290c l@ wanted-fuses <>  if
+      h# 29290c io@ wanted-fuses <>  if
          ." FUSE DID NOT REPROGRAM CORRECTLY!!!" cr
       else
          ." Fuse reprogramming succeeded" cr

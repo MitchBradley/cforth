@@ -1,10 +1,9 @@
-: +!@     ( value offset base -- )  + tuck l! l@ drop  ;
-: timer!  ( value offset -- )  timer-pa +!@  ;
+: timer!  ( value offset -- )  timer-pa +io!@  ;
 : init-timers  ( -- )
-   h# 13  h# 24 clock-unit-pa + l!
-   0  h# 84 timer-pa + l!      \ TMR_CER  - count enable
-   begin  h# 84 timer-pa + l@  7 and  0=  until
-   h# 24  h# 00 timer-pa +!@   \ TMR_CCR  - clock control
+   h# 13  h# 24 clock-unit-pa + io!
+   0  h# 84 timer-pa + io!      \ TMR_CER  - count enable
+   begin  h# 84 timer-pa + io@  7 and  0=  until
+   h# 24  h# 00 timer-pa +io!@   \ TMR_CCR  - clock control
    h# 200 0 do loop
    0  h# 88 timer!       \ count mode - periodic
    0  h# 4c timer!       \ preload value timer 0
@@ -24,7 +23,7 @@
 [ifdef] arm-assembler
 code timer0@  ( -- n )  \ 6.5 MHz
    psh  tos,sp
-   set  r1,0xD4014000
+   set  r1,`timer-pa +io #`
    mov  r0,#1
    str  r0,[r1,#0xa4]
    mov  r0,r0
@@ -33,7 +32,7 @@ c;
 
 code timer1@  ( -- n )  \ 32.768 kHz
    psh  tos,sp
-   set  r1,0xD4014000
+   set  r1,`timer-pa +io #`
    mov  r0,#1
    str  r0,[r1,#0xa8]
    mov  r0,r0
@@ -42,45 +41,45 @@ c;
 
 code timer2@  ( -- n )  \ 1 kHz
    psh  tos,sp
-   set  r1,0xD4014000
+   set  r1,`timer-pa +io #`
    mov  r0,#1
    str  r0,[r1,#0xac]
    mov  r0,r0
    ldr  tos,[r1,#0x30]
 c;
 [else]
-: timer0@  ( -- n )  1 h# d40140a4 l!  h# d4014028 l@  ;
-: timer1@  ( -- n )  1 h# d40140a8 l!  h# d401402c l@  ;
-: timer2@  ( -- n )  1 h# d40140ac l!  h# d4014030 l@  ;
+: timer0@  ( -- n )  1 h# 0140a4 io!  h# 014028 io@  ;
+: timer1@  ( -- n )  1 h# 0140a8 io!  h# 01402c io@  ;
+: timer2@  ( -- n )  1 h# 0140ac io!  h# 014030 io@  ;
 [then]
 
-: timer0-status@  ( -- n )  h# d4014034 l@  ;
-: timer1-status@  ( -- n )  h# d4014038 l@  ;
-: timer2-status@  ( -- n )  h# d401403c l@  ;
+: timer0-status@  ( -- n )  h# 014034 io@  ;
+: timer1-status@  ( -- n )  h# 014038 io@  ;
+: timer2-status@  ( -- n )  h# 01403c io@  ;
 
-: timer0-ier@  ( -- n )  h# d4014040 l@  ;
-: timer1-ier@  ( -- n )  h# d4014044 l@  ;
-: timer2-ier@  ( -- n )  h# d4014048 l@  ;
+: timer0-ier@  ( -- n )  h# 014040 io@  ;
+: timer1-ier@  ( -- n )  h# 014044 io@  ;
+: timer2-ier@  ( -- n )  h# 014048 io@  ;
 
-: timer0-icr!  ( n -- )  h# d4014074 l!  ;
-: timer1-icr!  ( n -- )  h# d4014078 l!  ;
-: timer2-icr!  ( n -- )  h# d401407c l!  ;
+: timer0-icr!  ( n -- )  h# 014074 io!  ;
+: timer1-icr!  ( n -- )  h# 014078 io!  ;
+: timer2-icr!  ( n -- )  h# 01407c io!  ;
 
-: timer0-ier!  ( n -- )  h# d4014040 l!  ;
-: timer1-ier!  ( n -- )  h# d4014044 l!  ;
-: timer2-ier!  ( n -- )  h# d4014048 l!  ;
+: timer0-ier!  ( n -- )  h# 014040 io!  ;
+: timer1-ier!  ( n -- )  h# 014044 io!  ;
+: timer2-ier!  ( n -- )  h# 014048 io!  ;
 
-: timer0-match0!  ( n -- )  h# d4014004 l!  ;  : timer0-match0@  ( -- n )  h# d4014004 l@  ;
-: timer0-match1!  ( n -- )  h# d4014008 l!  ;  : timer0-match1@  ( -- n )  h# d4014008 l@  ;
-: timer0-match2!  ( n -- )  h# d401400c l!  ;  : timer0-match2@  ( -- n )  h# d401400c l@  ;
+: timer0-match0!  ( n -- )  h# 014004 io!  ;  : timer0-match0@  ( -- n )  h# 014004 io@  ;
+: timer0-match1!  ( n -- )  h# 014008 io!  ;  : timer0-match1@  ( -- n )  h# 014008 io@  ;
+: timer0-match2!  ( n -- )  h# 01400c io!  ;  : timer0-match2@  ( -- n )  h# 01400c io@  ;
 
-: timer1-match0!  ( n -- )  h# d4014010 l!  ;  : timer1-match0@  ( -- n )  h# d4014010 l@  ;
-: timer1-match1!  ( n -- )  h# d4014014 l!  ;  : timer1-match1@  ( -- n )  h# d4014014 l@  ;
-: timer1-match2!  ( n -- )  h# d4014018 l!  ;  : timer1-match2@  ( -- n )  h# d4014018 l@  ;
+: timer1-match0!  ( n -- )  h# 014010 io!  ;  : timer1-match0@  ( -- n )  h# 014010 io@  ;
+: timer1-match1!  ( n -- )  h# 014014 io!  ;  : timer1-match1@  ( -- n )  h# 014014 io@  ;
+: timer1-match2!  ( n -- )  h# 014018 io!  ;  : timer1-match2@  ( -- n )  h# 014018 io@  ;
 
-: timer2-match0!  ( n -- )  h# d401401c l!  ;  : timer2-match0@  ( -- n )  h# d401401c l@  ;
-: timer2-match1!  ( n -- )  h# d4014020 l!  ;  : timer2-match1@  ( -- n )  h# d4014020 l@  ;
-: timer2-match2!  ( n -- )  h# d4014024 l!  ;  : timer2-match2@  ( -- n )  h# d4014024 l@  ;
+: timer2-match0!  ( n -- )  h# 01401c io!  ;  : timer2-match0@  ( -- n )  h# 01401c io@  ;
+: timer2-match1!  ( n -- )  h# 014020 io!  ;  : timer2-match1@  ( -- n )  h# 014020 io@  ;
+: timer2-match2!  ( n -- )  h# 014024 io!  ;  : timer2-match2@  ( -- n )  h# 014024 io@  ;
 
 ' timer2@ to get-msecs
 : (ms)  ( delay-ms -- )

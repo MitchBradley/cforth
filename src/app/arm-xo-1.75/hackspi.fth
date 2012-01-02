@@ -1,18 +1,18 @@
-: ssp1-clk-on  7 h# d4015050 l!   3 h# d4015050 l!  ;
+: ssp1-clk-on  7 h# 015050 io!   3 h# 015050 io!  ;
 : select-ssp1-pins  ( -- )
-   h# 5003 h# d401e100 l!
-   h# 5003 h# d401e104 l!
-   h# 5003 h# d401e108 l!
+   h# 5003 h# 01e100 io!
+   h# 5003 h# 01e104 io!
+   h# 5003 h# 01e108 io!
    d# 46 gpio-set
    d# 46 gpio-dir-out
-   h# c0 h# d401e10c l!
+   h# c0 h# 01e10c io!
 ;
 
 : init-spi  ( -- )
    select-ssp1-pins
    ssp1-clk-on
-   0 h# d4035004 l!      \ Master mode
-   h# 87 h# d4035000 l!  \ SPI mode, 8 bits, enabled
+   0 h# 035004 io!      \ Master mode
+   h# 87 h# 035000 io!  \ SPI mode, 8 bits, enabled
 ;
 
 h# 10 buffer: spi-cmdbuf
@@ -32,9 +32,9 @@ h# 10 buffer: spi-cmdbuf
 : cs1  d# 46 gpio-set ;
 : pio-mode  d# 46 gpio-set  d# 46 gpio-dir-out  h# c0 d# 46 af!  ;
 : ssp-mode  h# 5003 d# 46 af!  ;
-: g  begin d4035008 l@ 8 and until  d4035010 l@  ;
-: p  d4035010 l! ;
-: p0 0 d4035010 l! ;
+: g  begin 035008 io@ 8 and until  035010 io@  ;
+: p  035010 io! ;
+: p0 0 035010 io! ;
 : slow-spi-read  ( adr len offset -- )
    pio-mode
    cs0
@@ -47,7 +47,7 @@ h# 10 buffer: spi-cmdbuf
    cs1
 ;
 : flush-ssp  ( -- )
-   begin d4035008 l@ 8 and  while  d4035010 l@ drop  repeat 
+   begin 035008 io@ 8 and  while  035010 io@ drop  repeat 
 ;
 : .spi-id  ( -- )
    flush-ssp

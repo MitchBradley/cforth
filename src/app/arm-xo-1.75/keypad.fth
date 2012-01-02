@@ -2,12 +2,12 @@
 purpose: Driver for Armada 610/MMP2 keypad controller
 
 : keypad-on  ( -- )
-   5 h# d4015018 l!  \ Clock on with reset asserted
-   1 h# d4015018 l!  \ Clock on, release reset
+   5 h# 015018 io!  \ Clock on with reset asserted
+   1 h# 015018 io!  \ Clock on, release reset
    1 ms
 ;
-: kp!  ( n offset -- )  h# d4012000 + l!  ;
-: kp@  ( offset -- n )  h# d4012000 + l@  ;
+: kp!  ( n offset -- )  h# 012000 + io!  ;
+: kp@  ( offset -- n )  h# 012000 + io@  ;
 : keypad-direct-mode  ( #keys -- )
    1- 6 lshift  h# 202 or  0 kp!
 ;

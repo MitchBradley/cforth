@@ -24,7 +24,7 @@ d# 125 constant ack-gpio#
 ;
 : init-queues  ( -- )  -1 to ec-byte  ;
 
-h# d4037000 value ssp-base  \ Default to SSP3
+h# 037000 value ssp-base  \ Default to SSP3
 : ssp-sscr0  ( -- adr )  ssp-base  ;
 : ssp-sscr1  ( -- adr )  ssp-base  la1+  ;
 : ssp-sssr   ( -- adr )  ssp-base  2 la+  ;
@@ -34,34 +34,34 @@ h# d4037000 value ssp-base  \ Default to SSP3
 
 \ Wait until the CSS (Clock Synchronization Status) bit is 0
 : wait-clk-sync  ( -- )
-   begin  ssp-sssr rl@ h# 400.0000 and  0=  until
+   begin  ssp-sssr io@ h# 400.0000 and  0=  until
 ;
 
 : init-ssp-in-slave-mode  ( -- )
    ssp3-clk-on
-   h# 07 ssp-sscr0 rl!   \ 8-bit data, SPI normal mode
-   h# 1300.0010 ssp-sscr1 rl!  \ SCFR=1, slave mode, early phase
+   h# 07 ssp-sscr0 io!   \ 8-bit data, SPI normal mode
+   h# 1300.0010 ssp-sscr1 io!  \ SCFR=1, slave mode, early phase
    \ The enable bit must be set last, after all configuration is done
-   h# 87 ssp-sscr0 rl!   \ Enable, 8-bit data, SPI normal mode
+   h# 87 ssp-sscr0 io!   \ Enable, 8-bit data, SPI normal mode
    wait-clk-sync
 ;
 
 2 value ssp-rx-threshold
 : set-ssp-fifo-threshold  ( n -- )  to ssp-rx-threshold  ;
 
-: .ssr  ssp-sssr rl@  .  ;
+: .ssr  ssp-sssr io@  .  ;
 : rxavail  ( -- n )
-   ssp-sssr rl@  dup 8 and  if   ( val )
+   ssp-sssr io@  dup 8 and  if   ( val )
       d# 12 rshift h# f and  1+
    else
       drop 0
    then
 ;
 : prime-fifo  ( -- )
-   ssp-rx-threshold  0  ?do  0 ssp-ssdr rl!  loop
+   ssp-rx-threshold  0  ?do  0 ssp-ssdr io!  loop
 ;
 : rxflush  ( -- )
-   begin  ssp-sssr rl@  8 and  while  ssp-ssdr rl@ drop  repeat
+   begin  ssp-sssr io@  8 and  while  ssp-ssdr io@ drop  repeat
 ;
 : ssp-ready?  ( -- flag )  rxavail  ssp-rx-threshold  >=  ;
 
@@ -109,7 +109,7 @@ defer upstream
 \ Discard 'len' bytes from the Rx FIFO.  Used after a send
 \ operation to get rid of the bytes that were received as
 \ a side effect.
-: clean-fifo  ( len -- )  0  ?do  ssp-ssdr rl@ drop  loop  ;
+: clean-fifo  ( len -- )  0  ?do  ssp-ssdr io@ drop  loop  ;
 
 : response  ( -- )
    command-done
@@ -124,7 +124,7 @@ defer upstream
    cmdlen 0  do
       cmdbuf i + c@
       debug?  if  dup .  then
-      ssp-ssdr rl!
+      ssp-ssdr io!
    loop
    debug?  if  cr  then
    cmdlen set-ssp-fifo-threshold
@@ -139,7 +139,7 @@ defer upstream
    ssp-ready? 0=  if  prime-fifo pulse-ack  then
 ;
 : (upstream)  ( -- )
-   ssp-ssdr rl@  ssp-ssdr rl@              ( channel# data )
+   ssp-ssdr io@  ssp-ssdr io@              ( channel# data )
    debug? if
       ." UP: " over . dup . cr
    then
