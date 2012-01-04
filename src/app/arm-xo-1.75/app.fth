@@ -74,6 +74,9 @@ d# 27 ccall: reset-reason  { -- i.value }
 d# 28 ccall: 'version      { -- a.value }
 d# 29 ccall: 'build-date   { -- a.value }
 d# 30 ccall: wfi-loop      { -- }
+d# 31 ccall: ukey1?        { -- i.value }
+d# 32 ccall: ukey3?        { -- i.value }
+d# 33 ccall: ukey4?        { -- i.value }
 
 : .commit  ( -- )
    'version cscount 
@@ -97,6 +100,12 @@ d# 30 ccall: wfi-loop      { -- }
 fl keypad.fth
 
 [ifdef] cl3
+: early-activate-cforth?  ( -- flag )
+   d# 200 ms  ukey3?      ( flag )
+   dup  if
+      begin  key?  while  key drop  repeat
+   then
+;
 false constant activate-cforth?
 false constant show-fb?
 [else]
@@ -111,6 +120,7 @@ false constant show-fb?
    d# 17 gpio-pin@  0=
 [then]
 ;
+: early-activate-cforth?  ( -- flag )  rotate-button?  ;
 : activate-cforth?  ( -- flag )  rotate-button?  ;
 : show-fb?  ( -- flag )  check-button?  ;
 [then]
@@ -339,7 +349,7 @@ h# 1000.0000 value memtest-length
    then
 ;
 : maybe-ofw  ( -- )
-   activate-cforth?  if  ." Skipping OFW" cr  exit  then
+   early-activate-cforth?  if  ." Skipping OFW" cr  exit  then
    thermal
    ofw
 ;

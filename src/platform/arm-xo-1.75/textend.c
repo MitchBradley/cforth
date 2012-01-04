@@ -353,6 +353,9 @@ cell build_date_adr(void)
     extern char build_date[];
     return (cell)build_date;
 }
+extern int kbhit1(void);
+extern int kbhit3(void);
+extern int kbhit4(void);
 
 cell ((* const ccalls[])()) = {
 // Add your own routines here
@@ -387,6 +390,9 @@ cell ((* const ccalls[])()) = {
     (cell (*)())version_adr,     // Entry # 28
     (cell (*)())build_date_adr,  // Entry # 29
     (cell (*)())wfi_loop,        // Entry # 30
+    (cell (*)())kbhit1,          // Entry # 31
+    (cell (*)())kbhit3,          // Entry # 32
+    (cell (*)())kbhit4,          // Entry # 33
 };
 
 
