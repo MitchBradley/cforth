@@ -350,8 +350,9 @@ h# 1000.0000 value memtest-length
 ;
 : maybe-ofw  ( -- )
    early-activate-cforth?  if  ." Skipping OFW" cr  exit  then
-   thermal
-   ?watchdog
+   thermal?  if  ." thermal power-off" cr  power-off  then
+   watchdog?  if  ." watchdog restart" cr  bye  then
+   setup-thermal
    ofw
 ;
 

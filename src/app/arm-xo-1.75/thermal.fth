@@ -1,10 +1,9 @@
-: thermal  ( -- )
-   \ power off if this reset was caused by thermal watchdog
-   main-pmu-pa h# 0028 + io@  h# 10 and  if
-       ." thermal power-off" cr
-       power-off
-   then
+: thermal?  ( -- ? )
+   \ was this reset caused by thermal watchdog?
+   main-pmu-pa h# 0028 + io@  h# 10 and
+;
 
+: setup-thermal  ( -- )
    7 h# 015090 io!             \ reset thermal sensor
    3 h# 015090 io!             \ enable clocks to thermal sensor
    h# 10000 thermal-pa io!     \ enable sensing
