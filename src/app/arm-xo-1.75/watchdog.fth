@@ -31,6 +31,13 @@ h# 080000 value wdt-pa
 ;
 [then]
 
+: ?watchdog
+   h# 70 wdt@  1 and  if
+      ." watchdog restart" cr
+      bye
+   then
+;
+
 \ LICENSE_BEGIN
 \ Copyright (c) 2010 FirmWorks
 \
