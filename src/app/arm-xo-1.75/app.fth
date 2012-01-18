@@ -348,10 +348,20 @@ h# 1000.0000 value memtest-length
 \     d# 4000 ms  cforth-wait
    then
 ;
+: dmesg-dump ( -- )
+   h# 10014 io@         ( magic )                       \ RTC_BR0
+   h# 4f165bad = if     ( )
+      cr cr
+      h# 10018 io@      ( dmesg )                       \ RTC_BR1
+      h# 1001c io@      ( dmesg size )                  \ RTC_BR2
+      type              ( )
+      cr cr
+   then
+;
 : maybe-ofw  ( -- )
    early-activate-cforth?  if  ." Skipping OFW" cr  exit  then
    thermal?  if  ." thermal power-off" cr  power-off  then
-   watchdog?  if  ." watchdog restart" cr  bye  then
+   watchdog?  if  ." watchdog restart" cr  dmesg-dump  bye  then
    setup-thermal
    ofw
 ;
