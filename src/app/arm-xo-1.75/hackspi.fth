@@ -166,8 +166,28 @@ h# 10000 constant /spi-block
    then
 ;
 [ifndef] 3dup  : 3dup  2 pick  2 pick  2 pick  ;  [then]
+2 buffer: wp-buf
+: secure?  ( -- flag )
+   init-spi
+   .spi-id
+   wp-buf 2 h# e.fffe spi-read
+   wp-buf c@ [char] w = if
+      wp-buf 1+ c@ [char] p = if
+	 true exit
+      then
+   then
+   false
+;
+
+: sec-trg  ( -- )  d# 73 gpio-set  ;
+
+: protect-fw  ( -- )  secure?  if  spi-protect sec-trg  then  ;
+
 \ Assumes offset is block-aligned
 : write-setup-dance  ( -- )
+   \ This check could be patched out, but the write protect latch would then
+   \ prevent writing.  The message is for user-friendliness.
+   secure?  abort" Security is enabled; can't reprogram FLASH from CForth"
 \  init-spi
    wakeup-spi-flash
    .spi-id
@@ -192,20 +212,3 @@ h# 10000 constant /spi-block
    program-dance
 ;
 : reflash0  ( -- )  0 h# 100000 0 reflash  ;
-
-2 buffer: wp-buf
-: secure?  ( -- flag )
-   init-spi
-   .spi-id
-   wp-buf 2 e.fffe spi-read
-   wp-buf c@ [char] w = if
-      wp-buf 1+ c@ [char] p = if
-	 true exit
-      then
-   then
-   false
-;
-
-: sec-trg  ( -- )  d# 73 gpio-set  ;
-
-: protect-fw  ( -- )  secure?  if  spi-protect sec-trg  then  ;

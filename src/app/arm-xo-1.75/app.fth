@@ -220,7 +220,7 @@ h# 1000.0000 value memtest-length
    d# 11 gpio-pin@  if
       cr ." APPARENT CRASH RESET - INTERACTING - reset reason = "
       reset-reason . cr cr
-      hex quit
+      hex protect-fw quit
    then
 [then]
    open-ec  board-id@  close-ec  ( id )
@@ -414,7 +414,7 @@ h# 1fa0.0000 constant ofw-pa
 [then]
 
 \ Run this at startup
-: app  init  ( d# 400 ms )  maybe-ofw  hex quit  ;
+: app  init  ( d# 400 ms )  maybe-ofw  hex protect-fw quit  ;
 \ " ../objs/tester" $chdir drop
 
 \ Quick access to power management registers for debugging
@@ -494,7 +494,7 @@ h# 1fa0.0000 constant ofw-pa
 : testit
    'compressed h# 48000 bounds do i @ dup -1 <> if i . . cr leave else drop then 4 +loop
 ;
-: app  init0 clk-fast ." To init DRAM, type 'init1'.  To boot, type 'ofw'" cr  hex quit ;
+: app  init0 clk-fast ." To init DRAM, type 'init1'.  To boot, type 'ofw'" cr  hex protect-fw quit ;
 [then]
 
 " app.dic" save
