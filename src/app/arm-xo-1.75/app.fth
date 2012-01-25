@@ -348,20 +348,45 @@ h# 1000.0000 value memtest-length
 \     d# 4000 ms  cforth-wait
    then
 ;
-: dmesg-dump ( -- )
-   h# 10014 io@         ( magic )                       \ RTC_BR0
-   h# 4f165bad = if     ( )
-      cr cr
-      h# 10018 io@      ( dmesg )                       \ RTC_BR1
-      h# 1001c io@      ( dmesg size )                  \ RTC_BR2
-      type              ( )
-      cr cr
-   then
+: .log-buf  ( addr len -- )
+   bounds do
+      i c@                              ( char )
+      dup  if  dup emit  then           ( char )        \ skip NULs
+      h# 0a =  if  5 ms  then           ( )
+   loop
+;
+0 value log-buf-offset  \ offset kernel virtual address to physical address
+0 value log-buf-len
+0 value log-buf
+0 value log-buf-end
+: .epitaph  ( addr -- )
+   >r
+   r@ h# 08 + @  r@ -   to log-buf-offset
+   r@ h# 0c + @         to log-buf-len
+   r@ h# 10 + @  log-buf-offset -                        to log-buf
+   r@ h# 14 + @  log-buf-offset - @  log-buf-len 1- and  to log-buf-end
+   r> drop              ( )
+   log-buf log-buf-end +  log-buf-len log-buf-end -  .log-buf
+   log-buf                log-buf-end 1-             .log-buf
+;
+: epitaph  ( -- )
+   init1
+   ." epitaph "
+   h# 3000.0000 0 do
+      i @ h# 2163.666f =  if
+         i h# 04 + @ h# 7274.6821 =  if
+	    ." found" cr  i .epitaph  cr cr
+            unloop exit
+         then
+      then
+      h# 1000
+   +loop
+   ." missing" cr
 ;
 : maybe-ofw  ( -- )
    early-activate-cforth?  if  ." Skipping OFW" cr  exit  then
    thermal?  if  ." thermal power-off" cr  power-off  then
-   watchdog?  if  ." watchdog restart" cr  dmesg-dump  bye  then
+   watchdog?  if  ." watchdog restart" cr  epitaph  bye  then
    setup-thermal
    ofw
 ;
