@@ -20,38 +20,17 @@
    7 h# 84 timer!
 ;
 
-[ifdef] arm-assembler
-code timer0@  ( -- n )  \ 6.5 MHz
-   psh  tos,sp
-   set  r1,`timer-pa +io #`
-   mov  r0,#1
-   str  r0,[r1,#0xa4]
-   mov  r0,r0
-   ldr  tos,[r1,#0x28]
-c;
+\ This double-read technique is necessary for use on the PJ4 CPU, but
+\ doesn't seem to be needed from CForth, perhaps because of the speed
+\ difference, or perhaps because the security processor is ARM V5 with
+\ much simpler bus interfacing (no cache, etc).  We use it anyway for safety.
+: timer0@  ( -- n )  1 h# 0140a4 io!  h# 0140a4 io@ drop  h# 0140a4 io@  ;
+: timer1@  ( -- n )  1 h# 0140a8 io!  h# 0140a8 io@ drop  h# 0140a8 io@  ;
+: timer2@  ( -- n )  1 h# 0140ac io!  h# 0140ac io@ drop  h# 0140ac io@  ;
 
-code timer1@  ( -- n )  \ 32.768 kHz
-   psh  tos,sp
-   set  r1,`timer-pa +io #`
-   mov  r0,#1
-   str  r0,[r1,#0xa8]
-   mov  r0,r0
-   ldr  tos,[r1,#0x2c]
-c;
-
-code timer2@  ( -- n )  \ 1 kHz
-   psh  tos,sp
-   set  r1,`timer-pa +io #`
-   mov  r0,#1
-   str  r0,[r1,#0xac]
-   mov  r0,r0
-   ldr  tos,[r1,#0x30]
-c;
-[else]
-: timer0@  ( -- n )  1 h# 0140a4 io!  h# 014028 io@  ;
-: timer1@  ( -- n )  1 h# 0140a8 io!  h# 01402c io@  ;
-: timer2@  ( -- n )  1 h# 0140ac io!  h# 014030 io@  ;
-[then]
+\ The read-until-match technique does not seem to be necessary for CForth,
+\ but we include the code here for reference.
+\ : timer2@  ( -- n )  h# 14030 io@  begin  h# 14030 io@  tuck =  until  ;
 
 : timer0-status@  ( -- n )  h# 014034 io@  ;
 : timer1-status@  ( -- n )  h# 014038 io@  ;
