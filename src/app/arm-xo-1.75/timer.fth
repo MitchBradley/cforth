@@ -26,11 +26,10 @@
 \ much simpler bus interfacing (no cache, etc).  We use it anyway for safety.
 : timer0@  ( -- n )  1 h# 0140a4 io!  h# 0140a4 io@ drop  h# 0140a4 io@  ;
 : timer1@  ( -- n )  1 h# 0140a8 io!  h# 0140a8 io@ drop  h# 0140a8 io@  ;
-: timer2@  ( -- n )  1 h# 0140ac io!  h# 0140ac io@ drop  h# 0140ac io@  ;
 
-\ The read-until-match technique does not seem to be necessary for CForth,
-\ but we include the code here for reference.
-\ : timer2@  ( -- n )  h# 14030 io@  begin  h# 14030 io@  tuck =  until  ;
+\ The read-until-match technique is better for the slow timer.
+\ The double-read technique breaks the console.
+: timer2@  ( -- n )  h# 14030 io@  begin  h# 14030 io@  tuck =  until  ;
 
 : timer0-status@  ( -- n )  h# 014034 io@  ;
 : timer1-status@  ( -- n )  h# 014038 io@  ;
