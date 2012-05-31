@@ -27,7 +27,7 @@ hex
    00FFFE00 050034 io!  \ PMUM_PLL2_CTRL2 \ refclk divisor and feedback divisors at max, software controls activation
    00234200 050034 io!  \ PMUM_PLL2_CTRL2 \ refclk divisor=4, feedback divisor=0xd0=208, software controls activation
    00234300 050034 io!  \ PMUM_PLL2_CTRL2 \ same plus enable
-   28600322 050414 io!  \ PMUM_PLL2_CTRL1 \ same as above plus release PLL loop filter
+   286005a2 050414 io!  \ PMUM_PLL2_CTRL1 \ same as above plus release PLL loop filter
 ;
 : set-pll2-988  ( -- )
    \ select PLL2 frequency, 988MHz
