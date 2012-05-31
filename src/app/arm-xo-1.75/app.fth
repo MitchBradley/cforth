@@ -263,7 +263,12 @@ h# 1000.0000 value memtest-length
 ;
 
 : init1
-   clk-fast
+   rated-speed  case
+      0  of  op4     endof
+      1  of  op-910  endof
+      ( default - 2 or 3 )
+             op5
+   endcase
    init-dram
 [ifdef] cl3
    fix-fuses

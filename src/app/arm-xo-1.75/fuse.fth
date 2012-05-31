@@ -70,3 +70,5 @@ h# 88028416 constant wanted-fuses
    then
    otp-teardown
 ;
+\ Speed codes are in fuse block 3 bits 239:238.  0:800MHz, 1:910MHz, 2:1001MHz, 3:reserved
+: rated-speed  ( -- n )  h# 2928a4 io@ d# 14 rshift 3 and  ;

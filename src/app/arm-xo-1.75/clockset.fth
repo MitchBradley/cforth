@@ -21,6 +21,14 @@ hex
    0021db00 050034 io!  \ PMUM_PLL2_CTRL2 \ same plus enable
    28600322 050414 io!  \ PMUM_PLL2_CTRL1 \ same as above plus release PLL loop filter
 ;
+: set-pll2-910  ( -- )
+   \ select PLL2 frequency, 910MHz
+   086005a2 050414 io!  \ PMUM_PLL2_CTRL1 \ Bandgap+charge pump+VCO loading+regulator defaults, 486.3-528.55 PLL2 (bits 10:6)
+   00FFFE00 050034 io!  \ PMUM_PLL2_CTRL2 \ refclk divisor and feedback divisors at max, software controls activation
+   00234200 050034 io!  \ PMUM_PLL2_CTRL2 \ refclk divisor=4, feedback divisor=0xd0=208, software controls activation
+   00234300 050034 io!  \ PMUM_PLL2_CTRL2 \ same plus enable
+   28600322 050414 io!  \ PMUM_PLL2_CTRL1 \ same as above plus release PLL loop filter
+;
 : set-pll2-988  ( -- )
    \ select PLL2 frequency, 988MHz
    08600622 050414 io!  \ PMUM_PLL2_CTRL1 \ Bandgap+charge pump+VCO loading+regulator defaults, 971.35-1011.65 PLL2 (bits 10:6)
@@ -85,22 +93,11 @@ hex
                h# 40800000 fccr!   o# 36042200301 sp-cc!  o# 36042201110 pj4-cc!
 ;
 \ A266 D400  PJ: X494 B494 C520 P988  SP: B100 C200
-: op5a  ( -- )
+: op-520  ( -- )
    set-pll2-520
                h# 40800000 fccr!   o# 36042200301 sp-cc!  o# 36042201110 pj4-cc!
 ;
-
-: clk-fast  ( -- )
-   ffffffff 24 mpmu!  \ PMUM_CGR_SP     \ All clocks ON
-   op4
-;
-: clk-fast-1g  ( -- )
-   ffffffff 24 mpmu!  \ PMUM_CGR_SP     \ All clocks ON
-   op5
-;
-\ This 520 MHz setting is useful for testing the operation of PLL2 on boards whose
-\ SoC can't run at 1 GHz.  It's not intended for production use.
-: clk-fast-520  ( -- )
-   ffffffff 24 mpmu!  \ PMUM_CGR_SP     \ All clocks ON
-   op5a
+: op-910  ( -- )
+   set-pll2-910
+               h# 40800000 fccr!   o# 36042200301 sp-cc!  o# 36042201110 pj4-cc!
 ;
