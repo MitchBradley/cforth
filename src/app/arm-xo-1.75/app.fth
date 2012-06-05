@@ -263,12 +263,9 @@ h# 1000.0000 value memtest-length
 ;
 
 : init1
-   rated-speed  case
-      0  of  op4     endof
-      1  of  op-910  endof
-      ( default - 2 or 3 )
-             op5
-   endcase
+   \ Select the 1 GHz operating point - op5 - only if both the board
+   \ and the SoC are rated for operation at that speed.
+   1 gpio-pin@  rated-speed 2 =  and  if  op5  else  op4  then
    init-dram
 [ifdef] cl3
    fix-fuses
