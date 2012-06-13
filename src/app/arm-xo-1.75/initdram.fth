@@ -7,7 +7,7 @@ create dram-tablex lalign
    00000000 , d0000b50 ,   \ sdram-config-type2-cs1 (for LPDDR2)
 
    911500ca , d0000050 ,   \ sdram-timing1
-   646602c4 , d0000060 ,   \ sdram-timing2
+   646602c4 , d0000060 ,   \ sdram-timing2 64660404
    c2003053 , d0000190 ,   \ sdram-timing3
    34f4a187 , d00001c0 ,   \ sdram-timing4 !34f4a187
    000f0141 , d0000650 ,   \ sdram-timing5 !f0141
@@ -60,9 +60,9 @@ here dram-tablex laligned - constant /dram-table
    8 +loop
 ;
 
-\                    mmap-cs0        mmap-cs1     cfg-type1-cs0    cfg-type1-cs1
-create dram-512m  h# 000d0001 l,            0 l,  h# 00222430 l,            0 l,
-create dram-1g    h# 000e0001 l,            0 l,  h# 00222530 l,            0 l,
+\                    mmap-cs0        mmap-cs1     cfg-type1-cs0    cfg-type1-cs1   sdram-timing2
+create dram-512m  h# 000d0001 l,            0 l,  h# 00222430 l,            0 l,  h# 646602c4 l,
+create dram-1g    h# 000e0001 l,            0 l,  h# 00222530 l,            0 l,  h# 64660404 l,
 
 : l@+  ( adr -- adr' value )  dup la1+ swap l@  ;
 : set-mem-size  ( adr -- )
@@ -70,6 +70,7 @@ create dram-1g    h# 000e0001 l,            0 l,  h# 00222530 l,            0 l,
    l@+ h# d0000110 l!   \ mmap1
    l@+ h# d0000020 l!   \ sdram-config-type1-cs0
    l@+ h# d0000030 l!   \ sdram-config-type1-cs1
+   l@+ h# d0000060 l!   \ sdram-timing2
    drop
 ;
 false value dram-on?
