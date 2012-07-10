@@ -31,7 +31,7 @@ create mfpr-offsets                                         \  GPIOs
    224 w, 228 w, 22C w, 230 w, 234 w, 238 w, 23C w, 240 w,  \ 144->151
    248 w, 24C w, 254 w, 258 w, 14C w, 150 w, 154 w, 158 w,  \ 152->159
    250 w, 210 w, 20C w, 208 w, 204 w, 1EC w, 1E8 w, 1E4 w,  \ 160->167
-   1E0 w,                                                   \ 168
+   1E0 w, 2bc w, 2c0 w, 2c8 w,                              \ 168->171
 
 h# 01.e000 constant mfpr-base
 : gpio>mfpr  ( gpio# -- mfpr-pa )
@@ -45,23 +45,18 @@ h# 01.e000 constant mfpr-base
    base !
 ;
 
-: no-update,  ( -- )  8 w,  ;  \ 8 is a reserved bit; the code skips these
 : af@  ( gpio# -- function# )  gpio>mfpr io@  ;
-: af!  ( function# gpio# -- )  gpio>mfpr io!  ;
+: af!  ( function# gpio# -- )  gpio>mfpr io!@  ;
 
-: +edge-clr     ( n -- n' )  h#   40 or  ;
-: +medium       ( n -- n' )  h# 1000 or  ;
-: +fast         ( n -- n' )  h# 1800 or  ;
-: +twsi         ( n -- n' )  h#  400 or  ;
-: +pull-up      ( n -- n' )  h# c000 or  ;
-: +pull-dn      ( n -- n' )  h# a000 or  ;
-: +pull-up-alt  ( n -- n' )  h# 4000 or  ;
-: +pull-dn-alt  ( n -- n' )  h# 2000 or  ;
-
-\ We always start with edge detection off; it can be turned on later as needed
-: af,   ( n -- )  +edge-clr w,  ;
-
-: sleep-  ( n -- n' )  h# 0200 or  ;
-: sleep0  ( n -- n' )  h# 0000 or  ;
-: sleep1  ( n -- n' )  h# 0100 or  ;
-: sleepi  ( n -- n' )  h# 0080 or  ;
+[ifdef] mfpr-table
+: init-mfprs
+   #mfprs 0  do
+      mfpr-table i wa+ w@   ( code )
+      dup 8 =  if           ( code )
+         drop               ( )
+      else                  ( code )
+         i af!              ( )
+      then
+   loop
+;
+[then]

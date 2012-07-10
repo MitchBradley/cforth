@@ -40,11 +40,7 @@ purpose: Program Armada610 Fuses
    otp-setup
    h# 292904 +io h# 10 ldump
 ;
-[ifdef] cl3
-h# 90029410 constant wanted-fuses
-[else]
-h# 88028416 constant wanted-fuses
-[then]
+[ifdef] wanted-fuses
 : new-fuses  ( -- )
    h# 00000000
    wanted-fuses
@@ -70,5 +66,7 @@ h# 88028416 constant wanted-fuses
    then
    otp-teardown
 ;
+[then]
+
 \ Speed codes are in fuse block 3 bits 239:238.  0:800MHz, 1:910MHz, 2:1001MHz, 3:reserved
-: rated-speed  ( -- n )  h# 2928a4 io@ d# 14 rshift 3 and  ;
+: rated-speed  ( -- n )  ena-fuse-module  h# 2928a4 io@ d# 14 rshift 3 and  ;

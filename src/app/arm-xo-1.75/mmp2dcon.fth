@@ -29,13 +29,8 @@
 \ h# 8000 constant DM_SELFTEST
 
 : set-dcon-slave  ( -- )
-[ifdef] cl2-a1
-   d# 162 to smb-clock-gpio#
-   d# 163 to smb-data-gpio#
-[else]
-   d# 161 to smb-clock-gpio#
-   d# 110 to smb-data-gpio#
-[then]
+   dcon-scl-gpio# to smb-clock-gpio#
+   dcon-sda-gpio# to smb-data-gpio#
    h# 1a to smb-slave
 ;
 
@@ -44,16 +39,11 @@
 : dcon@  ( reg# -- word )  set-dcon-slave  smb-word@  ;
 : dcon!  ( word reg# -- )  set-dcon-slave  smb-word!  ;
 
-[ifdef] cl2-a1
-: dcon-load  ( -- )  d# 151 gpio-set  ;
-: dcon-unload  ( -- )  d# 151 gpio-clr  ;
-[else]
-: dcon-load  ( -- )  d# 142 gpio-set  ;
-: dcon-unload  ( -- )  d# 142 gpio-clr  ;
-[then]
+: dcon-load  ( -- )  dcon-load-gpio# gpio-set  ;
+: dcon-unload  ( -- )  dcon-load-gpio# gpio-clr  ;
 \ : dcon-blnk?  ( -- flag )  ;  \ Not hooked up
 : dcon-stat@  ( -- n )  h# 019100 io@ 4 rshift 3 and  ;
-: dcon-irq?  ( -- flag )  d# 124 gpio-pin@  0=  ;
+: dcon-irq?  ( -- flag )  dcon-irq-gpio# gpio-pin@  0=  ;
 
 \ DCONSTAT values:  0 SCANINT  1 SCANINT_DCON  2 DISPLAYLOAD  3 MISSED
 
@@ -192,11 +182,11 @@ d# 905 value resumeline  \ Configurable; should be set from args
 
 : maybe-set-cmos  ( -- )  ;
 
-: init-xo-display  ( -- )
+: init-panel  ( -- )
    smb-init
 
    dcon-load
-   dcon-enable  ( maybe-set-cmos )
+   ['] dcon-enable  catch  if  ." DCON enable failed" cr  then  ( maybe-set-cmos )
    \ dcon-enable leaves mode set to 69 - 40:antialias, 20:swizzle, 8:backlight on, 1:passthru off
 ;
 

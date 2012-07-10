@@ -3,8 +3,8 @@
    h# 5003 h# 01e100 io!
    h# 5003 h# 01e104 io!
    h# 5003 h# 01e108 io!
-   d# 46 gpio-set
-   d# 46 gpio-dir-out
+   spi-flash-cs-gpio# gpio-set
+   spi-flash-cs-gpio# gpio-dir-out
    h# c0 h# 01e10c io!
 ;
 
@@ -17,8 +17,8 @@
 
 h# 10 buffer: spi-cmdbuf
 
-: [[ d# 46 gpio-clr  ;
-: ]] d# 46 gpio-set  ;
+: [[ spi-flash-cs-gpio# gpio-clr  ;
+: ]] spi-flash-cs-gpio# gpio-set  ;
 
 0 value bufp
 : spi-out  ( n -- )  bufp c!  bufp 1+ to bufp  ;
@@ -28,10 +28,10 @@ h# 10 buffer: spi-cmdbuf
 : spi-adr  ( offset -- )  lbsplit drop  spi-out spi-out spi-out  ;
 
 \ Programmed I/O versions
-: cs0  d# 46 gpio-clr ;
-: cs1  d# 46 gpio-set ;
-: pio-mode  d# 46 gpio-set  d# 46 gpio-dir-out  h# c0 d# 46 af!  ;
-: ssp-mode  h# 5003 d# 46 af!  ;
+: cs0  spi-flash-cs-gpio# gpio-clr ;
+: cs1  spi-flash-cs-gpio# gpio-set ;
+: pio-mode  spi-flash-cs-gpio# gpio-set  spi-flash-cs-gpio# gpio-dir-out  h# c0 spi-flash-cs-gpio# af!  ;
+: ssp-mode  h# 5003 spi-flash-cs-gpio# af!  ;
 : g  begin 035008 io@ 8 and until  035010 io@  ;
 : p  035010 io! ;
 : p0 0 035010 io! ;
@@ -179,7 +179,7 @@ h# 10000 constant /spi-block
    false
 ;
 
-: sec-trg  ( -- )  d# 73 gpio-set  ;
+: sec-trg  ( -- )  sec-trg-gpio# gpio-set  ;
 
 : protect-fw  ( -- )  secure?  if  spi-protect sec-trg  then  ;
 

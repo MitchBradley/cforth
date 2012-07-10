@@ -112,25 +112,27 @@ h# 282000 value ic-base  \ Interrupt controller
    h# f4 kbd-cmd-ack drop    \ Tell the keyboard to start sending
 ;
 : ps2-xoff  ( -- )
-   d#  71 gpio-dir-out  \ Hold down keyboard clock
-   d# 160 gpio-dir-out  \ Hold down touchpad clock
+   soc-kbd-clk-gpio# gpio-dir-out  \ Hold down keyboard clock
+   soc-kbd-clk-gpio# gpio-dir-out  \ Hold down touchpad clock
 ;   
 : ps2-xon  ( -- )
-   d#  71 gpio-dir-in  \ Release keyboard clock
-   d# 160 gpio-dir-in  \ Release touchpad clock
+   soc-kbd-clk-gpio# gpio-dir-in  \ Release keyboard clock
+   soc-kbd-clk-gpio# gpio-dir-in  \ Release touchpad clock
 ;   
+[ifdef] soc-en-kbd-pwr-gpio#
 : keyboard-power-on  ( -- )
    ps2-xoff
-   d# 148 gpio-clr   \ Enable power to keyboard and touchpad
+   soc-en-kbd-pwr-gpio# gpio-clr   \ Enable power to keyboard and touchpad
 ;
+[then]
 : enable-ps2
    init-ps2
    init-timer-2s
-   d#  71 gpio-set-fer  \ Keyboard clock
-   d# 160 gpio-set-fer  \ Touchpad clock
+   soc-kbd-clk-gpio#  gpio-set-fer  \ Keyboard clock
+   soc-tpd-clk-gpio#  gpio-set-fer  \ Touchpad clock
    setup-interrupts
-   d#  71 >gpio-pin  h# 9c +  tuck io@ or  swap io!  \ Unmask edge detect
-   d# 160 >gpio-pin  h# 9c +  tuck io@ or  swap io!  \ Unmask edge detect
+   soc-kbd-clk-gpio#  >gpio-pin  h# 9c +  tuck io@ or  swap io!  \ Unmask edge detect
+   soc-tpd-clk-gpio#  >gpio-pin  h# 9c +  tuck io@ or  swap io!  \ Unmask edge detect
    d# 49 enable-irq  \ GPIO IRQ
    d# 31 enable-irq  \ first timer in second block
    enable-spcmd-irq
