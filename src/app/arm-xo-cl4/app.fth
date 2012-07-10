@@ -6,4 +6,4 @@ fl ../arm-xo-cl4/mfprtable.fth
 
 \ h# 88028416 constant wanted-fuses
 
-fl app.fth
+fl ../arm-xo-1.75/app.fth

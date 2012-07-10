@@ -20,15 +20,16 @@ SRC=$(TOPDIR)/src
 
 # BUILDDIR is relative to TOPDIR; it's the name of this directory
 # !!CHANGE!!
-BUILDDIR=build/arm-xo-3.0
+BUILDDIR=build/arm-thunderstone
 
 # OBJPATH is relative to $(SRC)/cforth/embed; don't change
 OBJPATH=../../../$(BUILDDIR)
 
 # APPPATH is where your application code lives.
-APPPATH=$(TOPDIR)/src/app/arm-xo-3.0
+APPPATH=$(TOPDIR)/src/app/arm-mmp3-thunderstone
 APPPATH2=$(TOPDIR)/src/app/arm-mmp2
 APPPATH3=$(TOPDIR)/src/app/arm-xo-1.75
+
 
 # APPLOADFILE is the top-level "Forth load file" for your application code.
 # It's okay to leave its name as "app.fth" and just use APPPATH to set the

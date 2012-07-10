@@ -8,7 +8,7 @@ h# 8009.1100 constant fb-on-value
    show-fb?  if  show-fb  true to fb-shown?  then
 ;
 
-fl fbnums.fth
+fl ../arm-xo-1.75/fbnums.fth
 : blank-display-lowres  ( -- )
    \ Setup the panel path with the normal resolution
    init-lcd

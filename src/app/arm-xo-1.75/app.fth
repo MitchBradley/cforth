@@ -8,7 +8,7 @@ fl ../../lib/random.fth
 fl ../../lib/ilog2.fth
 
 fl ../arm-mmp2/hwaddrs.fth
-fl addrs.fth
+fl ../arm-xo-1.75/addrs.fth
 
 : +io  ( offset -- adr )  h# d4000000 +  ;
 : io!  ( l offset -- )  +io l!  ;
@@ -22,32 +22,32 @@ fl ../arm-mmp2/watchdog.fth
 fl ../arm-mmp2/timer2.fth
 fl ../arm-mmp2/gpio.fth
 fl ../arm-mmp2/mfpr.fth
-fl boardgpio.fth
+fl ../arm-xo-1.75/boardgpio.fth
 
 : alloc-mem  drop 0  ;  : free-mem 2drop  ;
 \ fl flashif.fth
 \ fl spiif.fth
 \ fl spiflash.fth
 \ fl ../arm-mmp2/sspspi.fth
-fl clockset.fth
-fl initdram.fth
+fl ../arm-xo-1.75/clockset.fth
+fl ../arm-xo-1.75/initdram.fth
 fl ../arm-mmp2/fuse.fth
-fl smbus.fth
+fl ../arm-xo-1.75/smbus.fth
 
 : wljoin  ( w w -- l )  d# 16 lshift or  ;
 : third  ( a b c -- a b c a )  2 pick  ;
 fl ../arm-mmp2/lcd.fth
 
 [ifdef] dcon-scl-gpio#
-fl mmp2dcon.fth
+fl ../arm-xo-1.75/mmp2dcon.fth
 [else]
 fl ../arm-xo-3.0/panel.fth
 [then]
 
 : short-delay ;
 
-fl ccalls.fth
-fl banner.fth
+fl ../arm-xo-1.75/ccalls.fth
+fl ../arm-xo-1.75/banner.fth
 
 : enable-interrupts  ( -- )  psr@ h# 80 invert and psr!  ;
 : disable-interrupts  ( -- )  psr@ h# 80 or psr!  ;
@@ -56,19 +56,19 @@ fl banner.fth
 fl ../arm-mmp2/keypad.fth
 [then]
 
-fl controls.fth
-fl showfb.fth
+fl ../arm-xo-1.75/controls.fth
+fl ../arm-xo-1.75/showfb.fth
 
-fl hackspi.fth
-fl dropin.fth
+fl ../arm-xo-1.75/hackspi.fth
+fl ../arm-xo-1.75/dropin.fth
 
 [ifdef] soc-kbd-clk-gpio#
-fl ps2.fth
+fl ../arm-xo-1.75/ps2.fth
 [then]
 
-fl spicmd.fth
+fl ../arm-xo-1.75/spicmd.fth
 fl ../arm-mmp2/thermal.fth
-fl memtest.fth
+fl ../arm-xo-1.75/memtest.fth
 
 \ Drop the voltage to the lower level for testing
 : get-board-id  ( -- id )
@@ -212,7 +212,7 @@ fl memtest.fth
    then
 ;
 
-fl showlog.fth
+fl ../arm-xo-1.75/showlog.fth
 
 : maybe-ofw  ( -- )
    early-activate-cforth?  if  ." Skipping OFW" cr  exit  then
@@ -271,6 +271,6 @@ h# 1fa0.0000 constant ofw-pa
 : app  init  ( d# 400 ms )  maybe-ofw  hex protect-fw quit  ;
 \ " ../objs/tester" $chdir drop
 
-fl showpmu.fth
+fl ../arm-xo-1.75/showpmu.fth
 
 " app.dic" save

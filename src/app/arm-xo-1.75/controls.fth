@@ -7,6 +7,11 @@
    scan-keypad 2 and   0=
 [else]
    check-gpio# gpio-pin@  0=
+[then]
+;
+: early-activate-cforth?  ( -- flag )  rotate-button?  ;
+: activate-cforth?  ( -- flag )  rotate-button?  ;
+: show-fb?  ( -- flag )  check-button?  ;
 [else]
 : early-activate-cforth?  ( -- flag )
    d# 200 ms  ukey3?      ( flag )
@@ -16,10 +21,5 @@
 ;
 false constant activate-cforth?
 false constant show-fb?
-[then]
-;
-: early-activate-cforth?  ( -- flag )  rotate-button?  ;
-: activate-cforth?  ( -- flag )  rotate-button?  ;
-: show-fb?  ( -- flag )  check-button?  ;
 [then]
 

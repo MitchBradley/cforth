@@ -8,7 +8,6 @@ fl ../../lib/random.fth
 fl ../../lib/ilog2.fth
 
 fl ../arm-mmp2/hwaddrs.fth
-fl addrs.fth
 
 : +io  ( offset -- adr )  h# d4000000 +  ;
 : io!  ( l offset -- )  +io l!  ;
@@ -63,7 +62,7 @@ h# 8009.1100 constant fb-on-value
 : show-fb ;
 : ?visible ;
 
-fl thermal.fth
+fl ../arm-mmp2/thermal.fth
 
 fl ../arm-xo-1.75/memtest.fth
 

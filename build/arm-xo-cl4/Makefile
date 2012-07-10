@@ -20,13 +20,13 @@ SRC=$(TOPDIR)/src
 
 # BUILDDIR is relative to TOPDIR; it's the name of this directory
 # !!CHANGE!!
-BUILDDIR=build/arm-xo-3.0
+BUILDDIR=build/arm-xo-cl4
 
 # OBJPATH is relative to $(SRC)/cforth/embed; don't change
 OBJPATH=../../../$(BUILDDIR)
 
 # APPPATH is where your application code lives.
-APPPATH=$(TOPDIR)/src/app/arm-xo-3.0
+APPPATH=$(TOPDIR)/src/app/arm-xo-cl4
 APPPATH2=$(TOPDIR)/src/app/arm-mmp2
 APPPATH3=$(TOPDIR)/src/app/arm-xo-1.75
 
