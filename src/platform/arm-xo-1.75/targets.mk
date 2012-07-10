@@ -67,4 +67,5 @@ shim.elf: $(PLAT_OBJS) $(SHIM_OBJS)
 	@date  "+%F %H:%M" >>$@
 	@ls -l $@
 
-EXTRA_CLEAN += *.elf *.dump *.nm *.img date.c $(FORTH_OBJS) $(PLAT_OBJS)
+EXTRA_CLEAN += *.elf *.dump *.nm *.img date.c $(FORTH_OBJS) $(PLAT_OBJS) $(SHIM_OBJS) date.o version
+
