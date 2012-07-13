@@ -44,8 +44,9 @@
 
    h# 08 h# 01 h# c0 twsi1-reg!	\ Fairchild (c0), VSEL1 (01), core voltage change, 1257 mv, 600 mv ref, 12.826 mv step
 
- \  DDR3L Voltage Change and Termination Enable
- \  Turn on reduce DDR Voltage (SD2) to 1.35V
+   \ XXX - According to the schematic, the PM800 voltage is controlled by GPIO8 and GPIO9
+   \  DDR3L Voltage Change and Termination Enable
+   \  Turn on reduce DDR Voltage (SD2) to 1.35V
    h# 3c h# 40 h# 62 twsi1-reg!	\ PM800 (62), VBUCK2_SET (40), enable, 1.35 V, 12.5 mV step, 600 mV base
    
    \  Turn on SD2 to power up termination regulator
