@@ -64,6 +64,9 @@ clear_bss_loop:
     blo     clear_bss_loop
 
     bl      main
+dead:
+    b       dead
+    
 
 doirq:
     ldr     sp, =IRQSTACKTOP
