@@ -77,7 +77,7 @@ d# 905 value resumeline  \ Configurable; should be set from args
    false
 ;
 
-: set-source ( vga? -- )  \ true to unfreeze display, false to freeze it
+: set-display-source ( vga? -- )  \ true to unfreeze display, false to freeze it
    dup vga? =  if  drop exit  then  ( source )
    dup to vga?                      ( source )
    if
@@ -170,12 +170,12 @@ d# 905 value resumeline  \ Configurable; should be set from args
 ;
 
 : video-save
-   0 set-source  \ Freeze image
+   0 set-display-source  \ Freeze image
 ;
 
 : video-restore
    smb-init
-   1 set-source  \ Unfreeze image
+   1 set-display-source  \ Unfreeze image
 ;
 
 0 value dcon-found?
