@@ -20,7 +20,6 @@
    log-buf                log-buf-end 1-             .log-buf
 ;
 : epitaph  ( -- )
-   init1
    ." epitaph "
    h# 3000.0000 0 do
       i @ h# 2163.666f =  if
