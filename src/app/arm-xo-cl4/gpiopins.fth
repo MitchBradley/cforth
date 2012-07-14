@@ -53,8 +53,6 @@ d#  72 constant soc-kbd-dat-gpio#
 d# 129 constant lid-switch-gpio#
 d# 130 constant ebook-mode-gpio#
 
-d#  97 constant en-emmc-pwr-gpio#
-
 d#   4 constant hdmi-scl-gpio#
 d#   5 constant hdmi-sda-gpio#
 d#  14 constant hdmi-hp-det-gpio#
