@@ -45,13 +45,18 @@ purpose: Start OFW on a main CPU
 
 0 value reset-offset
 : ofw-go  ( -- )
-   h# ea000000 h# 0 pj4-l!  \ b 8
-   'compressed reset-offset +  h# 4 pj4-l!  \ reset vector address
-   h# e51f000c h# 8 pj4-l!  \ ldr r0,[pc,#-0xc]
-   h# e1a0f000 h# c pj4-l!  \ mov pc,r0
+   h# e1a00000 h#  0 pj4-l!  \ nop
+   h# e1a00000 h#  4 pj4-l!  \ nop
+   h# e1a00000 h#  8 pj4-l!  \ nop
+   h# e1a00000 h#  c pj4-l!  \ nop
+
+   h# ea000000 h# 10 pj4-l!  \ b 18
+   'compressed reset-offset +  h# 14 pj4-l!  \ reset vector address
+   h# e51f000c h# 18 pj4-l!  \ ldr r0,[pc,#-0xc]
+   h# e1a0f000 h# 1c pj4-l!  \ mov pc,r0
 
    ." releasing" cr
-   0 h# 050020 io!  \ Release reset for PJ4
+   release-main-cpu
 ;
 
 : load-ofw  ( -- )

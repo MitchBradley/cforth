@@ -1,6 +1,8 @@
 \ Load file for application-specific Forth extensions
 
-fl ../arm-xo-1.75/drivers.fth
+fl ../arm-mmp2/mmp2drivers.fth
+fl ../arm-xo-1.75/boardgpio.fth
+fl ../arm-xo-1.75/olpcbasics.fth
 fl ../arm-xo-1.75/showpmu.fth  \ Power management ebugging words
 fl ../arm-xo-1.75/memtest.fth
 
@@ -49,6 +51,10 @@ fl ../arm-xo-1.75/memtest.fth
    [ifdef] fix-fuses  fix-fuses  [then]
    fix-v7
    [ifdef] keyboard-power-on  keyboard-power-on  [then]
+;
+
+: release-main-cpu  ( -- )
+   0 h# 050020 io!  \ Release reset for PJ4
 ;
 
 fl ../arm-xo-1.75/ofw.fth
