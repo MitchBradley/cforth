@@ -1,6 +1,6 @@
 h# 1000.0000 value memtest-start    \ Boosted address of main memory
 h# 0800.0000 value memtest-length
-: memtest  ( adr len -- )
+: memtest  ( -- )
    ." Memory addresses are offset by 0x1000.0000 due to SP addressing quirks" cr
    ." Random pattern test from " memtest-start u.
    ." to " memtest-start memtest-length + 1- u. cr
