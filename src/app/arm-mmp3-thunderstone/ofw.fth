@@ -19,18 +19,22 @@
 : pj4-l!  ( l pj4-adr -- )  pj4>sp-adr l!  ;
 
 h# 0900.0000 constant 'compressed
-: 'compressed-sp  ( -- adr )  'compressed pj4>sp-adr  ;
-
-: di>body  ( adr -- adr' )  h# 20 +  ;
-: next-di  ( adr -- adr' )
-   dup 4 + be-l@ 4 round-up  di>body  +  ( adr' )
-;
-
-\ 282c78 is 30541 - core mode is 3 - Cortex-A9 (v7, uP or MP)
 0 value reset-offset
 
+: 'compressed-sp  ( -- adr )  'compressed pj4>sp-adr  ;
+: di>body  ( adr -- adr' )  h# 20 +  ;
+: next-di  ( adr -- adr' )  dup 4 + be-l@ 4 round-up  di>body  +  ;
+: obmd?  ( adr -- flag )  l@ h# 444d424f =  ;
+: mem-find-reset  ( -- )
+   'compressed-sp dup obmd? 0=  if  ( adr )
+      h# 20000 +  dup obmd? 0=  abort" Can't find dropins"
+   then                             ( adr )
+
+   next-di next-di di>body 'compressed-sp - to reset-offset
+;
+
 : ofw-go  ( -- )
-   'compressed-sp  next-di next-di di>body 'compressed-sp - to reset-offset
+   reset-offset 0=  if  mem-find-reset  then
 
    h# e1a00000 h#  0 pj4-l!  \ nop
    h# e1a00000 h#  4 pj4-l!  \ nop

@@ -1,5 +1,8 @@
 create cl4  \ OLPC XO-CL4
 
+h#   20.0000 constant /rom
+h# 08fe.0000 constant dlofw-base
+
 fl ../arm-xo-cl4/gpiopins.fth
 fl ../arm-mmp2/mfprbits.fth
 fl ../arm-xo-cl4/mfprtable.fth

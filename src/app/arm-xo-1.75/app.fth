@@ -1,5 +1,8 @@
 \ Load file for application-specific Forth extensions
 
+h# 10.0000 constant /rom
+0 constant dlofw-base
+
 fl ../arm-mmp2/mmp2drivers.fth
 fl ../arm-xo-1.75/boardgpio.fth
 fl ../arm-xo-1.75/clockset.fth

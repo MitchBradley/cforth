@@ -150,16 +150,17 @@ h# 10000 constant /spi-block
    drop                                    ( )
 ;
 
+h# 1010.0000 constant spi-mem-base
 : check-spi-programmed  ( adr len offset -- )
-   h# 100000  2 pick  rot  spi-read   ( adr len )
-   h# 100000 swap comp  if  ." Verify failed!!"  cr  then
+   spi-mem-base  2 pick  rot  spi-read   ( adr len )
+   spi-mem-base swap comp  if  ." Verify failed!!"  cr  then
 ;
 : check-spi-erased  ( len offset -- )
-   over >r          ( len offset  r: len )
-   h# 100000 -rot   ( adr len offset  r: len )
-   spi-read         ( r: len )
-   h# 100000 r>  h# ffffffff lcheck dup -1 <>  if  ( adr )
-      ." Not erased at address " h# 100000 - . cr
+   over >r             ( len offset  r: len )
+   spi-mem-base -rot   ( adr len offset  r: len )
+   spi-read            ( r: len )
+   spi-mem-base r>  h# ffffffff lcheck dup -1 <>  if  ( adr )
+      ." Not erased at address " spi-mem-base - . cr
       abort
    else                                            ( -1 )
       drop
@@ -211,4 +212,4 @@ h# 10000 constant /spi-block
    2dup erase-dance
    program-dance
 ;
-: reflash0  ( -- )  0 h# 100000 0 reflash  ;
+: reflash0  ( -- )  dlofw-base /rom 0 reflash  ;
