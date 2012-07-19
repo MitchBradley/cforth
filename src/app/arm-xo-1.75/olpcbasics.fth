@@ -3,8 +3,6 @@
 \ fl spiif.fth
 \ fl spiflash.fth
 \ fl ../arm-mmp2/sspspi.fth
-fl ../arm-xo-1.75/clockset.fth
-fl ../arm-xo-1.75/initdram.fth
 fl ../arm-xo-1.75/smbus.fth
 
 fl ../arm-xo-1.75/addrs.fth

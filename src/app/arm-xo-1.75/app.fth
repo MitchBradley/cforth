@@ -2,6 +2,8 @@
 
 fl ../arm-mmp2/mmp2drivers.fth
 fl ../arm-xo-1.75/boardgpio.fth
+fl ../arm-xo-1.75/clockset.fth
+fl ../arm-xo-1.75/initdram.fth
 fl ../arm-xo-1.75/olpcbasics.fth
 fl ../arm-xo-1.75/showpmu.fth  \ Power management ebugging words
 fl ../arm-xo-1.75/memtest.fth

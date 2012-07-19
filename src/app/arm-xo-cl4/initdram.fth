@@ -1,10 +1,3 @@
-: bitclr   ( and-val regadr -- )  tuck l@ swap invert and swap l!  ;
-: bitset   ( and-val regadr -- )  tuck l@ or  swap l!  ;
-: bitfld   ( set-val clr-mask regadr -- )
-   tuck l@  swap invert and      ( set-val regadr regval )
-   rot or  swap l!
-;
-
 : enable-aib  ( -- )
    h# 00000003 h# D4015064 l!		\  enable AIB
    d# 500 us

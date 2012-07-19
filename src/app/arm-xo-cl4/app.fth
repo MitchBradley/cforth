@@ -6,6 +6,8 @@ fl ../arm-xo-cl4/mfprtable.fth
 
 fl ../arm-mmp2/mmp2drivers.fth
 fl ../arm-xo-1.75/boardgpio.fth
+fl ../arm-xo-cl4/clockset.fth
+fl ../arm-xo-cl4/initdram.fth
 fl ../arm-xo-1.75/olpcbasics.fth
 fl ../arm-xo-1.75/memtest.fth
 
@@ -14,7 +16,7 @@ fl ../arm-xo-1.75/memtest.fth
 ;
 
 : late-init
-   thermal
+   ?startup-problem
 
    set-clock-frequency
 
@@ -23,9 +25,9 @@ fl ../arm-xo-1.75/memtest.fth
 
 : release-main-cpu  ( -- )
 \   h# 18 h# 282988 +io bitset   \ TIMER_CLKEN + TIMER_SW_RST(_N)
-   h# 02 h# 050020 +io bitclr   \ Release reset for PJ4
-   h# 0200.0000 h# 282950 +io bitset  \ PMUA_CC2_PJ - MPCRE2_SW_RSTN
-\   h# 0400.0000 h# 282950 +io bitset  \ PMUA_CC2_PJ - MMCRE_SW_RSTN
+   h# 02 h# 050020 +io bitclr   \ Release reset for PJ4 (MPCORE 1)
+\   h# 0200.0000 h# 282950 +io bitset  \ PMUA_CC2_PJ - MPCRE2_SW_RSTN (MPCORE 2)
+\   h# 0400.0000 h# 282950 +io bitset  \ PMUA_CC2_PJ - MMCRE_SW_RSTN  (MMCORE)
 ;
 
 fl ../arm-xo-1.75/ofw.fth
