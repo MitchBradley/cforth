@@ -1,0 +1,11 @@
+! Load CForth into SRAM and start it running
+
+stop
+set option /memory=long
+set core 1
+restart
+
+load/bin/address =0xd1000000 of "cforth.img" 
+ 
+set reg pc=0xd1000000
+run /nowait

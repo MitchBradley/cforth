@@ -1,0 +1,59 @@
+! Set the values of some fuses.  On MMP2 this was used to fix up
+! a fuse setting that was wrong on the first set of MMP2 parts,
+! specifically to allow booting from SPI FLASH.
+
+! This file was copied from the 1.75 / MMP2 kit and has not
+! yet been vetted for CL4 / MMP3.  Hopefully we will not need it
+
+set option /memory=long
+
+set core 1
+stop
+restart
+
+! Enable clocks to fuse module in WTM_CLK_RES_CTL register
+set value *(unsigned long *)0xd4282868 = 0x08;  ! Enable AXI clock
+set value *(unsigned long *)0xd4282868 = 0x09;  ! Release AXI reset
+set value *(unsigned long *)0xd4282868 = 0x19;  ! Enable peripheral clock
+set value *(unsigned long *)0xd4282868 = 0x1b;  ! Release peripheral reset
+
+! Turn on OTP controller
+set value *(unsigned long *)0xd4292804 = 0x00020000; ! Enable 2.5V
+set value *(unsigned long *)0xd4292804 = 0x00420000; ! Assert reset
+set value *(unsigned long *)0xd4292804 = 0x00020000; ! Release reset
+
+set value *(unsigned long *)0xd4292838 = 0x00000080; ! Set fuses 31:0
+set value *(unsigned long *)0xd429283c = 0xc10d9720; ! Set fuses 63:32
+set value *(unsigned long *)0xd4292840 = 0x88028416; ! Set fuses 95:64  (boot source = 1010)
+set value *(unsigned long *)0xd4292844 = 0x00000000; ! Set fuses 127:96
+
+set value *(unsigned long *)0xd4292804 = 0x02034000; ! Start burning
+
+! Display a dialog box to give time for programming to complete
+message "Click to finish programming"
+
+! Display the completion status
+! show mem /length=4 /size=long 0xd4292984 ; ! Status
+
+set value *(unsigned long *)0xd4292804 = 0x02024000; ! Stop burning
+
+! Turn off OTP controller
+set value *(unsigned long *)0xd4292804 = 0x02004000; ! Disable 2.5V
+set value *(unsigned long *)0xd4292804 = 0x02404000; ! Assert reset
+set value *(unsigned long *)0xd4292804 = 0x02004000; ! Release reset
+
+! Prepare to read back fuses
+set value *(unsigned long *)0xd4292804 = 0x00020000; ! Enable 2.5V
+set value *(unsigned long *)0xd4292804 = 0x00420000; ! Assert reset
+set value *(unsigned long *)0xd4292804 = 0x00020000; ! Release reset
+
+! Read back and display written value
+! show mem /length=4 /size=long 0xd4292904 ; ! Fuses 31:0
+! show mem /length=4 /size=long 0xd4292908 ; ! Fuses 63:32
+print "There should be an 8 (not a 0) in the position shown:\n"
+print "..................8...................................\n"
+show mem /length=4 /size=long 0xd429290c ; ! Fuses 95:64
+! show mem /length=4 /size=long 0xd4292910 ; ! Fuses 127:96
+
+! Turn off 1.5V
+set value *(unsigned long *)0xd4292804 = 0x00000000; ! Disable 2.5V

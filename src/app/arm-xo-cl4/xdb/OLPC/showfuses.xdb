@@ -1,0 +1,24 @@
+! Display the fuse settings.
+! XXX Untested on MMP3
+
+set option /memory=long
+
+! Enable clocks to fuse module in WTM_CLK_RES_CTL register
+set value *(unsigned long *)0xd4282868 = 0x08;  ! Enable AXI clock
+set value *(unsigned long *)0xd4282868 = 0x09;  ! Release AXI reset
+set value *(unsigned long *)0xd4282868 = 0x19;  ! Enable peripheral clock
+set value *(unsigned long *)0xd4282868 = 0x1b;  ! Release peripheral reset
+
+! Turn on OTP controller
+set value *(unsigned long *)0xd4292804 = 0x00020000; ! Enable 2.5V
+set value *(unsigned long *)0xd4292804 = 0x00420000; ! Assert reset
+set value *(unsigned long *)0xd4292804 = 0x00020000; ! Release reset
+
+! Read back and display written value
+show mem /length=4 /size=long 0xd4292904 ; ! Fuses 31:0
+show mem /length=4 /size=long 0xd4292908 ; ! Fuses 63:32
+show mem /length=4 /size=long 0xd429290c ; ! Fuses 95:64
+show mem /length=4 /size=long 0xd4292910 ; ! Fuses 127:96
+
+! Turn off 1.5V
+set value *(unsigned long *)0xd4292804 = 0x00000000; ! Disable 2.5V
