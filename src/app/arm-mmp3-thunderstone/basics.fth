@@ -7,13 +7,15 @@
 
 fl initdram.fth
 
+fl ../arm-xo-1.75/addrs.fth
+
 : wljoin  ( w w -- l )  d# 16 lshift or  ;
 : third  ( a b c -- a b c a )  2 pick  ;
 
-[ifdef] INCLUDE-DISPLAY
+\ [ifdef] INCLUDE-DISPLAY
 fl ../arm-mmp2/lcd.fth
-fl lcdcfg.fth
-[then]
+fl panel.fth
+\ [then]
 
 : short-delay ;
 
@@ -32,11 +34,7 @@ fl ../arm-mmp2/keypad.fth
 false constant activate-cforth?
 false constant show-fb?
 
-false value fb-shown?
-h# 8009.1100 constant fb-on-value
-
-: show-fb ;
-: ?visible ;
+fl ../arm-xo-1.75/showfb.fth
 
 : init-drivers
    banner

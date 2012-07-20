@@ -40,7 +40,7 @@ fl ../arm-mmp3-thunderstone/ofw.fth
    init-drivers
    board-config
 \    early-activate-cforth?  0=  if  ofw  then
-\   ." Skipping OFW" cr
+   ." Skipping OFW" cr
    init-dram  ." DRAM initialized" cr
    hex quit
 ;
