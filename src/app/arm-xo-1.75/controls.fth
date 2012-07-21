@@ -14,7 +14,8 @@
 : show-fb?  ( -- flag )  check-button?  ;
 [else]
 : early-activate-cforth?  ( -- flag )
-   d# 200 ms  ukey3?      ( flag )
+   d# 200 ms
+   ukey3?      ( flag )
    dup  if
       begin  key?  while  key drop  repeat
    then

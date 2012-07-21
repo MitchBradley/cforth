@@ -72,12 +72,12 @@
 0 [if]
 : xxx-setup-dram  ( -- )
    \ DDR3L-400 CH1
-   h# 000D0001 h# D0000010 l!		\ MMAP0
+   h# 000e0001 h# D0000010 l!		\ MMAP0
    h# 00042430 h# D0000020 l!		\ SDRAM_CONFIG_TYPE1-CS0
    h# 00000000 h# D0000030 l!		\ SDRAM_CONFIG_TYPE2-CS0
    \ Timing
    h# 911403CF h# D0000080 l!       	\ SDRAM_TIMING1
-   h# 64660404 h# D0000084 l!		\ SDRAM_TIMING2
+   h# 64660784 h# D0000084 l!		\ SDRAM_TIMING2
    h# C2004453 h# D0000088 l!       	\ SDRAM_TIMING3
    h# 34F4A187 h# D000008C l!       	\ SDRAM_TIMING4
    h# 000F20C1 h# D0000090 l!       	\ SDRAM_TIMING5
@@ -199,7 +199,7 @@
 hex
 create dram-tablex lalign
    \ DDR3L-400
-   000D0001 , 010 ,		\ MMAP0
+   000e0001 , 010 ,		\ MMAP0
    00042430 , 020 ,		\ SDRAM_CONFIG_TYPE1-CS0
    00000000 , 030 ,		\ SDRAM_CONFIG_TYPE2-CS0
 
@@ -280,9 +280,10 @@ false value dram-on?
       dram-table /dram-table bounds  ?do
          i @  i na1+ @  j  mc!
       8 +loop
+      i 1 =  if  h# 100d0001 h# 10 i mc!  then
       i reset-dll
       begin  h# 8 i mc@ 1 and  until  \ Wait init done
    loop
 
-   h# 20  h# d4282ca0  l!   \ Interleave on 512 MB boundary
+   h# 01  h# d4282ca0  l!   \ Interleave on 4 KB boundary
 ;

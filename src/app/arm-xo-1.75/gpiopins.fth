@@ -60,3 +60,7 @@ d#   5 constant compass-sda-gpio#
 
 d#  15 constant rotate-gpio#
 d#  17 constant check-gpio#
+
+d#  14 constant touch-hd-gpio#
+d# 139 constant touch-tck-gpio#
+d#  98 constant touch-rst-gpio#

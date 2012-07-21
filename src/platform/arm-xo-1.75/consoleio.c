@@ -13,12 +13,12 @@ int  ebook_mode();
 
 // Character I/O stubs
 
-#define UART4REG ((unsigned int volatile *)0xd4016000)  // UART4 - main board lower
-#define UART3REG ((unsigned int volatile *)0xd4018000)  // UART3 - main board upper
-#define UART2REG ((unsigned int volatile *)0xd4017000)  // UART2 - not connected
+#define UART4REG ((unsigned int volatile *)0xd4016000)  // UART4 - main board lower (cl2)
+#define UART3REG ((unsigned int volatile *)0xd4018000)  // UART3 - main board upper (cl2)
+#define UART2REG ((unsigned int volatile *)0xd4017000)  // UART2 - BSL (cl2), main board (cl3)
 #define UART1REG ((unsigned int volatile *)0xd4030000)  // UART1 - JTAG board
 
-int uart4_only = 0;
+int dbg_uart_only = 0;
 
 void tx1(char c)
 {
@@ -26,6 +26,13 @@ void tx1(char c)
     while ((UART1REG[5] & 0x20) == 0)
         ;
     UART1REG[0] = (unsigned int)c;
+}
+void tx2(char c)
+{
+    // send the character to the console output device
+    while ((UART2REG[5] & 0x20) == 0)
+        ;
+    UART2REG[0] = (unsigned int)c;
 }
 void tx3(char c)
 {
@@ -41,11 +48,19 @@ void tx4(char c)
         ;
     UART4REG[0] = (unsigned int)c;
 }
+void txdbg(char c)
+{
+#ifdef CL4
+    tx2(c);
+#else
+    tx4(c);
+#endif
+}
 
 void tx(char c)
 {
-    tx4(c);
-    if (uart4_only)
+    txdbg(c);
+    if (dbg_uart_only)
 	return;
     tx1(c);
     tx3(c);
@@ -54,18 +69,18 @@ void tx(char c)
 void dbgputn(unsigned int c)
 {
 	char *digits = "0123456789abcdef";
-	tx4(digits[(c>>4)&0x0f]);
-	tx4(digits[c&0x0f]);
+	txdbg(digits[(c>>4)&0x0f]);
+	txdbg(digits[c&0x0f]);
 }
 void dbgputcmd(unsigned int c)
 {
 	dbgputn(c);
-	tx4('.');
+	txdbg('.');
 }
 void dbgputresp(unsigned int c)
 {
 	dbgputn(c);
-	tx4(' ');
+	txdbg(' ');
 }
 
 int putchar(int c)
@@ -79,6 +94,9 @@ int putchar(int c)
 int kbhit1() {
     return (UART1REG[5] & 0x1) != 0;
 }
+int kbhit2() {
+    return (UART2REG[5] & 0x1) != 0;
+}
 int kbhit3() {
     return (UART3REG[5] & 0x1) != 0;
 }
@@ -87,19 +105,28 @@ int kbhit4() {
 }
 
 int kbhit() {
+#ifdef CL4
+    return kbhit2();
+#else
     return kbhit1() || kbhit3() || kbhit4();
+#endif
 }
 
 int getchar()
 {
     // return the next character from the console input device
     do {
+#ifdef CL4
+	if (kbhit2())
+	    return UART2REG[0];
+#else
 	if (kbhit4())
 	    return UART4REG[0];
-	if ((!uart4_only) && kbhit3())
+	if ((!dbg_uart_only) && kbhit3())
 	    return UART3REG[0];
-	if ((!uart4_only) && kbhit1())
+	if ((!dbg_uart_only) && kbhit1())
 	    return UART1REG[0];
+#endif
     } while (1);
 }
 
@@ -107,6 +134,22 @@ void init_io()
 {
     *(int *)0xd4051024 = 0xffffffff;  // PMUM_CGR_PJ - everything on
     *(int *)0xD4015064 = 0x7;         // APBC_AIB_CLK_RST - reset, functional and APB clock on
+    *(int *)0xD4015064 = 0x3;         // APBC_AIB_CLK_RST - release reset, functional and APB clock on
+#ifdef CL4
+    *(int *)0xD4015030 = 0x13;        // APBC_UART2_CLK_RST - VCTCXO, functional and APB clock on (26 mhz)
+
+    *(int *)0xd401e018 = 0xc1;        // GPIO127 = af1 for UART2 TXD
+    *(int *)0xd401e01c = 0xc4;        // GPIO128 = af1 for UART2 RXD
+
+    UART2REG[1] = 0x40;  // Marvell-specific UART Enable bit
+    UART2REG[3] = 0x83;  // Divisor Latch Access bit
+    UART2REG[0] = 14;    // 115200 baud
+    UART2REG[1] = 00;    // 115200 baud
+    UART2REG[3] = 0x03;  // 8n1
+    UART2REG[2] = 0x07;  // FIFOs and stuff
+
+    dbg_uart_only = 1;
+#else
     *(int *)0xD4015064 = 0x3;         // APBC_AIB_CLK_RST - release reset, functional and APB clock on
     *(int *)0xD401502c = 0x13;        // APBC_UART1_CLK_RST - VCTCXO, functional and APB clock on (26 mhz)
     *(int *)0xD4015034 = 0x13;        // APBC_UART3_CLK_RST - VCTCXO, functional and APB clock on (26 mhz)
@@ -145,7 +188,8 @@ void init_io()
     UART4REG[3] = 0x03;  // 8n1
     UART4REG[2] = 0x07;  // FIFOs and stuff
 
-    uart4_only = 0;
+    dbg_uart_only = 0;
+#endif
 }
 
 

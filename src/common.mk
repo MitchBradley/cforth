@@ -15,13 +15,13 @@ TCFLAGS += -g
 all: default
 
 %.o: %.S
-	$(TCC) $(INCS) $(TSFLAGS) -c $< -o $@
+	$(TCC) $(INCS) $(DEFS) $(TSFLAGS) -c $< -o $@
 
 %.o: %.s
-	$(TCC) $(INCS) -c $< -o $@
+	$(TCC) $(INCS) $(DEFS) -c $< -o $@
 
 %.o: %.c
-	$(TCC) $(INCS) $(TCFLAGS) $(TCPPFLAGS) -c $< -o $@
+	$(TCC) $(INCS) $(DEFS) $(TCFLAGS) $(TCPPFLAGS) -c $< -o $@
 
 # clean:
 #	rm -f *.o

@@ -30,5 +30,6 @@ d# 28 ccall: 'version      { -- a.value }
 d# 29 ccall: 'build-date   { -- a.value }
 d# 30 ccall: wfi-loop      { -- }
 d# 31 ccall: ukey1?        { -- i.value }
-d# 32 ccall: ukey3?        { -- i.value }
-d# 33 ccall: ukey4?        { -- i.value }
+d# 32 ccall: ukey2?        { -- i.value }
+d# 33 ccall: ukey3?        { -- i.value }
+d# 34 ccall: ukey4?        { -- i.value }

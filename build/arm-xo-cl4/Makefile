@@ -52,6 +52,7 @@ PLATPATH = $(SRC)/platform/arm-xo-1.75
 
 VPATH += $(PLATPATH)
 INCS += -I$(PLATPATH)
+DEFS += -DCL4
 
 # Set this to ROM or RAM depending on where you want the base Forth
 # dictionary to live.  RAM is nice if you have enough, so you can

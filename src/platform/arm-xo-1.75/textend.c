@@ -16,7 +16,7 @@ cell sum(cell b, cell a);
 cell byterev(cell n);
 #endif
 cell ps2_out(cell byte, cell device_num);
-cell uart4_only;
+cell dbg_uart_only;
 
 #define DECLARE_REGS \
     volatile unsigned long *fifo = (volatile unsigned long *)0xd4035010; \
@@ -334,7 +334,7 @@ cell ps2_devices_adr(void)
 }
 cell one_uart_adr(void)
 {
-    return (cell)&uart4_only;
+    return (cell)&dbg_uart_only;
 }
 cell reset_reason_val(void)
 {
@@ -354,6 +354,7 @@ cell build_date_adr(void)
     return (cell)build_date;
 }
 extern int kbhit1(void);
+extern int kbhit2(void);
 extern int kbhit3(void);
 extern int kbhit4(void);
 
@@ -391,8 +392,9 @@ cell ((* const ccalls[])()) = {
     (cell (*)())build_date_adr,  // Entry # 29
     (cell (*)())wfi_loop,        // Entry # 30
     (cell (*)())kbhit1,          // Entry # 31
-    (cell (*)())kbhit3,          // Entry # 32
-    (cell (*)())kbhit4,          // Entry # 33
+    (cell (*)())kbhit2,          // Entry # 32
+    (cell (*)())kbhit3,          // Entry # 33
+    (cell (*)())kbhit4,          // Entry # 34
 };
 
 

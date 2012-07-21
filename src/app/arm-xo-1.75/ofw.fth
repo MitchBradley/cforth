@@ -98,6 +98,7 @@ purpose: Start OFW on a main CPU
    'one-uart on
 ;
 
+0 [if]
 \ Start of alternative boot code.  This is used only for recovery/debugging purposes.
 \ It is slower than the normal boot code.  This code performs the decompression
 \ of the OFW image on the SP, whereas the normal boot code lets the PJ4 processor
@@ -142,4 +143,4 @@ h# 1fa0.0000 constant ofw-pa
 : sp-ofw  ( -- )  load-ofw-slow  " " drop  ofw-pa pj4>sp-adr acall  ;
 
 \ End of alternative boot code.
-
+[then]
