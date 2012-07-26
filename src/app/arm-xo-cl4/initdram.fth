@@ -69,124 +69,6 @@
    set-frequency
 ;
 
-0 [if]
-: xxx-setup-dram  ( -- )
-   \ DDR3L-400 CH1
-   h# 000e0001 h# D0000010 l!		\ MMAP0
-   h# 00042430 h# D0000020 l!		\ SDRAM_CONFIG_TYPE1-CS0
-   h# 00000000 h# D0000030 l!		\ SDRAM_CONFIG_TYPE2-CS0
-   \ Timing
-   h# 911403CF h# D0000080 l!       	\ SDRAM_TIMING1
-   h# 64660784 h# D0000084 l!		\ SDRAM_TIMING2
-   h# C2004453 h# D0000088 l!       	\ SDRAM_TIMING3
-   h# 34F4A187 h# D000008C l!       	\ SDRAM_TIMING4
-   h# 000F20C1 h# D0000090 l!       	\ SDRAM_TIMING5
-   h# 04040200 h# D0000094 l!       	\ SDRAM_TIMING6
-   h# 00005501 h# D0000098 l!       	\ SDRAM_TIMING7
-   \ Control
-   h# 00000000 h# D0000050 l!		\ SDRAM_CTRL1
-   h# 00000000 h# D0000054 l!        	\ SDRAM_CTRL2
-   h# 20C08009 h# D0000058 l!       	\ SDRAM_CTRL4
-   h# 00000201 h# D000005C l!		\ SDRAM_CTRL6_SDRAM_ODT_CTRL
-   h# 0200000A h# D0000060 l!		\ SDRAM_CTRL7_SDRAM_ODT_CTRL2
-   h# 00000000 h# D0000064 l!		\ SDRAM_CTRL13
-   h# 00000000 h# D0000068 l!		\ SDRAM_CTRL14
-   \ !#__PHY Deskew PLL config and PHY initialization
-   h# 00300008 h# D0000240 l!		\ PHY_CTRL11
-   h# 80000000 h# D000024C l!		\ PHY_CTRL14
-   h# 000031d8 h# D000023C l!		\ PHY_CTRL0
-   h# 20004055 h# D0000220 l!		\ PHY_CTRL3
-   h# 1FF84A79 h# D0000230 l!        	\ PHY_CTRL7
-   h# 0FF00A70 h# D0000234 l!        	\ PHY_CTRL8
-   h# 000000A7 h# D0000238 l!        	\ PHY_CTRL9
-   h# F0210000 h# D0000248 l!      	\ PHY_CTRL13
-   \ PHY DLL Tuning 
-   h# 00000000 h# D0000300 l!        	\ PHY DATA BYTE SEL
-   h# 00001080 h# D0000304 l!        	\ PHY DLL CTRL
-   h# 00000001 h# D0000300 l!        	\ PHY DATA BYTE SEL
-   h# 00001080 h# D0000304 l!        	\ PHY DLL CTRL
-   h# 00000002 h# D0000300 l!        	\ PHY DATA BYTE SEL
-   h# 00001080 h# D0000304 l!        	\ PHY DLL CTRL
-   h# 00000003 h# D0000300 l!        	\ PHY DATA BYTE SEL
-   h# 00001080 h# D0000304 l!        	\ PHY DLL CTRL
-   \ Read Leveling CS0
-   h# 00000100 h# D0000380 l!
-   h# 00000200 h# D0000390 l!
-   h# 00000101 h# D0000380 l!
-   h# 00000200 h# D0000390 l!
-   h# 00000102 h# D0000380 l!
-   h# 00000200 h# D0000390 l!
-   h# 00000103 h# D0000380 l!
-   h# 00000200 h# D0000390 l!
-   \ DLL reset
-   h# 20000000 h# D000024C bitset	\ # DLL reset
-   d# 68 us
-   h# 00030001 h# D0000160 l!		\ USER_INITIATED_COMMAND0
-   d# 68 us
-   h# 40000000 h# D000024C bitset	\ # DLL update via pulse mode
-   h# 68 us
-
-   \ DDR3L-400 CH0
-   h# 000D0001 h# D0010010 l!		\ MMAP0
-   h# 00042430 h# D0010020 l!		\ SDRAM_CONFIG_TYPE1-CS0
-   h# 00000000 h# D0010030 l!		\ SDRAM_CONFIG_TYPE2-CS0
-   \ Timing
-   h# 911403CF h# D0010080 l!       	\ SDRAM_TIMING1
-   h# 64660404 h# D0010084 l!		\ SDRAM_TIMING2
-   h# C2004453 h# D0010088 l!       	\ SDRAM_TIMING3
-   h# 34F4A187 h# D001008C l!       	\ SDRAM_TIMING4
-   h# 000F20C1 h# D0010090 l!       	\ SDRAM_TIMING5
-   h# 04040200 h# D0010094 l!       	\ SDRAM_TIMING6
-   h# 00005501 h# D0010098 l!       	\ SDRAM_TIMING7
-   \ Control
-   h# 00000000 h# D0010050 l!		\ SDRAM_CTRL1
-   h# 00000000 h# D0010054 l!        	\ SDRAM_CTRL2
-   h# 20C08009 h# D0010058 l!       	\ SDRAM_CTRL4
-   h# 00000201 h# D001005C l!		\ SDRAM_CTRL6_SDRAM_ODT_CTRL
-   h# 0200000A h# D0010060 l!		\ SDRAM_CTRL7_SDRAM_ODT_CTRL2
-   h# 00000000 h# D0010064 l!		\ SDRAM_CTRL13
-   h# 00000000 h# D0010068 l!		\ SDRAM_CTRL14
-   \ !#__PHY Deskew PLL config and PHY initialization
-   h# 00300008 h# D0010240 l!		\ PHY_CTRL11
-   h# 80000000 h# D001024C l!		\ PHY_CTRL14
-   h# 000031d8 h# D001023C l!		\ PHY_CTRL0
-   h# 20004055 h# D0010220 l!		\ PHY_CTRL3
-   h# 1FF84A79 h# D0010230 l!        	\ PHY_CTRL7
-   h# 0FF00A70 h# D0010234 l!        	\ PHY_CTRL8
-   h# 000000A7 h# D0010238 l!        	\ PHY_CTRL9
-   h# F0210000 h# D0010248 l!      	\ PHY_CTRL13
-   \ PHY DLL Tuning 
-   h# 00000000 h# D0010300 l!        	\ PHY DATA BYTE SEL - byte 0
-   h# 00001080 h# D0010304 l!        	\ PHY DLL CTRL phase is funny because it affects 2 fields
-   h# 00000001 h# D0010300 l!        	\ PHY DATA BYTE SEL - byte 1
-   h# 00001080 h# D0010304 l!        	\ PHY DLL CTRL
-   h# 00000002 h# D0010300 l!        	\ PHY DATA BYTE SEL - byte 2
-   h# 00001080 h# D0010304 l!        	\ PHY DLL CTRL
-   h# 00000003 h# D0010300 l!        	\ PHY DATA BYTE SEL - byte 3
-   h# 00001080 h# D0010304 l!        	\ PHY DLL CTRL
-   \ Read Leveling CS0
-   h# 00000100 h# D0010380 l!		\ select CS1 byte 0
-   h# 00000200 h# D0010390 l!		\ RL pos edge, cycle delay 2, tap delay 0
-   h# 00000101 h# D0010380 l!		\ select CS1 byte 1
-   h# 00000200 h# D0010390 l!		\ RL pos edge, cycle delay 2, tap delay 0
-   h# 00000102 h# D0010380 l!		\ select CS1 byte 2
-   h# 00000200 h# D0010390 l!		\ RL pos edge, cycle delay 2, tap delay 0
-   h# 00000103 h# D0010380 l!		\ select CS1 byte 3
-   h# 00000200 h# D0010390 l!		\ RL pos edge, cycle delay 2, tap delay 0
-   \ !# DLL reset
-   h# 20000000 h# D001024C bitset	\ DLL reset
-   d# 68 us
-   h# 00030001 h# D0010160 l!        	\ USER_INITIATED_COMMAND0
-   d# 68 us
-   h# 40000000 h# D001024C bitset	\ # DLL update via pulse mode
-   h# 68 us
-
-   \  disable interleave
-   h# 00000000 h# d4282ca0 l!
-   d# 5000 us
-;
-[then]
-
 \ Thunderstone - 2 chips per channel MT41K128M16HA-15E A0-A14 - 16 meg x 16 x 8 banks - 128 MiB / chip x 4 chips = 512 MiB
 \   -15E is 1333 data rate  tRCD 13.5  tRP 13.5  CL 13.5b  tRCD 9  tRP 9  tCL 9   1.5 nS @CL9 
 
@@ -205,7 +87,7 @@ create dram-tablex lalign
 
    \ Timing
    911403CF , 080 ,       	\ SDRAM_TIMING1
-   64660404 , 084 ,		\ SDRAM_TIMING2
+   64660784 , 084 ,		\ SDRAM_TIMING2
    C2004453 , 088 ,       	\ SDRAM_TIMING3
    34F4A187 , 08C ,       	\ SDRAM_TIMING4
    000F20C1 , 090 ,       	\ SDRAM_TIMING5
