@@ -280,7 +280,6 @@ false value dram-on?
       dram-table /dram-table bounds  ?do
          i @  i na1+ @  j  mc!
       8 +loop
-      i 1 =  if  h# 100d0001 h# 10 i mc!  then
       i reset-dll
       begin  h# 8 i mc@ 1 and  until  \ Wait init done
    loop
