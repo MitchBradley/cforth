@@ -11,8 +11,8 @@ d#  46 constant spi-flash-cs-gpio#
 d# 155 constant ec-spi-cmd-gpio#
 d# 113 constant ec-spi-ack-gpio#
 
-d# 167 constant dcon-scl-gpio#
-d# 168 constant dcon-sda-gpio#
+d# 168 constant dcon-scl-gpio#
+d# 167 constant dcon-sda-gpio#
 
 d# 126 constant dcon-irq-gpio#
 d# 142 constant dcon-load-gpio#
