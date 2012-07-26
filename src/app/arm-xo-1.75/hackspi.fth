@@ -126,8 +126,8 @@ h# 10000 constant /spi-block
 /spi-page buffer: ff-buf
 : dirty?  ( adr -- flag )  ff-buf /spi-page comp  ;
 : erase-range  ( len offset -- )
-   swap                                ( offset len )
-   over 0=  over h# 100000 =  and  if  ( offset len )
+   swap                           ( offset len )
+   over 0=  over /rom =  and  if  ( offset len )
       2drop  erase-spi-chip       ( )
    else                           ( offset len )
       begin  dup 0>  while        ( offset len )
