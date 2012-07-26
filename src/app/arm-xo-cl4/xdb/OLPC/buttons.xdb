@@ -48,9 +48,9 @@ DISPLAY /POSITION="658  29 974  59 132161" TOOLBAR "CPU[CS:2]"
 DISPLAY /POSITION=" -2  59 170  91 132161" TOOLBAR "User"
 
 ![*****     USER BUTTON      *****]!
-DEFINE BUTTON /OVERWRITE CFORTH "batch \"~\OLPC\cforth.xdb\"\n"
-DEFINE BUTTON /OVERWRITE DLOFW "batch \"~\OLPC\dlofw.xdb\"\n"
-DEFINE BUTTON /OVERWRITE RUNOFW "batch \"~\OLPC\runofw.xdb\"\n"
+DEFINE BUTTON /OVERWRITE CFORTH "batch \"~/OLPC/cforth.xdb\"\n"
+DEFINE BUTTON /OVERWRITE DLOFW "batch \"~/OLPC/dlofw.xdb\"\n"
+DEFINE BUTTON /OVERWRITE RUNOFW "batch \"~/OLPC/runofw.xdb\"\n"
 
 ![*****    DOCKED WINDOWS    *****]!
 DISPLAY /POSITION="  0   1 1000000  151   577" CORE
