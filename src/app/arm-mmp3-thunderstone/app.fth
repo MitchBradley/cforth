@@ -14,7 +14,7 @@ fl ../arm-xo-1.75/memtest.fth
 ;
 
 : late-init
-   init-dram
+   init-dram    ." DRAM initialized" cr
 ;
 
 : release-main-cpu  ( -- )
@@ -39,9 +39,9 @@ fl ../arm-mmp3-thunderstone/ofw.fth
    init-mfprs
    init-drivers
    board-config
+   late-init
 \    early-activate-cforth?  0=  if  ofw  then
    ." Skipping OFW" cr
-   init-dram  ." DRAM initialized" cr
    hex quit
 ;
 
