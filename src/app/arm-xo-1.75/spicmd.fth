@@ -23,9 +23,9 @@
 
 h# 037000 value ssp-base  \ Default to SSP3
 : ssp-sscr0  ( -- adr )  ssp-base  ;
-: ssp-sscr1  ( -- adr )  ssp-base  la1+  ;
-: ssp-sssr   ( -- adr )  ssp-base  2 la+  ;
-: ssp-ssdr   ( -- adr )  ssp-base  4 la+  ;
+: ssp-sscr1  ( -- adr )  ssp-base  4 +  ;
+: ssp-sssr   ( -- adr )  ssp-base  8 +  ;
+: ssp-ssdr   ( -- adr )  ssp-base  h# 10 +  ;
 
 : ssp3-clk-on  7 h# 015058 io!   3 h# 015058 io!  ;
 
