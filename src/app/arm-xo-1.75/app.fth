@@ -68,6 +68,7 @@ fl ../arm-xo-1.75/ofw.fth
 : app  ( -- )
    init-drivers
    board-config
+   late-init
    early-activate-cforth?  0=  if  ofw  then
    ." Skipping OFW" cr
    hex protect-fw quit

@@ -83,7 +83,6 @@ purpose: Start OFW on a main CPU
 ;
 
 : ofw  ( -- )
-   late-init
    blank-display-lowres
    h# 00 puthex  ?visible
    load-ofw
