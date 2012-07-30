@@ -27,6 +27,7 @@ d# 142 constant sec-trg-gpio#
 d#  53 constant rtc-scl-gpio#
 d#  54 constant rtc-sda-gpio#
 
+d# 103 constant ec-edi-miso-gpio#
 d# 104 constant ec-edi-cs-gpio#
 d# 105 constant ec-edi-mosi-gpio#
 d# 106 constant ec-edi-clk-gpio#
