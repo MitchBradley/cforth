@@ -60,10 +60,12 @@ void txdbg(char c)
 void tx(char c)
 {
     txdbg(c);
+#ifndef CL4
     if (dbg_uart_only)
 	return;
     tx1(c);
     tx3(c);
+#endif
 }
 
 void dbgputn(unsigned int c)
@@ -139,7 +141,7 @@ void init_io()
     *(int *)0xD4015030 = 0x13;        // APBC_UART2_CLK_RST - VCTCXO, functional and APB clock on (26 mhz)
 
     *(int *)0xd401e018 = 0xc1;        // GPIO127 = af1 for UART2 TXD
-    *(int *)0xd401e01c = 0xc4;        // GPIO128 = af1 for UART2 RXD
+    *(int *)0xd401e01c = 0xc1;        // GPIO128 = af1 for UART2 RXD
 
     UART2REG[1] = 0x40;  // Marvell-specific UART Enable bit
     UART2REG[3] = 0x83;  // Divisor Latch Access bit
@@ -147,8 +149,6 @@ void init_io()
     UART2REG[1] = 00;    // 115200 baud
     UART2REG[3] = 0x03;  // 8n1
     UART2REG[2] = 0x07;  // FIFOs and stuff
-
-    dbg_uart_only = 1;
 #else
     *(int *)0xD4015064 = 0x3;         // APBC_AIB_CLK_RST - release reset, functional and APB clock on
     *(int *)0xD401502c = 0x13;        // APBC_UART1_CLK_RST - VCTCXO, functional and APB clock on (26 mhz)
@@ -187,9 +187,9 @@ void init_io()
     UART4REG[1] = 00;    // 11500 baud
     UART4REG[3] = 0x03;  // 8n1
     UART4REG[2] = 0x07;  // FIFOs and stuff
+#endif
 
     dbg_uart_only = 0;
-#endif
 }
 
 
@@ -1094,4 +1094,3 @@ void gamekey_handle(int is_timer)
 	sched_debounce();
     }
 }
-
