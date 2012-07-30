@@ -1,6 +1,6 @@
 create cl4  \ OLPC XO-CL4
 
-h#   20.0000 constant /rom
+h#   10.0000 constant /rom
 h# 08fe.0000 constant dlofw-base
 
 fl ../arm-xo-cl4/gpiopins.fth
@@ -39,6 +39,7 @@ fl ../arm-xo-1.75/ofw.fth
 : app  ( -- )
    init-drivers
    board-config
+   late-init
    early-activate-cforth?  0=  if  
       ['] ofw catch ?dup  if  .error  then
    then
