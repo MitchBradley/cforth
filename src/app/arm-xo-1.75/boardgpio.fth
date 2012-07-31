@@ -71,6 +71,10 @@ purpose: Board-specific setup details - pin assigments, etc.
    emmc-rst-gpio#       gpio-out-clr
 [then]
 
+[ifdef] en-emmc-pwr-gpio#
+   en-emmc-pwr-gpio#    gpio-out-set
+[then]
+
 [ifdef] cam-pwr-gpio#
    cam-pwr-gpio#        gpio-out-clr
 [then]
