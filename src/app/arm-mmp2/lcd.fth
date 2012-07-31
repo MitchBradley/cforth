@@ -1,5 +1,13 @@
+[ifdef] cl4
+\ This value has the same effect as the value below.  The
+\ difference is that the SCLK_SOURCE_SELECT field added a
+\ low-order bit (bit 29), so the high nibble changed from
+\ 2 to 4 even though the field value is still 1.
+h# 20001102 value clkdiv  \ Display Clock 1 / 2 -> 56.93 MHz
+[else]
 h# 40001102 value clkdiv  \ Display Clock 1 / 2 -> 56.93 MHz
-h# 00000700 value pmua-disp-clk-sel  \ PLL1 / 7 -> 113.86 MHz 
+[then]
+h# 00000700 value pmua-disp-clk-sel  \ PLL1 / 7 -> 113.86 MHz
 
 d#    8 value hsync  \ Sync width
 d# 1200 value hdisp  \ Display width
@@ -32,10 +40,12 @@ d# 16 constant bpp
 
 : init-lcd  ( -- )
    \ Turn on clocks
+\ New: d12bf
    h# 08 pmua-disp-clk-sel + h# 28284c io!
    h# 09 pmua-disp-clk-sel + h# 28284c io!
    h# 19 pmua-disp-clk-sel + h# 28284c io!
    h# 1b pmua-disp-clk-sel + h# 28284c io!
+\ New: d12bf h# 282910 io!
 
    0                  h# 190 lcd!  \ Disable LCD DMA controller
    diagfb-pa           h# f4 lcd!  \ Frame buffer area 0
@@ -50,8 +60,10 @@ d# 16 constant bpp
    hbp >chunks  wljoin  h# 11c lcd!
    
    vfp vbp wljoin  h# 120 lcd!
-   h# 2000FF00 h# 194 lcd!  \ DMA CTRL 1
+   h# 2000FF00 h# 194 lcd!  \ DMA CTRL 1 \ New: NOT
+\ New: d not 2000000d
    h# 2000000d h# 1b8 lcd!  \ Dumb panel controller - 18 bit RGB666 on LDD[17:0]
+\ New: a000a not 01330133
    h# 01330133 h# 13c lcd!  \ Panel VSYNC Pulse Pixel Edge Control
    clkdiv      h# 1a8 lcd!  \ Clock divider
 \  h# 08021100 h# 190 lcd!  \ DMA CTRL 0 - enable DMA, 24 bpp mode
