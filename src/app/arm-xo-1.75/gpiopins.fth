@@ -43,6 +43,7 @@ d# 128 constant ebook-mode-gpio#
 d# 143 constant mic-ac/dc-gpio#
 d#   8 constant audio-reset-gpio#
 d#  97 constant hp-plug-gpio#
+d#  96 constant mic-plug-gpio#
 
 d#  10 constant led-storage-gpio#
 d#  11 constant vid2-gpio#

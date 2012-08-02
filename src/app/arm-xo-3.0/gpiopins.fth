@@ -37,4 +37,5 @@ d#  56 constant boot-dev-sel-gpio#
 d# 143 constant mic-ac/dc-gpio#
 d#   8 constant audio-reset-gpio#
 d#  97 constant hp-plug-gpio#
+d#  96 constant mic-plug-gpio#
 d#  11 constant vid2-gpio#
