@@ -23,7 +23,7 @@ create mfpr-table
    0 sleepi af,			\ GPIO_21 - KEY_L_RT (using gpio)
    0 sleepi af,			\ GPIO_22 - KEY_L_DN (using gpio)
    0 sleepi af,			\ GPIO_23 - KEY_L_LF (using gpio)
-   1 sleep1 af,			\ GPIO_24 - I2S_SYSCLK   (Codec) \ wastes 40 mW if S0
+   5 sleep1 af,			\ GPIO_24 - I2S_SYSCLK   (Codec) \ wastes 40 mW if S0
    1 sleep1 af,			\ GPIO_25 - I2S_BITCLK   (Codec) \ wastes 2 mW if S0
    1 sleep0 af,			\ GPIO_26 - I2S_SYNC     (Codec)
    1 sleep1 af,			\ GPIO_27 - I2S_DATA_OUT (Codec) \ wastes 3 mW if S0
