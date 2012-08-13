@@ -52,6 +52,7 @@ void txdbg(char c)
 {
 #ifdef CL4
     tx2(c);
+    tx1(c);
 #else
     tx4(c);
 #endif
@@ -108,7 +109,7 @@ int kbhit4() {
 
 int kbhit() {
 #ifdef CL4
-    return kbhit2();
+    return kbhit2() || kbhit1();
 #else
     return kbhit1() || kbhit3() || kbhit4();
 #endif
@@ -119,7 +120,9 @@ int getchar()
     // return the next character from the console input device
     do {
 #ifdef CL4
-	if (kbhit2())
+	if (kbhit1())
+	    return UART1REG[0];
+	if ((!dbg_uart_only) && kbhit2())
 	    return UART2REG[0];
 #else
 	if (kbhit4())
@@ -138,10 +141,24 @@ void init_io()
     *(int *)0xD4015064 = 0x7;         // APBC_AIB_CLK_RST - reset, functional and APB clock on
     *(int *)0xD4015064 = 0x3;         // APBC_AIB_CLK_RST - release reset, functional and APB clock on
 #ifdef CL4
-    *(int *)0xD4015030 = 0x13;        // APBC_UART2_CLK_RST - VCTCXO, functional and APB clock on (26 mhz)
+
+    *(int *)0xd401e0c8 = 0xc1;        // GPIO29 = af1 for UART1 RXD
+    *(int *)0xd401e0cc = 0xc1;        // GPIO30 = af1 for UART1 TXD
+
+    *(int *)0xD401502c = 0x13;        // APBC_UART1_CLK_RST - VCTCXO, functio
+
+    UART1REG[1] = 0x40;  // Marvell-specific UART Enable bit
+    UART1REG[3] = 0x83;  // Divisor Latch Access bit
+    UART1REG[0] = 14;    // 115200 baud
+    UART1REG[1] = 00;    // 115200 baud
+    UART1REG[3] = 0x03;  // 8n1
+    UART1REG[2] = 0x07;  // FIFOs and stuff
+
 
     *(int *)0xd401e018 = 0xc1;        // GPIO127 = af1 for UART2 TXD
     *(int *)0xd401e01c = 0xc1;        // GPIO128 = af1 for UART2 RXD
+
+    *(int *)0xD4015030 = 0x13;        // APBC_UART2_CLK_RST - VCTCXO, functional and APB clock on (26 mhz)
 
     UART2REG[1] = 0x40;  // Marvell-specific UART Enable bit
     UART2REG[3] = 0x83;  // Divisor Latch Access bit
