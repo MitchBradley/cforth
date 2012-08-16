@@ -30,7 +30,7 @@ h# 04 c,  h# 08 c,  h# 0c c,  h# 10 c,  h# 7c c,  h# 80 c,
 ;
 : set-twsi-target  ( slave channel -- )  \ Channel numbers range from 1 to 6
    set-twsi-channel
-   to slave-address
+   2* to slave-address
 ;
 
 \       Bit defines
