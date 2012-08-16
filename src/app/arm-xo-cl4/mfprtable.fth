@@ -152,7 +152,7 @@ create mfpr-table
    no-update,			\ GPIO_138 - Not connected (TP65)
    0 sleep0 af,			\ GPIO_139 - TOUCH_TCK
    no-update,			\ GPIO_140 - Not connected (TP67)
-   1 sleepi af,			\ GPIO_141 - SD2_WP#
+   1 sleepi +pull-up af,	\ GPIO_141 - SD2_WP#
 
    1 sleep0 af,			\ GPIO_142 - DCONLOAD
    1 sleep0 af,			\ GPIO_143 - MIC_AC#/DC

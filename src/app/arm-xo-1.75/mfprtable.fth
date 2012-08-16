@@ -167,7 +167,7 @@ create mfpr-table
    1 sleep0 +fast af, \ GPIO_139 - SD_CLK AKA SD2_CLK
    no-update,         \ GPIO_140 - Not connected if R130 is nopop
 \  1 sleep1 af,       \ GPIO_140 - (SD_CD# if R130 is populated)
-   1 sleepi af,       \ GPIO_141 - SD_WP# AKA SD2_WP#
+   1 sleepi +pull-up af,  \ GPIO_141 - SD_WP# AKA SD2_WP#
 
    1 sleep0 af,      \ GPIO_142 - DCONLOAD (CL2), SEC_TRG (CL3)
    1 sleep0 af,      \ GPIO_143 - MIC_AC#/DC
