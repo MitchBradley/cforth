@@ -48,25 +48,33 @@ void tx4(char c)
         ;
     UART4REG[0] = (unsigned int)c;
 }
+#ifdef CL4
 void txdbg(char c)
 {
-#ifdef CL4
-    tx2(c);
-#else
-    tx4(c);
-#endif
+    tx1(c);
 }
-
+void tx(char c)
+{
+    txdbg(c);
+    if (dbg_uart_only)
+	return;
+    tx2(c);
+}
+#else
+void txdbg(char c)
+{
+    tx4(c);
+}
 void tx(char c)
 {
     txdbg(c);
     if (dbg_uart_only)
 	return;
     tx1(c);
-#ifndef CL4
     tx3(c);
-#endif
 }
+#endif
+
 
 void dbgputn(unsigned int c)
 {
