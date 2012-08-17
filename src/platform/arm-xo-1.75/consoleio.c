@@ -52,7 +52,6 @@ void txdbg(char c)
 {
 #ifdef CL4
     tx2(c);
-    tx1(c);
 #else
     tx4(c);
 #endif
@@ -61,10 +60,10 @@ void txdbg(char c)
 void tx(char c)
 {
     txdbg(c);
-#ifndef CL4
     if (dbg_uart_only)
 	return;
     tx1(c);
+#ifndef CL4
     tx3(c);
 #endif
 }
