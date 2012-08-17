@@ -15,6 +15,9 @@ d# 125 constant ec-spi-ack-gpio#
 d# 161 constant dcon-scl-gpio#
 d# 110 constant dcon-sda-gpio#
 
+d# 100 constant dcon-stat0-gpio#
+d# 101 constant dcon-stat1-gpio#
+
 d# 124 constant dcon-irq-gpio#
 d# 142 constant dcon-load-gpio#
 
