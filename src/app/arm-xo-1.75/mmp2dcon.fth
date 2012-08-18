@@ -31,7 +31,7 @@
 : set-dcon-slave  ( -- )
    dcon-scl-gpio# to smb-clock-gpio#
    dcon-sda-gpio# to smb-data-gpio#
-   h# 1a to smb-slave
+   h# 0d to smb-slave
 ;
 
 : smb-init    ( -- )  set-dcon-slave  smb-on  smb-pulses  ;

@@ -76,7 +76,7 @@ h# 3500 constant smb-data-timeout-us
 ;
 
 0 value smb-slave
-: smb-addr  ( lowbit -- )  smb-slave or  smb-byte  ;
+: smb-addr  ( lowbit -- )  smb-slave 2* or  smb-byte  ;
 
 : smb-byte!  ( byte reg# -- )
    smb-start
