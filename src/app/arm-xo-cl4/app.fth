@@ -39,8 +39,7 @@ fl ../arm-xo-1.75/ofw.fth
 : app  ( -- )
    init-drivers
    board-config
-   late-init
-   early-activate-cforth?  0=  if  
+   early-activate-cforth?  0=  if
       ['] ofw catch ?dup  if  .error  then
    then
    ." Skipping OFW" cr
