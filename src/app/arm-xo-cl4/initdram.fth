@@ -82,7 +82,7 @@ hex
 create dram-tablex lalign
    \ DDR3L-400
    000e0001 , 010 ,		\ MMAP0
-   00042430 , 020 ,		\ SDRAM_CONFIG_TYPE1-CS0
+   00042530 , 020 ,		\ SDRAM_CONFIG_TYPE1-CS0
    00000000 , 030 ,		\ SDRAM_CONFIG_TYPE2-CS0
 
    \ Timing
@@ -137,7 +137,7 @@ here dram-tablex laligned - constant /dram-table
 
 false value dram-on?
 : +mc  ( offset channel -- adr )
-   if  h# d000.0000  else  h# d001.0000  then  +
+   if  h# d001.0000  else  h# d000.0000  then  +
 ;
 : mc!  ( value offset channel -- )  +mc l!  ;
 : mc@  ( offset channel -- value )  +mc l@  ;
@@ -152,13 +152,14 @@ false value dram-on?
    h# 68 us
 ;
 
+2 value #mcs
 : init-dram
    dram-on?  if  exit  then
    true to dram-on? 
 
    setup-platform
 
-   2 0  do
+   #mcs 0  do
       dram-table /dram-table bounds  ?do
          i @  i na1+ @  j  mc!
       8 +loop
@@ -166,5 +167,22 @@ false value dram-on?
       begin  h# 8 i mc@ 1 and  until  \ Wait init done
    loop
 
-   h# 01  h# d4282ca0  l!   \ Interleave on 4 KB boundary
+   #mcs 2 =  if  h# 40  else  0  then   h# d4282ca0  l!   \ Interleave on 1 GiB boundary, or not at all
 ;
+
+\ Simple address-independence test to find aliasing
+\ Works well for 1 GiB, shows false aliasing at 60000000 for 2 GiB
+\ because the SP can only access 0x70000000 bytes of DRAM due to the
+\ 0x10000000 offset.
+: p>s  h# 1000.0000 +  ;
+: fi
+   h# 4000.0000 #mcs *  0  do
+      i  i p>s  l!
+   h# 10.0000 +loop
+;
+: di
+   h# 4000.0000 #mcs *  0  do
+      i p>s l@  i <>  if  i . i l@ . leave  then
+   h# 10.0000 +loop
+;
+: t  fi di  ;
