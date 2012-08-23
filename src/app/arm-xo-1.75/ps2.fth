@@ -10,7 +10,12 @@ h# 282000 value ic-base  \ Interrupt controller
 : enable-irq  ( level -- )  h# 11 swap /l* ic!  ;  \ Enable for IRQ0
 : disable-irq  ( level -- )  0 swap /l* ic!  ;
 
+: all-interrupts-off  ( -- )
+   d# 64 0  do  i disable-irq  loop 
+;
+
 : setup-interrupts  ( -- )
+   all-interrupts-off  \ The MMP boot ROM leaves some interrupts on
    \ Take over the vector table which starts out in ROM at ffff0000
    itcm-on  cforth>itcm  \ Shadow address 0 with ITCM and copy cforth to it
    control@ h# 2000 invert and control!  \ vector table at 0
