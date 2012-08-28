@@ -148,6 +148,7 @@ void init_io()
     *(int *)0xD4015064 = 0x7;         // APBC_AIB_CLK_RST - reset, functional and APB clock on
     *(int *)0xD4015064 = 0x3;         // APBC_AIB_CLK_RST - release reset, functional and APB clock on
 #ifdef CL4
+    *(int *)0xd4051020 = 0x0;         // PMUM_PRR_PJ - Turn off SLAVE_R and WDTR2 (empirically, the WDTR2 bit stays set afterwards)
 
     *(int *)0xd401e0c8 = 0xc1;        // GPIO29 = af1 for UART1 RXD
     *(int *)0xd401e0cc = 0xc1;        // GPIO30 = af1 for UART1 TXD
