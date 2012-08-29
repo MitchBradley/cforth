@@ -32,7 +32,12 @@ create mfpr-offsets                                         \  GPIOs
    248 w, 24C w, 254 w, 258 w, 14C w, 150 w, 154 w, 158 w,  \ 152->159
    250 w, 210 w, 20C w, 208 w, 204 w, 1EC w, 1E8 w, 1E4 w,  \ 160->167
    1E0 w, 2bc w, 2c0 w, 2c8 w,                              \ 168->171
-here mfpr-offsets - /w /  constant #mfprs
+here mfpr-offsets - /w /  
+[ifdef] #mfprs
+  #mfprs <>  abort" #mfprs mismatch!"
+[else]
+  constant #mfprs
+[then]
 
 h# 01.e000 constant mfpr-base
 : gpio>mfpr  ( gpio# -- mfpr-pa )
