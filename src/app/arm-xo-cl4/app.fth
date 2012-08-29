@@ -21,7 +21,7 @@ fl ../arm-xo-1.75/memtest.fth
 : late-init
    ?startup-problem
 
-   set-clock-frequency
+   set-frequency-1g
 
    init-dram
 ;

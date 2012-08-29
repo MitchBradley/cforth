@@ -1,72 +1,24 @@
 : enable-aib  ( -- )
-   h# 00000003 h# D4015064 l!		\  enable AIB
+   h# 00000003 h# 15064 io!		\  enable AIB
    d# 500 us
 ;
 
-: set-voltages  ( -- )
-;
-
-: set-frequency  ( -- )   \  Static Frequency Change
-   \ pjdiv 0, atdiv 2, reserved 3, peripheral 1, ddrdiv 0, axidiv 0, mb1 f, mb1 1
-   h# 00BC02D0  h# d4282804 l!	  	\ PMUA_CC_PJ  (octal 57001320)
-   h# 01fffe07  h# d4282950 bitclr	\ PMUA_CC2_PJ  - clear divisor fields
-
-   \  axi clk2 div = 1 (ratio = 2), mmcore pclk 1 (ratio = 2), aclk div 1 (ratio = 2)
-   h# 00220001  h# d4282950 bitset
-   h# 01f00000  h# d4282988 bitclr	\ PMUA_CC3_PJ  clear divisor field
-   h#   100000  h# d4282988 bitset	\  set low bit of ATCLK/PCLKDBG ratio field
-
-   \  PMUM_FCCR - PJCLKSEL 1 (use PLL1), SPCLKSEL 0 (PLL1/2),
-   \ DDRCLKSEL 0 (PLL1/2),  PLL1REFD = 0, PLL1FBD = 8
-   h# 20800000  h# d4050008 l!
-
-   \ PMUA_BUS_CLK_RES_CTRL - DCLK2_PLL_SEL = 1 (PLL1),
-   \ SOC_AXI_CLK_PLL_SEL = 0 (PLL1/2), unreset both DDR channels
-   h# 00000203  h# d428286c l!
-
-   \ h# 000FFFFF h# d4282888 l!
-   \ h# 000FFFFF h# d4282990 l!
-   d#   500 us
-   h# F0000000  h# d4282804 bitset	\  force frequency change
-   d#   500 us
-;
-
 : setup-platform  ( -- )
-   h# 0000E000 h# D4051024 bitset \ PMUM_CGR_PJ - enable APMU_PLL1, APMU_PLL2, APMU_PLL1_2
-   \  h# 88b99001 h# d4282800 l!    \ PMUA_CC_SP - frequency change for SP
-
-   \ PM programming upon SOD
    \ PMUA_GENERIC_CTRL - bits 22,20,18,16,6,5,4  - tristate some pads in APIDLE state, enable SRAM retention
-   h# 00550070  h# d4282a44 bitset
+   h# 00550070  h# 244 pmua-set
 
-   \  h# 00000000   h# d428288c l!   \  Turn off coresight ram
+   \  h# 00000000   h# 8c pmua!   \  Turn off coresight ram
 
-   h# 00005400 h# 0000fc00 h# d4282c7c bitfld  \ CIU_PJ4MP1_PDWN_CFG_CTL - SRAM access delay
-   h# 00005400 h# 0000fc00 h# d4282c80 bitfld  \ CIU_PJ4MP2_PDWN_CFG_CTL - SRAM access delay
-   h# 00005400 h# 0000fc00 h# d4282c84 bitfld  \ CIU_PJ4MM_PDWN_CFG_CTL - SRAM access delay
+   h# 00005400 h# 0000fc00 h# 282c7c +io bitfld  \ CIU_PJ4MP1_PDWN_CFG_CTL - SRAM access delay
+   h# 00005400 h# 0000fc00 h# 282c80 +io bitfld  \ CIU_PJ4MP2_PDWN_CFG_CTL - SRAM access delay
+   h# 00005400 h# 0000fc00 h# 282c84 +io bitfld  \ CIU_PJ4MM_PDWN_CFG_CTL - SRAM access delay
 
-   h# f0000200 h# d4282A48 bitclr	\ PMUA_PJ_C0_CC4 - clear L1_LOW_LEAK_DIS - UNDOCUMENTED!
-   h# f0000200 h# d4282A4C bitclr	\ PMUA_PJ_C1_CC4 - clear L1_LOW_LEAK_DIS - UNDOCUMENTED!
-   h# f0000200 h# d4282A50 bitclr	\ PMUA_PJ_C2_CC4 - clear L1_LOW_LEAK_DIS - UNDOCUMENTED!
-
-   set-voltages
+   h# f0000200 h# 248 pmua-clr	\ PMUA_PJ_C0_CC4 - clear L1_LOW_LEAK_DIS - UNDOCUMENTED!
+   h# f0000200 h# 24C pmua-clr	\ PMUA_PJ_C1_CC4 - clear L1_LOW_LEAK_DIS - UNDOCUMENTED!
+   h# f0000200 h# 250 pmua-clr	\ PMUA_PJ_C2_CC4 - clear L1_LOW_LEAK_DIS - UNDOCUMENTED!
 
    \ CORE RTC/WTC
    \ using default for high mips
-
-   \ PLL1:797, PLL2:OFF, PLL1OUTP:OFF, PLL2OUTP: OFF
-   \ MP1:797, MP2:797, MM:399, ACLK:399, DDRCH1:399, DDRCH2:399, AXI1:399, AXI2:200
-   \ CONFIG PLL2
-   \     h# 00000100  h# d4050034 bitclr
-   \     h# 00000001  h# d4050418 bitset
-   \  h# 01090099   h# d4050414 l!
-   \  h# 001A6A00   h# d4050034 l!
-   \     h# 00000100  h# d4050034 bitset
-   \    d#   500 us
-   \     h# 20000000  h# d4050414 bitset
-   \    d#   500 us
-
-   set-frequency
 ;
 
 \ Thunderstone - 2 chips per channel MT41K128M16HA-15E A0-A14 - 16 meg x 16 x 8 banks - 128 MiB / chip x 4 chips = 512 MiB
@@ -167,7 +119,7 @@ false value dram-on?
       begin  h# 8 i mc@ 1 and  until  \ Wait init done
    loop
 
-   #mcs 2 =  if  h# 40  else  0  then   h# d4282ca0  l!   \ Interleave on 1 GiB boundary, or not at all
+   #mcs 2 =  if  h# 40  else  0  then   h# 282ca0  io!   \ Interleave on 1 GiB boundary, or not at all
 ;
 
 \ Simple address-independence test to find aliasing

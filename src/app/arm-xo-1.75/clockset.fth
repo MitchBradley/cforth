@@ -38,8 +38,6 @@ hex
    28600622 050414 io!  \ PMUM_PLL2_CTRL1 \ same as above plus release PLL loop filter
 ;
 
-: mpmu! 050000 + io! ; : mpmu@ 050000 + io@ ;
-: pmua! 282800 + io! ; : pmua@ 282800 + io@ ;
 : .3bits  ( n shift -- n )  over swap  rshift 7 and .  ;
 : .divisors  ( n -- )
    ." A" d# 15 .3bits

@@ -13,6 +13,25 @@ fl ../arm-mmp2/hwaddrs.fth
 : io!@  ( l offset -- )  tuck io! io@ drop  ;
 : +io!@  ( l offset base -- )  + io!@  ;
 
+: bitclr   ( and-val regadr -- )  tuck l@ swap invert and swap l!  ;
+: bitset   ( or-val regadr -- )  tuck l@ or  swap l!  ;
+: bitfld   ( set-val clr-mask regadr -- )
+   tuck l@  swap invert and      ( set-val regadr regval )
+   rot or  swap l!
+;
+: +mpmu h# 050000 +  ; 
+: mpmu! +mpmu io! ; : mpmu@ +mpmu io@ ;
+
+: mpmu-set  ( or-val regadr -- )  +mpmu +io bitset  ;
+: mpmu-clr  ( and-val regadr -- )  +mpmu +io bitclr  ;
+
+: +pmua h# 282800 +  ; 
+: pmua! +pmua io! ; : pmua@ +pmua io@ ;
+
+: pmua-set  ( or-val regadr -- )  +pmua +io bitset  ;
+: pmua-clr  ( and-val regadr -- )  +pmua +io bitclr  ;
+
+
 defer ms  defer get-msecs
 fl ../arm-mmp2/timer.fth
 fl ../arm-mmp2/watchdog.fth
