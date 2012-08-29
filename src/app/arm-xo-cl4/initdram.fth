@@ -32,14 +32,10 @@
 
 hex
 create dram-tablex lalign
-   \ DDR3L-400
-   000e0001 , 010 ,		\ MMAP0
-   00042530 , 020 ,		\ SDRAM_CONFIG_TYPE1-CS0
-   00000000 , 030 ,		\ SDRAM_CONFIG_TYPE2-CS0
+   \ MMAP0, SDRAM_CONFIG_TYPE1-CS0, SDRAM_CONFIG_TYPE2-CS0,
+   \ SDRAM_TIMING1, and SDRAM_TIMING2 are set from size-dependent tables
 
    \ Timing
-   911403CF , 080 ,       	\ SDRAM_TIMING1
-   64660784 , 084 ,		\ SDRAM_TIMING2
    C2004453 , 088 ,       	\ SDRAM_TIMING3
    34F4A187 , 08C ,       	\ SDRAM_TIMING4
    000F20C1 , 090 ,       	\ SDRAM_TIMING5
@@ -79,29 +75,71 @@ create dram-tablex lalign
 
 here dram-tablex laligned - constant /dram-table
 
-
 : dram-table  dram-tablex laligned  ;
+
 : .table  ( -- )
    dram-table /dram-table bounds  ?do
       i . ." : "  i @ 8 u.r  space  i na1+ @ 8 u.r  cr
    8 +loop
 ;
 
-false value dram-on?
-: +mc  ( offset channel -- adr )
-   if  h# d001.0000  else  h# d000.0000  then  +
-;
-: mc!  ( value offset channel -- )  +mc l!  ;
-: mc@  ( offset channel -- value )  +mc l@  ;
+\                 mmap-cs0(10)    cfg-type1-cs0(20) cfg-type2-cs0(30) sdram-timing1(80)  sdram-timing2(84)
+create dram-2g    h# 000e0001 ,    h# 00042530 ,              0 ,   h# 911403cf ,    h# 64660784 ,
+create dram-1g    h# 000d0001 ,    h# 00042430 ,              0 ,   h# 911403cf ,    h# 64660404 ,
 
-: reset-dll  ( mc# -- )
-   >r
-   h# 20000000 24c r@ mc!	\ DLL reset
+create dram-x     h# 000e0001 ,    h# 00042530 ,              0 ,   h# 911403cf ,    h# 64660784 ,
+
+false value dram-on?
+
+0 value the-mc
+: +mc  ( offset -- adr )
+   the-mc  if  h# d001.0000  else  h# d000.0000  then  +
+;
+: mc!  ( value offset -- )  +mc l!  ;
+: mc@  ( offset -- value )  +mc l@  ;
+
+: @+  ( adr -- adr' value )  dup na1+ swap @  ;
+
+: set-mem-size  ( adr -- )
+   @+ h# 10 mc!   \ mmap0
+   @+ h# 20 mc!   \ sdram-config-type1-cs0
+   @+ h# 30 mc!   \ sdram-config-type2-cs0
+   @+ h# 80 mc!   \ sdram-timing1
+   @+ h# 84 mc!   \ sdram-timing2
+   drop
+;
+
+: reset-dll  ( -- )
+   h# 20000000 24c mc!	\ DLL reset
    d# 68 us
-   h# 00030001 160 r@ mc!	\ USER_INITIATED_COMMAND0 - reserved, SDRAM INIT
+   h# 00030001 160 mc!	\ USER_INITIATED_COMMAND0 - reserved, SDRAM INIT
    d# 68 us
-   h# 40000000 24c r> mc!	\ DLL update via pulse mode
+   h# 40000000 24c mc!	\ DLL update via pulse mode
    h# 68 us
+;
+
+: memory-size-code  ( -- n )
+   0 gpio-pin@ 1 and
+   1 gpio-pin@ 2 and  or
+;
+: .bad-size  ( -- )
+   ." Unsupported memory size!" cr
+;
+: memory-size-table  ( -- adr )
+   memory-size-code  case
+      0 of  dram-1g   endof
+      1 of  dram-2g   endof
+      2 of  dram-2g  .bad-size  endof  \ Placeholder - not yet defined
+      3 of  dram-2g  .bad-size  endof  \ Placeholder - not yet defined
+   endcase
+;
+: interleave-boundary  ( -- n )
+   memory-size-code  case
+      0 of  h# 20  endof  \ 1 GiB interleave boundary
+      1 of  h# 40  endof  \ 512 MiB interleave boundary
+      2 of  h# 20  endof  \ Placeholder - not yet defined
+      3 of  h# 20  endof  \ Placeholder - not yet defined
+   endcase
 ;
 
 2 value #mcs
@@ -112,14 +150,17 @@ false value dram-on?
    setup-platform
 
    #mcs 0  do
+      i to the-mc
+      memory-size-table  set-mem-size
       dram-table /dram-table bounds  ?do
-         i @  i na1+ @  j  mc!
+         i @  i na1+ @  mc!
       8 +loop
-      i reset-dll
-      begin  h# 8 i mc@ 1 and  until  \ Wait init done
+      reset-dll
+      begin  h# 8 mc@ 1 and  until  \ Wait init done
    loop
 
-   #mcs 2 =  if  h# 40  else  0  then   h# 282ca0  io!   \ Interleave on 1 GiB boundary, or not at all
+   \ Set interleaving (none for only 1 memory controller)
+   #mcs 2 =  if  interleave-boundary  else  0  then   h# 282ca0  io!
 ;
 
 \ Simple address-independence test to find aliasing
