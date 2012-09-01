@@ -7,18 +7,15 @@
    \ PMUA_GENERIC_CTRL - bits 22,20,18,16,6,5,4  - tristate some pads in APIDLE state, enable SRAM retention
    h# 00550070  h# 244 pmua-set
 
-   \  h# 00000000   h# 8c pmua!   \  Turn off coresight ram
+   \ h# 00040000 h# 8c pmua-clr   \  Turn on coresight ram (default is off - bit set)
 
    h# 00005400 h# 0000fc00 h# 282c7c +io bitfld  \ CIU_PJ4MP1_PDWN_CFG_CTL - SRAM access delay
    h# 00005400 h# 0000fc00 h# 282c80 +io bitfld  \ CIU_PJ4MP2_PDWN_CFG_CTL - SRAM access delay
    h# 00005400 h# 0000fc00 h# 282c84 +io bitfld  \ CIU_PJ4MM_PDWN_CFG_CTL - SRAM access delay
 
-   h# f0000200 h# 248 pmua-clr	\ PMUA_PJ_C0_CC4 - clear L1_LOW_LEAK_DIS - UNDOCUMENTED!
-   h# f0000200 h# 24C pmua-clr	\ PMUA_PJ_C1_CC4 - clear L1_LOW_LEAK_DIS - UNDOCUMENTED!
-   h# f0000200 h# 250 pmua-clr	\ PMUA_PJ_C2_CC4 - clear L1_LOW_LEAK_DIS - UNDOCUMENTED!
-
-   \ CORE RTC/WTC
-   \ using default for high mips
+   h# 00002000 h# 248 pmua-clr	\ PMUA_PJ_C0_CC4 - clear L1_LOW_LEAK_DIS
+   h# 00002000 h# 24C pmua-clr	\ PMUA_PJ_C1_CC4 - clear L1_LOW_LEAK_DIS
+   h# 00002000 h# 250 pmua-clr	\ PMUA_PJ_C2_CC4 - clear L1_LOW_LEAK_DIS
 ;
 
 \ Thunderstone - 2 chips per channel MT41K128M16HA-15E A0-A14 - 16 meg x 16 x 8 banks - 128 MiB / chip x 4 chips = 512 MiB
@@ -158,6 +155,8 @@ false value dram-on?
       reset-dll
       begin  h# 8 mc@ 1 and  until  \ Wait init done
    loop
+
+   #mcs 1 =  if  2 h# 6c pmua-clr  then
 
    \ Set interleaving (none for only 1 memory controller)
    #mcs 2 =  if  interleave-boundary  else  0  then   h# 282ca0  io!
