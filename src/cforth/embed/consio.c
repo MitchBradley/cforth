@@ -279,6 +279,7 @@ int caccept(char *addr, cell count, cell *up)
             case '\r':
             case -1:
                 goto done;
+            case DEL:
             case BS:
                 if (thisaddr > startaddr)
                     erase_char(up);
@@ -290,7 +291,6 @@ int caccept(char *addr, cell count, cell *up)
             case CTRL('b'):
                 backward_char(up);
                 break;
-            case DEL:
             case CTRL('d'):
                 if (thisaddr < endaddr ) {
                     forward_char(up);
