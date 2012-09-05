@@ -9,7 +9,7 @@ create mfpr-table
    0 sleepi af,			\ GPIO_07 - AUDIO_IRQ#
    0 sleep0 af,			\ GPIO_08 - AUDIO_RESET#
    no-update,			\ GPIO_09 - Not connected (TP72)
-   0 sleep0 af,			\ GPIO_10 - LED_STORAGE
+   0 sleep0 +pull-dn af,	\ GPIO_10 - LED_STORAGE
    no-update,			\ GPIO_11 - Not connected (TP44)
    0 sleepi af,			\ GPIO_12 - TOUCH_HD#
    0 sleepi af,			\ GPIO_13 - HP_PLUG
