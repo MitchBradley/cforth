@@ -17,6 +17,7 @@ fl ../arm-xo-1.75/memtest.fth
 
 : board-config  ( -- )
    \ Add board-revision-specific setup as necessary
+   vid2-gpio# gpio-set
 ;
 
 : late-init
