@@ -73,7 +73,9 @@
 
    h# 05390699  h# 414 mpmu!        \ PMUM_PLL2_CTRL1 - post-div 2, 6 uA charge pump, 2.3-2.4 GHz VCO range
 
-   h# 01566EEF  h# 41C mpmu!        \ PMUM_PLL2_CTRL3 - spread spectrum settings
+\ For now, enabling spead spectrum is causing problems.
+\  h# 01566EEF  h# 41C mpmu!        \ PMUM_PLL2_CTRL3 - spread spectrum settings
+
    h# 001C5200  h#  34 mpmu!        \ PMUM_PLL2CR - ref div 3, fbdiv 276 (0x114) for 2392 MHz
    fc-delay
    h#      100  h#  34 mpmu-set     \ PMUM_PLL2CR - Enable PLL2
@@ -99,7 +101,7 @@
    \ PMUA_BUS_CLK_RES_CTRL - DCLK2_PLL_SEL = 3 (PLL1_CLKOUTP),
    \ SOC_AXI_CLK_PLL_SEL = 0 (PLL1/2), unreset both DDR channels
 \  h# 00000603  h#  6c pmua!  \ For running memory at 533
-   h# 00000403  h#  6c pmua!  \ For running memory at 400
+   h# 00000203  h#  6c pmua!  \ For running memory at 400
    fc-delay
 
    h# f0000000  h#   4 pmua-set  	\  force frequency change
