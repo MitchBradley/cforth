@@ -145,7 +145,6 @@ int getchar()
 void init_io()
 {
     *(int *)0xd4051024 = 0xffffffff;  // PMUM_CGR_PJ - everything on
-    *(int *)0xd4050038 |= 0x1;        // PMUM_SCCR - use external 32 kHz clock
     *(int *)0xD4015064 = 0x7;         // APBC_AIB_CLK_RST - reset, functional and APB clock on
     *(int *)0xD4015064 = 0x3;         // APBC_AIB_CLK_RST - release reset, functional and APB clock on
 #ifdef CL4
