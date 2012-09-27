@@ -166,6 +166,8 @@ void init_io()
     *(int *)0xd401e018 = 0xc1;        // GPIO127 = af1 for UART2 TXD
     *(int *)0xd401e01c = 0xc1;        // GPIO128 = af1 for UART2 RXD
 
+    *(int *)0xd401e15c = 0xb140;      // SLAVE_RESET_OUT = af0, drive high during suspend (so the EC does not think it is a thermal watchdog)
+
     *(int *)0xD4015030 = 0x13;        // APBC_UART2_CLK_RST - VCTCXO, functional and APB clock on (26 mhz)
 
     UART2REG[1] = 0x40;  // Marvell-specific UART Enable bit
