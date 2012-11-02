@@ -112,10 +112,11 @@ create mfpr-table
    1 sleep1 af,			\ GPIO_106 - EC_EDI_CLK
    1 sleep- af,			\ GPIO_107 - (ND_IO[4]) - SOC_TPD_DAT
 
-   2 sleep0 +fast af,		\ GPIO_108 - eMMC_D7 (MMC3)
-   2 sleep0 +fast af,		\ GPIO_109 - eMMC_D6
-   2 sleep0 +fast af,		\ GPIO_110 - eMMC_D2
-   2 sleep0 +fast af,		\ GPIO_111 - eMMC_D3
+   \ Set to GPIOs initially (MMC3 is function 2) to avoid leakage current
+   1 sleep0 +fast af,		\ GPIO_108 - eMMC_D7 (MMC3)
+   1 sleep0 +fast af,		\ GPIO_109 - eMMC_D6
+   1 sleep0 +fast af,		\ GPIO_110 - eMMC_D2
+   1 sleep0 +fast af,		\ GPIO_111 - eMMC_D3
 
    4 sleep0 +fast af,		\ GPIO_112 - SD1_DATA3 (MMC5)
 
@@ -157,8 +158,10 @@ create mfpr-table
    1 sleep0 af,			\ GPIO_142 - DCONLOAD
    1 sleep0 af,			\ GPIO_143 - MIC_AC#/DC
    1 sleep0 af,			\ GPIO_144 - eMMC_RST#
-   2 sleep0 +fast af,		\ GPIO_145 - eMMC_CMD (MMC3)
-   2 sleep0 +fast af,		\ GPIO_146 - eMMC_CLK
+
+   \ Set to GPIOs initially (MMC3 is function 2) to avoid leakage current
+   1 sleep0 +fast af,		\ GPIO_145 - eMMC_CMD (MMC3)
+   1 sleep0 +fast af,		\ GPIO_146 - eMMC_CLK
 
    4 sleep0 +fast af,		\ GPIO_147 - SD1_DATA2
    1 sleep- af,			\ GPIO_148 - HUB_RESET#
@@ -175,10 +178,13 @@ create mfpr-table
    no-update,			\ GPIO_158 - PRI_TDK (JTAG)
    no-update,			\ GPIO_159 - PRI_TDO (JTAG)
    1 sleepi af,			\ GPIO_160 - (ND_RDY[1]) - SOC_TPD_CLK
-   2 sleep0 +fast af,		\ GPIO_161 - eMMC_D5 (MMC3)
-   2 sleep0 +fast af,		\ GPIO_162 - eMMC_D6
-   2 sleep0 +fast af,		\ GPIO_163 - eMMC_D4
-   2 sleep0 +fast af,		\ GPIO_164 - eMMC_D2
+
+   \ Set to GPIOs initially (MMC3 is function 2) to avoid leakage current
+   1 sleep0 +fast af,		\ GPIO_161 - eMMC_D5 (MMC3)
+   1 sleep0 +fast af,		\ GPIO_162 - eMMC_D6
+   1 sleep0 +fast af,		\ GPIO_163 - eMMC_D4
+   1 sleep0 +fast af,		\ GPIO_164 - eMMC_D2
+
    1 sleep0 af,			\ GPIO_165 - CAM_SCL
    1 sleep0 af,			\ GPIO_166 - CAM_SDA
    1 sleep0 af,			\ GPIO_167 - DCON_SDA
