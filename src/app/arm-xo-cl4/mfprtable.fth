@@ -113,12 +113,12 @@ create mfpr-table
    1 sleep- af,			\ GPIO_107 - (ND_IO[4]) - SOC_TPD_DAT
 
    \ Set to GPIOs initially (MMC3 is function 2) to avoid leakage current
-   1 sleep0 +fast af,		\ GPIO_108 - eMMC_D7 (MMC3)
-   1 sleep0 +fast af,		\ GPIO_109 - eMMC_D6
-   1 sleep0 +fast af,		\ GPIO_110 - eMMC_D2
-   1 sleep0 +fast af,		\ GPIO_111 - eMMC_D3
+   1 sleep0 af,			\ GPIO_108 - eMMC_D7 (MMC3)
+   1 sleep0 af,			\ GPIO_109 - eMMC_D6
+   1 sleep0 af,			\ GPIO_110 - eMMC_D2
+   1 sleep0 af,			\ GPIO_111 - eMMC_D3
 
-   4 sleep0 +fast af,		\ GPIO_112 - SD1_DATA3 (MMC5)
+   4 sleep0 af,			\ GPIO_112 - SD1_DATA3 (MMC5)
 
    1 sleep1 +pull-up af,	\ GPIO_113 - EC_SPI_ACK
 
@@ -143,12 +143,12 @@ create mfpr-table
    1 sleep- af,			\ GPIO_128 - UART2_TXD
    0 sleepi af,			\ GPIO_129 - LID_SW#
    0 sleepi af,			\ GPIO_130 - EB_MODE#
-   1 sleep0 +fast af,		\ GPIO_131 - SD2_DATA3
-   1 sleep0 +fast af,		\ GPIO_132 - SD2_DATA2
-   1 sleep0 +fast af,		\ GPIO_133 - SD2_DATA1
-   1 sleep0 +fast af,		\ GPIO_134 - SD2_DATA0
+   1 sleep0 af,			\ GPIO_131 - SD2_DATA3
+   1 sleep0 af,			\ GPIO_132 - SD2_DATA2
+   1 sleep0 af,			\ GPIO_133 - SD2_DATA1
+   1 sleep0 af,			\ GPIO_134 - SD2_DATA0
    1 sleep0 +fast af,		\ GPIO_135 - SD2_CLK
-   1 sleep1 +fast af,		\ GPIO_136 - SD2_CMD - CMD is pulled up externally
+   1 sleep1 af,			\ GPIO_136 - SD2_CMD - CMD is pulled up externally
    no-update,			\ GPIO_137 - Not connected (TP64)
    no-update,			\ GPIO_138 - Not connected (TP65)
    0 sleep0 af,			\ GPIO_139 - TOUCH_TCK
@@ -160,16 +160,16 @@ create mfpr-table
    1 sleep0 af,			\ GPIO_144 - eMMC_RST#
 
    \ Set to GPIOs initially (MMC3 is function 2) to avoid leakage current
-   1 sleep0 +fast af,		\ GPIO_145 - eMMC_CMD (MMC3)
+   1 sleep0 af,			\ GPIO_145 - eMMC_CMD (MMC3)
    1 sleep0 +fast af,		\ GPIO_146 - eMMC_CLK
 
-   4 sleep0 +fast af,		\ GPIO_147 - SD1_DATA2
+   4 sleep0 af,			\ GPIO_147 - SD1_DATA2
    1 sleep- af,			\ GPIO_148 - HUB_RESET#
-   4 sleep0 +fast af,		\ GPIO_149 - SD1_DATA1
+   4 sleep0 af,			\ GPIO_149 - SD1_DATA1
    1 sleep0 af,			\ GPIO_150 - EN_CAM_PWR - Must be 0 in sleep state for camera off
-   4 sleep0 +fast af,		\ GPIO_151 - SD1_DATA1
+   4 sleep0 af,			\ GPIO_151 - SD1_DATA1
    4 sleep0 +fast af,		\ GPIO_152 - SD1_CLK
-   4 sleep0 +fast af,		\ GPIO_153 - SD1_CMD
+   4 sleep0 af,			\ GPIO_153 - SD1_CMD
 
    1 sleepi af,			\ GPIO_154 - (SM_INT) - EC_IRQ#
    1 sleep0 +pull-dn af,			\ GPIO_155 - (EXT_DMA_REQ0) - EC_SPI_CMD
@@ -180,10 +180,10 @@ create mfpr-table
    1 sleepi af,			\ GPIO_160 - (ND_RDY[1]) - SOC_TPD_CLK
 
    \ Set to GPIOs initially (MMC3 is function 2) to avoid leakage current
-   1 sleep0 +fast af,		\ GPIO_161 - eMMC_D5 (MMC3)
-   1 sleep0 +fast af,		\ GPIO_162 - eMMC_D6
-   1 sleep0 +fast af,		\ GPIO_163 - eMMC_D4
-   1 sleep0 +fast af,		\ GPIO_164 - eMMC_D2
+   1 sleep0 af,			\ GPIO_161 - eMMC_D5 (MMC3)
+   1 sleep0 af,			\ GPIO_162 - eMMC_D6
+   1 sleep0 af,			\ GPIO_163 - eMMC_D4
+   1 sleep0 af,			\ GPIO_164 - eMMC_D2
 
    1 sleep0 af,			\ GPIO_165 - CAM_SCL
    1 sleep0 af,			\ GPIO_166 - CAM_SDA
