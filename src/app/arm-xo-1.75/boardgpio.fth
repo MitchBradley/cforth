@@ -24,7 +24,12 @@ purpose: Board-specific setup details - pin assigments, etc.
    led-storage-gpio#    gpio-dir-out
 [then]
 
+[ifdef] cl4
+   vid2-gpio#           gpio-out-set
+[else]
    vid2-gpio#           gpio-out-clr
+[then]
+
    en-wlan-pwr-gpio#    gpio-dir-out
    wlan-pd-gpio#        gpio-out-set
    wlan-reset-gpio#     gpio-out-set
