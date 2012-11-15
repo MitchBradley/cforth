@@ -72,3 +72,6 @@ d#   3 constant soc-sel-gpio#
 
 d#  15 constant rotate-gpio#
 d#  17 constant check-gpio#
+
+d# 115 constant sd-pwroff-gpio#
+d# 116 constant sd-1.8vsel-gpio#

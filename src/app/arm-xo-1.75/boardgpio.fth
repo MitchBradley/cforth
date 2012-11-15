@@ -83,4 +83,12 @@ purpose: Board-specific setup details - pin assigments, etc.
 [ifdef] cam-pwr-gpio#
    cam-pwr-gpio#        gpio-out-clr
 [then]
+
+[ifdef] sd-pwroff-gpio#
+   sd-pwroff-gpio#      gpio-out-set  \ Power initially off (1)
+[then]
+
+[ifdef] sd-1.8vsel-gpio#
+   sd-1.8vsel-gpio#     gpio-out-clr  \ Default to 3.3V (0)
+[then]
 ;

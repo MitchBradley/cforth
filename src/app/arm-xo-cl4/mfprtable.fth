@@ -124,8 +124,8 @@ create mfpr-table
 
    1 sleep- af,			\ GPIO_114 - G_CLK_OUT - Not connected (TP93)
 
-   no-update,			\ GPIO_115 - Not connected (TP92)
-   no-update,			\ GPIO_116 - Not connected (TP106)
+   0 sleep1 af,			\ GPIO_115 - SD_PWROFF (as of XO-4 C1)
+   0 sleep0 af,			\ GPIO_116 - SD_1.8VSEL (as of XO-4 C1)
    3 sleep0 af,			\ GPIO_117 - TOUCH_BSL_TXD
    3 sleepi af,			\ GPIO_118 - TOUCH_BSL_RXD
    3 sleep0 af,			\ GPIO_119 - SDI_CLK  (SSP3) w70 S1
