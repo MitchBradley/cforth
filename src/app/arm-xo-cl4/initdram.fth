@@ -30,11 +30,10 @@
 hex
 create dram-tablex lalign
    \ MMAP0, SDRAM_CONFIG_TYPE1-CS0, SDRAM_CONFIG_TYPE2-CS0,
-   \ SDRAM_TIMING1, and SDRAM_TIMING2 are set from size-dependent tables
+   \ SDRAM_TIMING1-3 are set from size-dependent tables
 
    \ Timing
-   C2004453 , 088 ,       	\ SDRAM_TIMING3
-   34F4A187 , 08C ,       	\ SDRAM_TIMING4
+   44F4A187 , 08C ,       	\ SDRAM_TIMING4
    000F20C1 , 090 ,       	\ SDRAM_TIMING5
    04040200 , 094 ,       	\ SDRAM_TIMING6
    00005501 , 098 ,       	\ SDRAM_TIMING7
@@ -80,11 +79,11 @@ here dram-tablex laligned - constant /dram-table
    8 +loop
 ;
 
-\                 mmap-cs0(10)    cfg-type1-cs0(20) cfg-type2-cs0(30) sdram-timing1(80)  sdram-timing2(84)
-create dram-2g    h# 000e0001 ,    h# 00042530 ,              0 ,   h# 911403cf ,    h# 64660784 ,
-create dram-1g    h# 000d0001 ,    h# 00042430 ,              0 ,   h# 911403cf ,    h# 64660404 ,
+\                 mmap-cs0(10) cfg-type1-cs0(20) cfg-type2-cs0(30) sdram-timing1(80)  sdram-timing2(84) sdram-timing3(88)
+create dram-2g    h# 000e0001 ,    h# 00042530 ,              0 ,   h# 911403cf ,    h# 64660784 ,  h# c2004453 ,
+create dram-1g    h# 000d0001 ,    h# 00042430 ,              0 ,   h# 911403cf ,    h# 64660404 ,  h# c2003053 ,
 
-create dram-x     h# 000e0001 ,    h# 00042530 ,              0 ,   h# 911403cf ,    h# 64660784 ,
+create dram-x     h# 000e0001 ,    h# 00042530 ,              0 ,   h# 911403cf ,    h# 64660784 ,  h# c2004453 ,
 
 false value dram-on?
 
@@ -103,6 +102,7 @@ false value dram-on?
    @+ h# 30 mc!   \ sdram-config-type2-cs0
    @+ h# 80 mc!   \ sdram-timing1
    @+ h# 84 mc!   \ sdram-timing2
+   @+ h# 88 mc!   \ sdram-timing3
    drop
 ;
 
