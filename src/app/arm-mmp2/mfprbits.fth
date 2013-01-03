@@ -10,6 +10,7 @@
 : +pull-dn      ( n -- n' )  h# a000 or  ;
 : +pull-up-alt  ( n -- n' )  h# 4000 or  ;
 : +pull-dn-alt  ( n -- n' )  h# 2000 or  ;
+: +pull-sel     ( n -- n' )  h# 8000 or  ;
 
 \ We always start with edge detection off; it can be turned on later as needed
 : af,   ( n -- )  +edge-clr w,  ;
