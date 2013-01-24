@@ -144,6 +144,13 @@ int getchar()
 
 void init_io()
 {
+    dbg_uart_only = 0;
+
+    // If the PJ4 processor has already been started, this is an unexpected
+    // reset so we skip the SoC init to preserve state for debugging.
+    if (((*(int *)0xd4050020) & 0x02) == 0)
+	    return;
+
     *(int *)0xd4051024 = 0xffffffff;  // PMUM_CGR_PJ - everything on
     *(int *)0xD4015064 = 0x7;         // APBC_AIB_CLK_RST - reset, functional and APB clock on
     *(int *)0xD4015064 = 0x3;         // APBC_AIB_CLK_RST - release reset, functional and APB clock on
@@ -215,8 +222,6 @@ void init_io()
     UART4REG[3] = 0x03;  // 8n1
     UART4REG[2] = 0x07;  // FIFOs and stuff
 #endif
-
-    dbg_uart_only = 0;
 }
 
 

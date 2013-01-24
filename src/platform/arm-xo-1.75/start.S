@@ -69,7 +69,7 @@ dead:
     
 
 doirq:
-    ldr     sp, =IRQSTACKTOP
+    ldr     sp, irqstacktop
     subs    lr, lr, #4  // Adjust the return address and
     stmfd   sp!, {lr}   // save it on the stack.
     mrs     r14, SPSR   // Save SPSR
@@ -146,6 +146,17 @@ bye:
     mov r3, #1          // REMAP bit
     str r3, [r2, #0]    // Map the ROM back to 0
     b   _start
+
+#This is a bit subtle.  It assumes that the interrupt handling code
+#will ultimately run from Tightly Coupled Memory instead of from SRAM.
+#We allocate the IRQ stack inside the text segment so it will land in
+#TCM when we copy the code into TCM.
+#TCM starts at address 0, so we have to relocate the IRQ stack address
+#down to be 0-based, by subtracting the base address of the image (_start)
+irqstack:
+    .space IRQSTACKSIZE
+irqstacktop:
+    .word  irqstacktop - _start
 
 .L1:
     .word   reset_reason

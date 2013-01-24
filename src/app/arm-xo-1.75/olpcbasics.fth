@@ -57,6 +57,11 @@ fl ../arm-xo-1.75/showlog.fth
 ;
 
 : init-drivers
+   h# 20 mpmu@ 2 and  0=  if
+      ." CForth unexpected restart! - freezing PJ4" cr
+      2  h# 20 mpmu-set
+      quit
+   then
    banner
    basic-setup
    init-timers

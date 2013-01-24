@@ -24,6 +24,7 @@ purpose: Start OFW on a main CPU
    ?ofw-up
    'one-uart @  0=  if
       wfi-loop
+      ." CForth: wfi-loop returned unexpectedly" cr
 \     d# 4000 ms  cforth-wait
    then
 ;
