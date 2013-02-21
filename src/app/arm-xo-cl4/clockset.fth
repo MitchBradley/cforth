@@ -20,10 +20,8 @@
    h# 00BC02D0  04 pmua!	  	\ PMUA_CC_PJ  (octal 57001320)
    h# 01fffe07  h# 150 pmua-clr		\ PMUA_CC2_PJ  - clear divisor fields
 
-   
-
-   \ PJ_FORCE_PCLKON, axi clk2 div = 1 (ratio = 2), mmcore pclk 1 (ratio = 2), aclk div 1 (ratio = 2)
-   h# 80220001  h# 150 pmua-set
+   \  axi clk2 div = 1 (ratio = 2), mmcore pclk 1 (ratio = 2), aclk div 1 (ratio = 2)
+   h# 00220001  h# 150 pmua-set
    h# 01f00000  h# 188 pmua-clr		\ PMUA_CC3_PJ  clear divisor field
    h#   100000  h# 188 pmua-set		\  set low bit of ATCLK/PCLKDBG ratio field
 
@@ -49,8 +47,8 @@
    h# 00BC04D0  h# 004 pmua!	  	\ PMUA_CC_PJ  (octal 57002321)
    h# 01fffe07  h# 150 pmua-clr		\ PMUA_CC2_PJ  - clear divisor fields
 
-   \ PJ_FORCE_PCLKON, axi clk2 div = 1 (ratio = 2), mmcore pclk 1 (ratio = 2), aclk div 1 (ratio = 2)
-   h# 80220001  h# 150 pmua-set
+   \  axi clk2 div = 1 (ratio = 2), mmcore pclk 1 (ratio = 2), aclk div 1 (ratio = 2)
+   h# 00220001  h# 150 pmua-set
    h# 01f00000  h# 188 pmua-clr		\ PMUA_CC3_PJ  clear divisor field
    h#   100000  h# 188 pmua-set		\  set low bit of ATCLK/PCLKDBG ratio field
 
@@ -90,7 +88,7 @@
    \ Static Frequency Change
    h# 00BC04D0  h#  04 pmua!        \ PMUA_CC_PJ - ddrclk/1, periphclk/6, atclk/3, pjclk/1
    h# 01fffe07  h# 150 pmua-clr
-   h# 80240001  h# 150 pmua-set     \ PMUA_CC2_PJ - PJ_FORCE_PCLKON, aclk/2, mm/1, mp2/1, mp1/1, axiclk/2
+   h# 80240001  h# 150 pmua-set     \ PMUA_CC2_PJ - aclk/2, mm/1, mp2/1, mp1/1, axiclk/2
 
    h# 01f00000  h# 188 pmua-clr	    \ PMUA_CC3_PJ  clear divisor field
    h# 00100000  h# 188 pmua-set     \  set low bit of ATCLK/PCLKDBG ratio field
