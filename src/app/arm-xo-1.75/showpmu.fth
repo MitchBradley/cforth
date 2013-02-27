@@ -17,8 +17,9 @@
 : p.8  dup 4 u.r ." :" p@ 9 u.r  2 spaces ;
 
 : .scu
-   ." ==SCU=="
-   ." PJ4_CPU_CONF     " h# 08 s.8  ." CORESIGHT_CONFIG " h# 4c s.8 ." SP_CONFIG    " h# 50 s.8 cr
+   ." ==SCU==" cr
+   ." PJ4_CPU_CONF     " h# 08 s.8  ." CORESIGHT_CONFIG " h# 4c s.8  cr
+   ." SP_CONFIG        " h# 50 s.8 cr
    ." AXIFAB_CKGT_CTRL0" h# 64 s.8  ." AXIFAB_CKGT_CTRL1" h# 68 s.8  cr
 ;
 : .mpmu  ( -- )
@@ -45,6 +46,10 @@
    ." PJ_ISR     " h#   a0 p.8  ." MC_HW_SLP" h#   b0 p.8  ." MC_SLP_REQ " h#   b4 p.8  cr
    ." MC_SW_SLP  " h#   c0 p.8  ." PLL_SEL  " h#   c4 p.8  ." PWR_ONOFF  " h#   e0 p.8  cr
    ." PWR_TIMER  " h#   e4 p.8  ." MC_PAR   " h#  11c p.8  cr
+[ifdef] cl4
+   \ some of these might exist on mmp2 as well
+   ." CC2_PJ     " h#  150 p.8  ." CC3_PJ   " h#  188 p.8  ." DEBUG2     " h#  190 p.8 cr
+[then]
    ." ==PMUA Clock Controls==" cr
    ." CCIC_GATE  " h#   28 p.8  ." IRE_RES  " h#   48 p.8  ." DISP1_RES  " h#   4c p.8  cr
    ." CCIC_RES   " h#   50 p.8  ." SDH0_RES " h#   54 p.8  ." SDH1_RES   " h#   58 p.8  cr
@@ -55,6 +60,16 @@
    ." CCIC2_RES  " h#   f4 p.8  ." HSI_RES  " h#  108 p.8  ." AUDIO_RES  " h#  10c p.8  cr
    ." DISP2_RES  " h#  110 p.8  ." CCIC2_RES" h#  118 p.8  ." ISP_RES    " h#  120 p.8  cr
    ." EPD_RES    " h#  124 p.8  ." APB2_RES " h#  134 p.8  cr
+[ifdef] cl4
+   \ some of these might exist on mmp2 as well
+   ." IDLE_CFG2  " h#  200 p.8  ." IDLE_CFG3" h#  204 p.8  ." ISL_POWER  " h#  220 p.8  cr
+   ." ==Other Controls==" cr
+   ." GENRC_CTL  " h#  244 p.8  cr
+   ." PJ_C0_CC4  " h#  248 p.8  ." PJ_C1_CC4" h#  24C p.8  ." C2_CC4     " h#  250 p.8 cr
+   ." CIU_PJ4MP1_PDWN_CFG_CTL " h# 47C p.8 cr
+   ." CIU_PJ4MP2_PDWN_CFG_CTL " h# 480 p.8 cr
+   ." CIU_PJ4MM_PDWN_CFG_CTL  " h# 484 p.8 cr
+[then]
 ;
 : .apbclks  ( -- )
    ." ==APB Clock/Reset==" cr
