@@ -34,7 +34,7 @@ create mfpr-table
    no-update,			\ GPIO_32 - Not connected (TP58)
    no-update,			\ GPIO_33 - Not connected (TP60)
    0 sleep0 af,			\ GPIO_34 - EN_WLAN_PWR
-   0 sleepi af,			\ GPIO_35 - WLAN_PD#  (app.fth changes this to sleep1 for pre-C2 boards)
+   0 sleepi af,			\ GPIO_35 - WLAN_WAKE (WLAN_PD# on C1 and earlier)
    0 sleep1 af,			\ GPIO_36 - WLAN_RESET#
    1 sleepi af,			\ GPIO_37 - SDDA_D3 (MMC2)
    1 sleepi af,			\ GPIO_38 - SDDA_D2 (MMC2)

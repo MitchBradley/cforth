@@ -22,7 +22,6 @@ d# 126 constant dcon-irq-gpio#
 d# 142 constant dcon-load-gpio#
 
 d#  34 constant en-wlan-pwr-gpio#
-d#  35 constant wlan-pd-gpio#
 d#  36 constant wlan-reset-gpio#
 
 d# 148 constant usb-hub-reset-gpio#

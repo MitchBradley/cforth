@@ -35,9 +35,6 @@ fl ../arm-xo-1.75/memtest.fth
 
    \ Add board-revision-specific setup as necessary
    vid2-gpio# gpio-set
-
-   \ WLAN_PD sleeps as input for new boards, high for old boards
-   get-board-id h# 4c2 <  if  h# 140 wlan-pd-gpio# af!  then
 ;
 
 : late-init

@@ -31,7 +31,9 @@ purpose: Board-specific setup details - pin assigments, etc.
 [then]
 
    en-wlan-pwr-gpio#    gpio-dir-out
+[ifdef] wlan-pd-gpio#
    wlan-pd-gpio#        gpio-out-set
+[then]
    wlan-reset-gpio#     gpio-out-set
    sec-trg-gpio#        gpio-out-clr
 
