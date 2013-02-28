@@ -204,6 +204,4 @@ old_r0:
 
 first_to_clear: 
 
-.Lfe1:
-    .size   _start,.Lfe1-_start
     .ident  "GCC: (GNU) 3.2"
