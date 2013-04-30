@@ -39,9 +39,7 @@ fl ../arm-xo-1.75/memtest.fth
 
 : late-init
    ?startup-problem
-
-   3 gpio-pin@  if  set-frequency-1g  else  set-frequency-1.2g  then
-
+   set-frequency-1.2g
    init-dram
 ;
 
