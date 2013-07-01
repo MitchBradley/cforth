@@ -2,7 +2,6 @@
 # and target are the same
 
 TCC=$(CC)
-TCFLAGS=-march=armv5te
 TLD=$(LD)
 LIBDIRS=-L$(dir $(shell $(TCC) -print-libgcc-file-name))
 
