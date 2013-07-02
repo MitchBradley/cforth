@@ -1,0 +1,1 @@
+: page  ( -- )  control L emit  ;

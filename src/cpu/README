@@ -1,0 +1,9 @@
+CPU-dependent subdirectories
+
+The "host" subdirectory contains compiler macros (compiler.mk)
+for the case where the host and target have the same instruction
+set, so cross-compilation is unnecessary.
+
+Other subdirectories contain various CPU-dependent routines,
+and compiler macros for cross-compilation (i.e. the locations
+of the cross-compiler utilities).

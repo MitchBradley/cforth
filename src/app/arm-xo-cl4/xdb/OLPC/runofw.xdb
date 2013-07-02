@@ -1,0 +1,8 @@
+! After OFW has been loaded into memory (e.g. with dlofw.xdb) and ofw-go has
+! been executed from CForth, this script releases ARM CS core 2 from JTAG
+! stopped state so it will begin execution of OFW.  It also stops core 1.
+
+stop
+set core 2
+set reg pc=0
+run /nowait

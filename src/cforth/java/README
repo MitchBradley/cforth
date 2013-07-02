@@ -1,0 +1,3 @@
+This is version of C Forth that will run on a Java system
+such as a Java cell phone.  It uses the C preprocessor to
+transliterate the C source code into Java.

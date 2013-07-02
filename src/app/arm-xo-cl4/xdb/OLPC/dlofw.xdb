@@ -1,0 +1,13 @@
+! Load OFW into DRAM (after CForth has inited the DRAM) in preparation
+! for either running OFW or having CForth write it to SPI FLASH
+
+stop
+set option /memory=long
+
+set core 1
+stop
+
+load/bin/address =0x08fe0000 of "ofw.rom" 
+
+run /nowait
+print "Type 'reflash0' in terminal window or 'ofw-go' then RUNOFW button\n"

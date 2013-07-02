@@ -1,0 +1,911 @@
+	C Forth 93 Documentation
+		94/02/19
+
+This is a start at the documentation for C Forth 93.
+From a functional standpoint, C Forth 93 is believed to be
+an ANS Forth Standard System, but the documentation is
+currently incomplete.
+
+This file consists of two major sections.  The first section lists system
+documentation requirements, with many of the C Forth 93 values filled in.
+
+The second section lists all ANS Forth words and the C Forth 93 source files
+that contain them.  Words that are "primitives" (i.e. defined in C) are
+marked with a "p".  Words that are not implemented are marked as
+"NOT IMPLEMENTED".  Other words are marked with the names of the Forth
+source files that contain them.
+
+The Block wordset and the obsolescent words "QUERY" and "CONVERT" are not
+compiled into the system by default.  To make these words available, the
+files that contain them must be loaded explicitly.
+
+
+System Documentation  
+
+An * indicates specific ambiguous conditions not listed in the standard.  In
+addition to the items listed here, the strings for ENVIRONMENT?  and some sort
+of glossary must be included.
+
+Core  
+  4.1.1   Implementation Options  
+   - number of bits in one address unit (3.1.3.5);
+	8
+
+   - size of one character in address units (3.1.2);
+	1
+
+   - character-aligned address requirements (3.1.3.6);
+	8 bit byte boundaries
+
+   - character set (3.1.2.1, 3.1.2.2, 6.1.1320, 6.1.1750);
+	determined by operating system
+
+   - system case-sensitivity characteristics (3.3.1.3);
+	When the CAPS variable contains non-zero, the system is
+	case-insensitive; all word names are converted to
+	lower case when they are created and prior to searching.
+	This is the default mode.
+
+	When CAPS contains zero, the system is case-sensitive;
+	no case mapping is done either when words are created
+	or prior to searching.  In that mode, standard words
+	are recognized only in lower case, so the system does
+	not comply with the standard in that mode.
+	
+   - character-set-extensions matching characteristics (3.3.1.3);
+	Since control characters are treated the same as spaces
+	by space-delimited parsing operations, it is not possible
+	to create definition names containing control characters.
+	Depending on the underlying operating system's character
+	set, it may be possible to create word names containing
+	characters with numeric codes above 128.
+
+   - conditions under which control characters match a space delimiter (3.4.2.1);
+	Space-delimited parsing always treats control characters
+	as delimiters
+
+   - character editing of 6.1.0695 ACCEPT and 6.2.1390 EXPECT;
+	determined by the underlying operating system
+
+   - behavior of 6.1.1320 EMIT for non-displayable values;
+	determined by the underlying operating system
+
+   - size of one cell in address units (3.1.3);
+	2 (16-bit version)
+	4 (32-bit version)
+
+   - aligned address requirements (3.1.3.7);
+	determined by the processor
+
+   - number representation (3.2.1.1);
+	two's complement
+
+   - ranges for n, +n, u, d, +d, ud (3.1.3.2, 3.1.3.3, 3.1.3.4, 3.1.4.2, 3.2.4.3, 3.1.4.4);
+	 n: -2147483648..2147483647
+	+n: 0..2147483647
+	 u: 0..4294967295
+	 d: -92233720368554775808..9223372036854775807
+	+d: 0..9223372036854775807
+	ud: 0..18446744073709551615
+   - values returned after arithmetic overflow (3.2.2.2);
+	determined by the processor
+   - type of division rounding (3.2.2.1, 6.1.0100, 6.1.0110, 6.1.0230, 6.1.0240, 6.1.1090);
+	floored
+
+   - method of selecting user output device (3.2.4.2);
+	The Forth system itself provides no method for selecting the user
+	output device - user output goes to the C "standard output" stream.
+	Most operating systems or C compilers provide a way to redirect
+	C's standard output with command line arguments; such provisions
+	apply to Forth.
+	
+   - display after return of 6.1.0695 ACCEPT and 6.2.1390 EXPECT;
+	Depends on underlying operating system; most operating
+	systems return the cursor to the first column of the next
+	line after an input line is collected.
+
+   - method of selection of user input device (3.2.4.1);
+	The Forth system itself provides no method for selecting the user
+	output device - user input comes from the C "standard input" stream.
+	Most operating systems or C compilers provide a way to redirect
+	C's standard input with command line arguments; such provisions
+	apply to Forth.
+	
+   - input return key (3.2.11);
+	Depends on the underlying operating system and the type of terminal
+	that is in use; in most system, it is the key labeled either "Return"
+	or "Enter".
+
+   - read-only data-space regions (3.3.3, 3.3.3.3, 3.3.3.4);
+	No regions of data space are read-only.
+
+   - maximum size of a counted string, in characters (3.1.5.2, 6.1.2450);
+	255
+
+   - maximum size of a parsed string (3.4.2);
+	truncated if longer than 255
+
+   - maximum size of a word name, in characters (3.3.1.2);
+	The maximum length of a word name is 255 characters;
+	however some debugging tools (e.g. SEE) may not work
+	correctly with names longer than 32 characters.
+
+   - maximum string length for 6.1.1345 ENVIRONMENT?, in characters;
+	same as word name
+
+   - size of buffer at 6.1.2450 WORD (3.3.3.6);
+	255
+
+   - size of the keyboard terminal input buffer (3.3.3.5);
+	132
+
+   - size of the pictured-numeric-output-string buffer (3.3.3.6);
+	100
+
+   - size of the scratch area whose address is returned by 6.2.2000 PAD (3.3.3.6);
+	continues to the end of the region of data space addressed by HERE.
+	At any time, the size is given by  UNUSED 100 -
+
+   - list of non-standard words using 6 exception abort sequence (as in 6.1.0680 ABORT");
+????
+
+   - method of adding required source to dictionary (3.3);
+	fload <file-name with source code>
+
+   - conversion of digits larger than thirty-five (3.2.1.2);
+	Values of BASE greater than thirty-five are not supported.
+	When converting from characters to numbers, the valid
+	digits are 0-9 and either a-z or A-Z, with the upper
+	case and lower case forms equivalent.
+
+   - values of 6.1.2250 STATE when true;
+	-1
+
+   - control-flow stack (3.2.3.2);
+	is data stack
+
+   - system prompt (3.4, 6.1.2050);
+	"ok" when interpreting, "]" when compiling
+
+   - whether the current definition can be found after 6.1.1250 DOES> (6.1.0450).
+	yes
+
+  4.1.2   Ambiguous Conditions  
+   - insufficient data-stack space or return-stack space (stack overflow);
+   - reading from an empty data stack or return stack (stack underflow);
+   - insufficient space for loop-control parameters;
+   - insufficient space in the dictionary;
+   - a program addresses a region not listed in 3.3.3 Data Space (3.3);
+   - division by zero (6.1.0100, 6.1.0110, 6.1.0230, 6.1.0240, 6.1.1561, 6.1.1890, 6.1.2214, 6.1.2370, 8.6.1.1820);
+   - a result out of range, e.g., multiplication (using *) results in a value too big to be represented by a single-cell integer (6.1.0100, 6.1.0110, 6.1.0570, 6.1.1561, 6.1.2214, 6.1.2370, 6.2.0970, 8.6.1.1820);
+   - argument type incompatible with specified input parameter, e.g., passing a flag to a word expecting an n (3.1);
+   - a name is neither a valid definition name nor a valid number during text interpretation (3.4.1);
+   - interpretation of a word with undefined interpretation semantics;
+   - attempting to obtain the execution token, (e.g., with ', FIND, etc.) of a definition with undefined interpretation semantics;
+   - unexpected end of input stream, resulting in an attempt to use a zero-length string as a name;
+   - overflow of a pictured-numeric-output string;
+   - parsed string overflow;
+   - a word name exceeded the maximum length of a word name;
+   - contents of input stream or string literal are modified by program (3.3.3.4, 3.3.3.5).
+   * data space read/write with incorrect alignment (3.3.3.1)
+   * data space containing definitions is de-allocated (3.3.3.2)
+   * >IN greater than size of input buffer (3.4.2)
+   * words improperly used outside <# #> (6.1.0030, 6.1.0050, 6.1.1670, 6.1.2210)
+   * name not found (6.1.0070, 6.1.2033, 6.1.2510, 6.2.2530)
+   * loop-control parameters not available (6.1.0140, 6.1.1680, 6.1.1730, 6.1.1760, 6.1.1800, 6.1.2380)
+   * data-space pointer not properly aligned (6.1.0150, 6.1.0860)
+   * word not defined via CREATE (6.1.0550, 6.1.1250)
+   * parameters are not of the same type (6.1.1240, 6.2.0620, 6.2.2405)
+   * n greater than or equal to the number of bits in a cell ( 6.1.1805, 6.1.2162)
+   * 6.1.2120 RECURSE appears after DOES>
+   * string longer than a counted string returned by 6.1.2450 WORD
+   * less than u+2 stack items (6.2.2030, 6.2.2150)
+   * argument input source different than current input source for 6.2.2148 RESTORE-INPUT
+   * name not defined by VALUE used by 6.2.2295 TO
+   * POSTPONE or [COMPILE] applied to 6.2.2295 TO
+  4.1.3   Other System Documentation  
+   - system dictionary space used, in address units;
+   - application data space available, in address units;
+   - stack space, in cells;
+   - return stack space, in cells;
+   - operators terminal facilities available.
+Block  
+  7.4.1.1   Implementation Options  
+   - the format used for display by 7.6.2.1770 LIST (if implemented);
+   - the length of a line affected by 7.6.2.2535 \ (if implemented).
+  7.4.1.2   Ambiguous Conditions  
+   - Correct block read was not possible;
+   - Invalid block number (7.6.1.0800, 7.6.1.0820, 7.6.1.1790);
+   - I/O error in block transfer.
+   * A program directly alters the contents of 7.6.1.0790 BLK
+   * No current block buffer for 7.6.1.2400 UPDATE
+  7.4.1.3   Other System Documentation  
+   - any restrictions the multiprogramming algorithm of multiprogrammed systems places on the use of buffer addresses;
+   - the number of blocks available for source text and data.
+Double Number  
+  8.4.1.1   Implementation Options  
+   - no additional requirements.
+  8.4.1.2   Ambiguous Conditions  Double Number  
+   * d outside range of n in 8.6.1.1140 D>S
+  8.4.1.3   Other System Documentation  
+   - no additional requirements.
+Exception  
+  9.4.1.1   Implementation Options  
+   - Values used in the implemented system by 9.6.1.0875 CATCH and 9.6.1.2275 THROW (9.3.1.2.10, 9.3.4.4).
+  9.4.1.2   Ambiguous Conditions  
+   - no additional requirements.
+  9.4.1.3   Other System Documentation  
+   - no additional requirements.
+Facility  
+ 10.4.1.1   Implementation Options  
+   - encoding of keyboard events (10.6.2.1305);
+   - duration of a system clock tick: repeatability to be expected from execution of 10.6.2.1905 MS.
+ 10.4.1.2   Ambiguous Conditions  
+   * 10.6.1.0742 AT-XY operation can't be performed on user output device
+ 10.4.1.3   Other System Documentation  
+   - no additional requirements.
+File  
+ 11.4.1.1   Implementation Options  
+   - number of string buffers provided (11.6.1.2165);
+   - max size of input line (11.3.4.2);
+   - max depth of file input nesting (11.3.3.3.5);
+   - file exceptions;
+   - file line terminator (11.6.1.2050);
+   - file name format (11.3.1.4.3);
+   - input file state after an exception (11.6.1.1717, 11.6.1.1718);
+   - ior values and meaning (11.3.1.2.12, 11.6.1.0900, 11.6.1.1010, 11.6.1.1190, 11.6.1.1520, 11.6.1.1522, 11.6.1.1970, 11.6.1.2080, 11.6.1.2090, 11.6.1.2142, 11.6.1.2147, 11.6.1.2480, 11.6.1.2485, 11.6.2.1524, 11.6.2.1560, 11.6.2.2130)
+   - size of string buffer used by 11.6.1.2165 S";
+   - methods for mapping block ranges to files (11.3.2.4.1);
+   - file-access methods used by 11.6.1.1010 CREATE-FILE (11.6.1.0765, 11.6.1.1970, 11.6.1.2054, 11.6.1.2056, 11.6.1.2425);
+   - information returned by 11.6.2.1524 FILE-STATUS.
+ 11.4.1.2   Ambiguous Conditions  
+   * requested block number is not mapped (11.3.2.4.1)
+   * fileid is invalid (11.6.1.1717)
+   * i/o error reading fileid (11.6.1.1717, 11.6.1.1718)
+   * i/o error closing fileid (11.6.1.1717, 11.6.1.1718)
+   * named file cannot be opened (11.6.1.1718)
+   * read-file when file-position is greater than file-size (11.6.1.2080, 11.6.1.2090)
+   * attempt to read from file positions not yet written (11.6.1.2080, 11.6.1.2090)
+   * attempt to position file outside the boundary (11.6.1.2142)
+   * SOURCE-ID used when BLK is not zero (11.6.1.2218)
+ 11.4.1.3   Other System Documentation  
+   - no additional requirements.
+Floating Point  
+ 12.4.1.1   Implementation Options  
+   - size of floating-point stack (12.3.2.2.5);
+   - results of 12.6.1.2143 REPRESENT when float is out of range;
+   - format and range of floating-point numbers (12.3.1.3.13, 12.3.1.3.14, 12.3.1.3.15, 12.3.1.8, 12.6.1.2143);
+   - rounding or truncation of floating-point numbers (12.3.1.8);
+   - width of floating-point stack (12.3.2.2.5);
+   - default rounding behavior for floating-point package.
+ 12.4.1.2   Ambiguous Conditions  
+   - F@ or F! is used with an address that is not float aligned;
+   - DF@ or DF! is used with an address that is not double-float aligned;
+   - SF@ or SF! is used with an address that is not single-float aligned;
+   - floating point result out of range (12.6.1.1430).
+   * d can't be precisely represented as float in 12.6.1.1130 D>F
+   * divide by zero (12.6.1.14340)
+   * integer part of float can't be represented by d in 12.6.1.1470 F>D
+   * BASE is not decimal (12.6.1.2143, 12.6.2.1427, 12.6.2.1513, 12.6.2.1613)
+   * exponent too big for conversion (12.6.2.1203, 12.6.2.1204, 12.6.2.2202, 12.6.2.2203)
+   * string larger than pictured-numeric output area (12.6.2.1427, 12.6.2.1513, 12.6.2.1613)
+   * float magnitude greater than one (12.6.2.1476, 12.6.2.1486, 12.6.2.1491)
+   * float less than one (12.6.2.1477)
+   * both arguments equal zero (12.6.2.1489)
+   * float less than or equal to zero (12.6.2.1553, 12.6.2.1557)
+   * float less than zero (12.6.2.1487, 12.6.2.1618)
+   * float less than or equal to minus-one (12.6.2.1554)
+   * cos(float) equals zero (12.6.2.1625)
+ 12.4.1.3   Other System Documentation  
+   - no additional requirements.
+Locals  
+ 13.4.1.1   Implementation Options  
+   - maximum number of locals in a definition (13.3.4.6, 13.6.2.1795).
+ 13.4.1.2   Ambiguous Conditions  
+   * local executed interpretively (13.6.1.0086)
+   * name not defined by VALUE or LOCAL (13.6.1.2295)
+ 13.4.1.3   Other System Documentation  
+   - no additional requirements.
+Memory Allocation  
+ 14.4.1.1   Implementation Options  
+   - ior, values and meaning (14.3.1.3.12, 14.6.1.0707, 14.6.1.1605, 14.6.1.2145);
+ 14.4.1.2   Ambiguous Conditions  
+   - no additional requirements.
+ 14.4.1.3   Other System Documentation  
+   - no additional requirements.
+Programming Tools  
+ 15.4.1.1   Implementation Options  
+   - source and format of display by 15.6.1.2194 SEE;
+   - manner of processing input following 15.6.2.0470 ;CODE and 15.6.2.0930 CODE;
+   - ending sequence for input following 15.6.2.0470 ;CODE and 15.6.2.0930 CODE;
+   - search-order capability for 15.6.2.1300 EDITOR and 15.6.2.0740 ASSEMBLER (15.3.3).
+ 15.4.1.2   Ambiguous Conditions  
+   * name not defined via CREATE (15.6.2.0470)
+   * fewer than u+1 items on control-flow stack (15.6.2.1015, 15.6.2.1020)
+   * name can't be found (15.6.2.1580)
+   * compilation word-list deleted (15.6.2.1580)
+   * definition removed that is needed (15.6.2.1580)
+   * POSTPONE applied to [IF] (15.6.2.2532)
+   * end of input stream before matching [ELSE] or [THEN] (15.6.2.2532)
+ 15.4.1.3   Other System Documentation  
+   - no additional requirements.
+Search Order  
+ 16.4.1.1   Implementation Options  
+   - minimum search order (16.6.1.2197, 16.6.2.1965);
+   - maximum number of word lists in the search order (16.3.3.1.3, 16.6.1.2197).
+ 16.4.1.2   Ambiguous Conditions  
+   * compilation word list changed (16.3.3.1.3)
+   * too many word lists in search order (16.6.2.0715)
+   * search order empty (16.6.2.2037)
+ 16.4.1.3   Other System Documentation  
+   - no additional requirements.
+String  
+ 17.4.1.1   Implementation Options  
+   - no additional requirements.
+ 17.4.1.2   Ambiguous Conditions  
+   - no additional requirements.
+ 17.4.1.3   Other System Documentation  
+   - no additional requirements.
+
+Program Documentation  
+Core  
+  4.2.1   Environmental Dependencies  
+   - requires non-standard words or techniques (3.);
+   - uses the graphic with a value of hex 24 (3.1.2.1);
+   - requires the ability to send or receive control characters (3.1.2.2, 6.1.1750);
+   - uses flags as arithmetic operands (3.1.3.1);
+   - requires a particular number representation and arithmetic (3.2.1.1);
+   - relies on a particular rounding direction (3.2.2.1);
+   - uses lower case for standard definition names or depend on the case sensitivities of a system (3.3.1.2);
+   - considers the output string buffer a fixed area with unchanging access parameters (3.3.3.6);
+   - depends on the presence or absence of non-graphic characters in a received string (6.1.0695, 6.2.1390);
+   - uses control characters to perform specific functions (6.1.1320, 6.1.2310);
+
+  4.2.2   Other Program Documentation  
+   - the minimum operators terminal facilities required;
+   - whether a Standard System exists after the program is loaded.
+Block 
+  7.4.2.1   Environmental Dependencies  
+   - no additional requirements.
+  7.4.2.2   Other Program Documentation  
+   - the number of blocks required by the program.
+Double Number  
+  8.4.2.1   Environmental Dependencies  
+   - no additional requirements.
+  8.4.2.2   Other Program Documentation  
+   - no additional requirements.
+Exception  
+  9.4.2.1   Environmental Dependencies  
+   - no additional requirements.
+  9.4.2.2   Other Program Documentation  
+   - no additional requirements.
+Facility  
+ 10.4.2.1   Environmental Dependencies  
+   - uses more than seven bits of a character in 10.6.2.1305 EKEY.
+ 10.4.2.2   Other Program Documentation  
+   - no additional requirements.
+File  
+ 11.4.2.1   Environmental Dependencies  
+   - uses more than eight levels of input-file nesting (11.3.3.3.5)
+   - requires more than 128 character lines (11.3.4.2).
+ 11.4.2.2   Other Program Documentation  
+   - no additional requirements.
+Floating Point  
+ 12.4.2.1   Environmental Dependencies  
+   - requires the floating-point stack to be larger than six items (12.3.2.2.5).
+ 12.4.2.2   Other Program Documentation  
+   - no additional requirements.
+Locals  
+ 13.4.2.1   Environmental Dependencies  
+   - declares more than eight locals in a single definition (13.3.4.6).
+ 13.4.2.2   Other Program Documentation  
+   - no additional requirements.
+Memory Allocation  
+ 14.4.2.1   Environmental Dependencies  
+   - no additional requirements.
+ 14.4.2.2   Other Program Documentation  
+   - no additional requirements.
+Programming Tools  
+ 15.4.2.1   Environmental Dependencies  
+   - uses the words ;CODE or CODE.
+ 15.4.2.2   Other Program Documentation  
+   - no additional requirements.
+Search Order  
+ 16.4.2.1   Environmental Dependencies  
+   - requires more than eight word-lists in the search order.
+ 16.4.2.2   Other Program Documentation  
+   - no additional requirements.
+String  
+ 17.4.2.1   Environmental Dependencies  
+   - no additional requirements.
+ 17.4.2.2   Other Program Documentation  
+   - no additional requirements.
+
+C Forth 93 ANS Words
+
+		Word Name		Where Defined
+
+					p = kernel primitive
+					i = immediate kernel primitive
+					u = kernel user variable
+					xxx.fth = the indicated file
+					*xxx.fth = the indicated file,
+					   which must be loaded explicitly
+					   in order to make the word
+					   available
+
+	CORE
+
+ 6.1.0010	!			p	
+ 6.1.0030	#			util.fth	
+ 6.1.0040	#>			util.fth	
+ 6.1.0050	#S			util.fth	
+ 6.1.0070	'			compiler.fth	
+ 6.1.0080	(			compiler.fth	
+ 6.1.0090	*			p	
+ 6.1.0100	*/			util.fth	
+ 6.1.0110	*/MOD			util.fth	
+ 6.1.0120	+			p	
+ 6.1.0130	+!			p	
+ 6.1.0140	+LOOP			control.fth	
+ 6.1.0150	,			p	
+ 6.1.0160	-			p	
+ 6.1.0180	.			util.fth	
+ 6.1.0190	."			util.fth	
+ 6.1.0230	/			p	
+ 6.1.0240	/MOD			p	
+ 6.1.0450	:			p	
+ 6.1.0460	;			i	
+ 6.1.0480	<			p	
+ 6.1.0490	<#			util.fth	
+ 6.1.0530	=			p	
+ 6.1.0540	>			p	
+ 6.1.0550	>BODY			p	
+ 6.1.0560	>IN			u	
+ 6.1.0570	>NUMBER			p	
+ 6.1.0580	>R			p	
+ 6.1.0630	?DUP			p	
+ 6.1.0650	@			p	
+ 6.1.2500	[			interp.fth	
+ 6.1.2510	[']			compiler.fth	
+ 6.1.2520	[CHAR]			compiler.fth
+ 6.1.2540	]			interp.fth	
+ 6.1.0250	0<			p	
+ 6.1.0270	0=			p	
+ 6.1.0290	1+			p	
+ 6.1.0300	1-			util.fth	
+ 6.1.0310	2!			util.fth	
+ 6.1.0320	2*			util.fth	
+ 6.1.0330	2/			p	
+ 6.1.0350	2@			util.fth	
+ 6.1.0370	2DROP			interp.fth	
+ 6.1.0380	2DUP			interp.fth	
+ 6.1.0400	2OVER			util.fth	
+ 6.1.0430	2SWAP			interp.fth	
+ 6.1.0670	ABORT			p	
+ 6.1.0680	ABORT"			util.fth	
+ 6.1.0690	ABS			p	
+ 6.1.0695	ACCEPT			p
+ 6.1.0705	ALIGN			util.fth	
+ 6.1.0706	ALIGNED			util.fth	
+ 6.1.0710	ALLOT			p	
+ 6.1.0720	AND			p	
+ 6.1.0750	BASE			u	
+ 6.1.0760	BEGIN			control.fth	
+ 6.1.0770	BL			p	
+ 6.1.0850	C!			p	
+ 6.1.0860	C,			misc.fth	
+ 6.1.0870	C@			p	
+ 6.1.0880	CELL+			p
+ 6.1.0890	CELLS			p
+ 6.1.0895	CHAR			compiler.fth
+ 6.1.0897	CHAR+			util.fth
+ 6.1.0898	CHARS			util.fth
+ 6.1.0950	CONSTANT		p	
+ 6.1.0980	COUNT			p	
+ 6.1.0990	CR			p	
+ 6.1.1000	CREATE			p	
+ 6.1.1170	DECIMAL			misc.fth	
+ 6.1.1200	DEPTH			p	
+ 6.1.1240	DO			control.fth	
+ 6.1.1250	DOES>			compiler.fth	
+ 6.1.1260	DROP			p	
+ 6.1.1290	DUP			p	
+ 6.1.1310	ELSE			control.fth	
+ 6.1.1320	EMIT			p	
+ 6.1.1345	ENVIRONMENT?		environ.fth
+ 6.1.1360	EVALUATE		interp.fth
+ 6.1.1370	EXECUTE			p	
+ 6.1.1380	EXIT			p	
+ 6.1.1540	FILL			p	
+ 6.1.1550	FIND			p	
+ 6.1.1561	FM/MOD			util.fth	
+ 6.1.1650	HERE			p	
+ 6.1.1670	HOLD			util.fth	
+ 6.1.1680	I			p	
+ 6.1.1700	IF			control.fth	
+ 6.1.1710	IMMEDIATE		p	
+ 6.1.1720	INVERT			util.fth
+ 6.1.1730	J			p	
+ 6.1.1750	KEY			p	
+ 6.1.1760	LEAVE			p	
+ 6.1.1780	LITERAL			interp.fth	
+ 6.1.1800	LOOP			control.fth	
+ 6.1.1805	LSHIFT			util.fth
+ 6.1.1810	M*			p	
+ 6.1.1870	MAX			p	
+ 6.1.1880	MIN			p	
+ 6.1.1890	MOD			p	
+ 6.1.1900	MOVE			util.fth	
+ 6.1.1910	NEGATE			p	
+ 6.1.1980	OR			p	
+ 6.1.1990	OVER			p	
+ 6.1.2033	POSTPONE		postpone.fth
+ 6.1.2050	QUIT			p, interp.fth	
+ 6.1.2060	R>			p	
+ 6.1.2070	R@			p	
+ 6.1.2120	RECURSE			util.fth
+ 6.1.2140	REPEAT			control.fth	
+ 6.1.2160	ROT			p	
+ 6.1.2162	RSHIFT			util.fth
+ 6.1.2165	S"			util.fth
+ 6.1.2170	S>D			util.fth	
+ 6.1.2210	SIGN			util.fth	
+ 6.1.2214	SM/REM			p	
+ 6.1.2216	SOURCE			p
+ 6.1.2220	SPACE			util.fth	
+ 6.1.2230	SPACES			util.fth	
+ 6.1.2250	STATE			u	
+ 6.1.2260	SWAP			p	
+ 6.1.2270	THEN			control.fth	
+ 6.1.2310	TYPE			p	
+ 6.1.2320	U.			util.fth	
+ 6.1.2340	U<			p	
+ 6.1.2360	UM*			p	
+ 6.1.2370	UM/MOD			p	
+ 6.1.2380	UNLOOP			util.fth
+ 6.1.2390	UNTIL			control.fth	
+ 6.1.2410	VARIABLE		p	
+ 6.1.2430	WHILE			control.fth	
+ 6.1.2450	WORD			p	
+ 6.1.2490	XOR			p	
+
+	CORE EXT
+
+ 6.2.0060	#TIB			u	
+ 6.2.0200	.(			compiler.fth	
+ 6.2.0210	.R			util.fth	
+ 6.2.0455	:NONAME			p	
+ 6.2.0500	<>			config.fth	
+ 6.2.0620	?DO			control.fth	
+ 6.2.2530	[COMPILE]		compiler.fth	
+ 6.2.2535	\			compiler.fth	
+ 6.2.0260	0<>			util.fth	
+ 6.2.0280	0>			p	
+ 6.2.0340	2>R			p
+ 6.2.0410	2R>			p
+ 6.2.0415	2R@			p
+ 6.2.0700	AGAIN			control.fth	
+ 6.2.0855	C"			util.fth
+ 6.2.0873	CASE			case.fth	
+ 6.2.0945	COMPILE,		p
+ 6.2.0970	CONVERT			*convert.fth
+ 6.2.1342	ENDCASE			case.fth	
+ 6.2.1343	ENDOF			case.fth	
+ 6.2.1350	ERASE			util.fth	
+ 6.2.1390	EXPECT			p	
+ 6.2.1485	FALSE			misc.fth	
+ 6.2.1660	HEX			misc.fth	
+ 6.2.1850	MARKER			marker.fth
+ 6.2.1930	NIP			util.fth	
+ 6.2.1950	OF			case.fth	
+ 6.2.2000	PAD			util.fth	
+ 6.2.2008	PARSE			p	
+ 6.2.2030	PICK			p	
+ 6.2.2040	QUERY			*query.fth
+ 6.2.2125	REFILL			interp.fth
+ 6.2.2148	RESTORE-INPUT		interp.fth
+ 6.2.2150	ROLL			p	
+ 6.2.2182	SAVE-INPUT		interp.fth
+ 6.2.2218	SOURCE-ID		p
+ 6.2.2240	SPAN			u	
+ 6.2.2290	TIB			p	
+ 6.2.2295	TO			util.fth, local.fth
+ 6.2.2298	TRUE			misc.fth	
+ 6.2.2300	TUCK			misc.fth	
+ 6.2.2330	U.R			util.fth	
+ 6.2.2350	U>			util.fth	
+ 6.2.2395	UNUSED			p
+ 6.2.2405	VALUE			util.fth
+ 6.2.2440	WITHIN			util.fth	
+
+	BLOCK
+
+ 7.6.1.0790	BLK			u
+ 7.6.1.0800	BLOCK			*loadblk.fth
+ 7.6.1.0820	BUFFER			*loadblk.fth	
+ 7.6.1.1360	EVALUATE		interp.fth
+ 7.6.1.1559	FLUSH			*loadblk.fth	
+ 7.6.1.1790	LOAD			*loadblk.fth	
+ 7.6.1.2180	SAVE-BUFFERS		*loadblk.fth	
+ 7.6.1.2400	UPDATE			*loadblk.fth
+ 
+	BLOCK EXT
+
+ 7.6.2.2535	\			*loadblk.fth	
+ 7.6.2.1330	EMPTY-BUFFERS		*loadblk.fth	
+ 7.6.2.1770	LIST			*loadblk.fth	
+ 7.6.2.2125	REFILL			interp.fth
+ 7.6.2.2190	SCR			*loadblk.fth	
+ 7.6.2.2280	THRU			*loadblk.fth	
+
+	DOUBLE
+
+ 8.6.1.0360	2CONSTANT		double.fth
+ 8.6.1.0390	2LITERAL		double.fth
+ 8.6.1.0440	2VARIABLE		double.fth
+ 8.6.1.1040	D+			p	
+ 8.6.1.1050	D-			p	
+ 8.6.1.1060	D.			double.fth
+ 8.6.1.1070	D.R			double.fth
+ 8.6.1.1110	D<			double.fth
+ 8.6.1.1120	D=			double.fth		
+ 8.6.1.1140	D>S			double.fth		
+ 8.6.1.1075	D0<			double.fth		
+ 8.6.1.1080	D0=			util.fth	
+ 8.6.1.1090	D2*			double.fth		
+ 8.6.1.1100	D2/			double.fth		
+ 8.6.1.1160	DABS			double.fth		
+ 8.6.1.1210	DMAX			double.fth		
+ 8.6.1.1220	DMIN			double.fth		
+ 8.6.1.1230	DNEGATE			p	
+ 8.6.1.1820	M*/			p
+ 8.6.1.1830	M+			double.fth
+
+	DOUBLE EXT
+
+ 8.6.2.0420	2ROT			double.fth
+ 8.6.2.1270	DU<			double.fth
+
+	EXCEPTION
+
+ 9.6.1.0875	CATCH			interp.fth	
+ 9.6.1.2275	THROW			p	
+
+	EXCEPTION EXT
+
+ 9.6.2.0670	ABORT			p
+ 9.6.2.0680	ABORT"			p
+
+	FACILITY
+
+10.6.1.0742	AT-XY			atxy.fth
+10.6.1.1755	KEY?			p	
+10.6.1.2005	PAGE			page.fth
+
+	FACILITY EXT
+
+10.6.2.1305	EKEY			NOT IMPLEMENTED (nonportable)
+10.6.2.1306	EKEY>CHAR		NOT IMPLEMENTED (nonportable)
+10.6.2.1307	EKEY?			NOT IMPLEMENTED (nonportable)
+10.6.2.1325	EMIT?			NOT IMPLEMENTED (nonportable)
+10.6.2.1905	MS			NOT IMPLEMENTED (nonportable)
+10.6.2.2292	TIME&DATE		NOT IMPLEMENTED (nonportable)
+
+	FILE
+
+11.6.1.0080	(			comment.fth	
+11.6.1.0765	BIN			p
+11.6.1.0900	CLOSE-FILE		p	
+11.6.1.1010	CREATE-FILE		p	
+11.6.1.1190	DELETE-FILE		p	
+11.6.1.1520	FILE-POSITION		p	
+11.6.1.1522	FILE-SIZE		p	
+11.6.1.1717	INCLUDE-FILE		interp.fth	
+11.6.1.1718	INCLUDED		interp.fth	
+11.6.1.1970	OPEN-FILE		p	
+11.6.1.2054	R/O			p	
+11.6.1.2056	R/W			p	
+11.6.1.2080	READ-FILE		p	
+11.6.1.2090	READ-LINE		p	
+11.6.1.2142	REPOSITION-FILE		p	
+11.6.1.2147	RESIZE-FILE		p	
+11.6.1.2165	S"			utils.fth
+11.6.1.2218	SOURCE-ID		interp.fth
+11.6.1.2425	W/O			p	
+11.6.1.2480	WRITE-FILE		p	
+11.6.1.2485	WRITE-LINE		p	
+
+	FILE EXT
+
+11.6.2.1524	FILE-STATUS		p	
+11.6.2.1560	FLUSH-FILE		p	
+11.6.2.2125	REFILL			interp.fth
+11.6.2.2130	RENAME-FILE		p	
+
+	FLOAT
+
+12.6.1.0558	>FLOAT			floatops.fth
+12.6.1.1130	D>F			floatops.fth
+12.6.1.1425	F-			floatops.fth	
+12.6.1.1400	F!			floatops.fth	
+12.6.1.1410	F*			floatops.fth	
+12.6.1.1420	F+			floatops.fth	
+12.6.1.1430	F/			floatops.fth	
+12.6.1.1460	F<			floatops.fth	
+12.6.1.1470	F>D			floatops.fth
+12.6.1.1472	F@			floatops.fth	
+12.6.1.1440	F0<			floatops.fth	
+12.6.1.1450	F0=			floatops.fth	
+12.6.1.1479	FALIGN			floatops.fth
+12.6.1.1483	FALIGNED		floatops.fth	
+12.6.1.1492	FCONSTANT		floatops.fth	
+12.6.1.1497	FDEPTH			floatops.fth	
+12.6.1.1500	FDROP			floatops.fth	
+12.6.1.1510	FDUP			floatops.fth	
+12.6.1.1552	FLITERAL		floatops.fth	
+12.6.1.1555	FLOAT+			floatops.fth
+12.6.1.1556	FLOATS			floatops.fth
+12.6.1.1558	FLOOR			floatops.fth
+12.6.1.1562	FMAX			floatops.fth
+12.6.1.1565	FMIN			floatops.fth
+12.6.1.1567	FNEGATE			floatops.fth
+12.6.1.1600	FOVER			floatops.fth
+12.6.1.1610	FROT			floatops.fth
+12.6.1.1612	FROUND			floatops.fth
+12.6.1.1620	FSWAP			floatops.fth
+12.6.1.1630	FVARIABLE		floatops.fth
+12.6.1.2143	REPRESENT		floatops.fth
+
+	FLOAT EXT
+
+12.6.2.1203	DF!			floatops.fth
+12.6.2.1204	DF@			floatops.fth
+12.6.2.1205	DFALIGN			floatops.fth
+12.6.2.1207	DFALIGNED		floatops.fth
+12.6.2.1208	DFLOAT+			floatops.fth
+12.6.2.1209	DFLOATS			floatops.fth
+12.6.2.1415	F**			floatops.fth
+12.6.2.1427	F.			floatops.fth
+12.6.2.1640	F~			floatops.fth
+12.6.2.1474	FABS			floatops.fth
+12.6.2.1476	FACOS			floatops.fth
+12.6.2.1477	FACOSH			floatops.fth
+12.6.2.1484	FALOG			floatops.fth
+12.6.2.1486	FASIN			floatops.fth
+12.6.2.1487	FASINH			floatops.fth
+12.6.2.1488	FATAN			floatops.fth
+12.6.2.1489	FATAN2			floatops.fth
+12.6.2.1491	FATANH			floatops.fth
+12.6.2.1493	FCOS			floatops.fth
+12.6.2.1494	FCOSH			floatops.fth
+12.6.2.1513	FE.			floatops.fth
+12.6.2.1515	FEXP			floatops.fth
+12.6.2.1516	FEXPM1			floatops.fth
+12.6.2.1553	FLN			floatops.fth
+12.6.2.1554	FLNP1			floatops.fth
+12.6.2.1557	FLOG			floatops.fth
+12.6.2.1613	FS.			floatops.fth
+12.6.2.1614	FSIN			floatops.fth
+12.6.2.1616	FSINCOS			floatops.fth
+12.6.2.1617	FSINH			floatops.fth
+12.6.2.1618	FSQRT			floatops.fth
+12.6.2.1625	FTAN			floatops.fth
+12.6.2.1626	FTANH			floatops.fth
+12.6.2.2035	PRECISION		floatops.fth
+12.6.2.2200	SET-PRECISION		floatops.fth
+12.6.2.2202	SF!			floatops.fth
+12.6.2.2203	SF@			floatops.fth
+12.6.2.2204	SFALIGN			floatops.fth
+12.6.2.2206	SFALIGNED		floatops.fth
+12.6.2.2207	SFLOAT+			floatops.fth
+12.6.2.2208	SFLOATS			floatops.fth
+
+	LOCAL
+
+13.6.1.0086	(LOCAL)			locals.fth
+13.6.1.2295	TO			locals.fth
+
+	LOCAL EXT
+
+13.6.2.1795	LOCALS|			locals.fth
+
+	MEMORY
+
+14.6.1.0707	ALLOCATE		p
+14.6.1.1605	FREE			p
+14.6.1.2145	RESIZE			p
+
+	TOOLKIT
+
+15.6.1.0220	.S			util.fth
+15.6.1.0600	?			util.fth
+15.6.1.1280	DUMP			dump.fth
+15.6.1.2194	SEE			decomp.fth
+15.6.1.2465	WORDS			words.fth
+
+	TOOLKIT EXT
+
+15.6.2.0470	;CODE			NOT IMPLEMENTED (nonportable)
+15.6.2.2531	[ELSE]			brackif.fth
+15.6.2.2532	[IF]			brackif.fth
+15.6.2.2533	[THEN]			brackif.fth
+15.6.2.0702	AHEAD			control.fth
+15.6.2.0740	ASSEMBLER		NOT IMPLEMENTED (nonportable)
+15.6.2.0830	BYE			p
+15.6.2.0930	CODE			NOT IMPLEMENTED (nonportable)
+15.6.2.1015	CS-PICK			control.fth
+15.6.2.1020	CS-ROLL			control.fth
+15.6.2.1300	EDITOR			NOT IMPLEMENTED (use system's editor)
+15.6.2.1580	FORGET			util.fth
+15.6.2.2250	STATE			u
+
+	SEARCH
+
+16.6.1.1180	DEFINITIONS		util.fth
+16.6.1.1550	FIND			p
+16.6.1.1595	FORTH-WORDLIST		order.fth
+16.6.1.1643	GET-CURRENT		order.fth
+16.6.1.1647	GET-ORDER		order.fth	
+16.6.1.2192	SEARCH-WORDLIST		p
+16.6.1.2195	SET-CURRENT		order.fth
+16.6.1.2197	SET-ORDER		order.fth
+16.6.1.2460	WORDLIST		order.fth
+
+	SEARCH EXT
+
+16.6.2.0715	ALSO			util.fth
+16.6.2.1590	FORTH			util.fth
+16.6.2.1965	ONLY			util.fth
+16.6.2.1985	ORDER			util.fth
+16.6.2.2037	PREVIOUS		previous.fth
+
+	STRING
+
+17.6.1.0170	-TRAILING		p
+17.6.1.0245	/STRING			u
+17.6.1.0780	BLANK			util.fth
+17.6.1.0910	CMOVE			p
+17.6.1.0920	CMOVE>			p
+17.6.1.0935	COMPARE			p
+17.6.1.2191	SEARCH			p
+17.6.1.2212	SLITERAL		u
+
+	Enhancements
+
+		SIFTING str
+			Shows word names that contain a given substring
+
+		.CALLS  ( xt -- )
+			Shows words that call a given other word
+
+		SH command line
+			Executes given command line in a subshell
+
+		PATCH  new old word-to-patch
+			Replaces "old" with "new" in "word-to-patch"
+
+		\NEEDS name command-line
+			Executes command line if word 'name' is not defined
+
+		STRING-ARRAY
+			See Forthmacs documentation
+
+		CCALL: name  { argspec .. -- resultspec }  ( n -- )
+			Defines 'name' to call C function 'n'
+
+		H# nnn   ( -- n )
+			Interprets the following number in hexadecimal
+
+		SAVE  ( adr len -- )
+			Writes the Forth dictionary to the file named
+			by the string "adr len"
+
+		DEFINER  ( xt1 -- xt2 )
+			Returns the execution token 'xt2' of the word
+			that defined the word 'xt1'
+
+		DEFER name
+			Creates a 'defer' word.
+
+		<various "shell" commands, such as "CD", "LS", "DIR">

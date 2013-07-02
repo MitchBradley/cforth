@@ -1,0 +1,15 @@
+! This is the top-level XDB startup file for use with MMP3 on OLPC XO-CL4.
+! It also works on Thunderstone.
+! Based on c:\program files (x86)\marvell\xdb5.3\xdb\configurations\jtag\soc\pxa2128\pxa2128_a0_armv7.xsf
+
+[PROJECT]
+Target=JTAG ARM/CS/CS/CS/XTENSA
+Version=2:2
+[SETTINGS]
+Global=-B "~\OLPC\buttons.xdb" -sync "EctHardware" -W "~\OLPC" 
+ARM=-plg ".\..\plugin\marvellpxa\flash\flashw.dll " -L "usb:" -rdf "~\SoC\rdf\PXA2128_A0.RDF" -target scanchain=FPGA_PTAP9_ARMV5_CS_XTENSA_V5 tckoverwrite=10.0MHz device=mjc 
+CS$2=-plg ".\..\plugin\arm\trace\etmtrace.dll ,.\..\plugin\arm\cachegui\cachegui.dll " -L "usb:" -rdf "~\SoC\rdf\PXA2128_A0.RDF" -smp "1" -target scanchain=FPGA_PTAP9_ARMV5_CS_XTENSA_V7_1 tckoverwrite=10.0MHz hotdebug device=mjc override=ap:1,debug:0xd4110000,etm:0xd411c000,etb:0xd4120000,cti:0xd4118000,ctm:0xd4121000,tpiu:0xd4122000,cstf:0xd4123000,cstf1:0xd4124000,pmu:0xd4111000 
+CS$3=-plg ".\..\plugin\arm\trace\etmtrace.dll ,.\..\plugin\arm\cachegui\cachegui.dll " -L "usb:" -rdf "~\SoC\rdf\PXA2128_A0.RDF" -smp "1" -target scanchain=FPGA_PTAP9_ARMV5_CS_XTENSA_V7_2 tckoverwrite=10.0MHz hotdebug device=mjc override=ap:1,debug:0xd4112000,etm:0xd411d000,etb:0xd4120000,cti:0xd4119000,ctm:0xd4121000,tpiu:0xd4122000,cstf:0xd4123000,cstf1:0xd4124000,pmu:0xd4113000 
+CS$4=-plg ".\..\plugin\arm\trace\etmtrace.dll ,.\..\plugin\arm\cachegui\cachegui.dll " -L "usb:" -rdf "~\SoC\rdf\PXA2128_A0.RDF" -smp "1" -target scanchain=FPGA_PTAP9_ARMV5_CS_XTENSA_V7_3 tckoverwrite=10.0MHz hotdebug device=mjc override=ap:1,debug:0xd4114000,etm:0xd411e000,etb:0xd4120000,cti:0xd411a000,ctm:0xd4121000,tpiu:0xd4122000,cstf:0xd4123000,cstf1:0xd4124000,pmu:0xd4115000 
+XTENSA=-L "usb:" -target scanchain=FPGA_PTAP9_ARMV5_CS_XTENSA_XT tckoverwrite=10.0MHz noconnect device=mjc 
+
