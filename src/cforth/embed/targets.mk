@@ -60,11 +60,11 @@ METAOBJS=meta.o compiler.o io.o dictfile.o mallocl.o
 
 # The following macros are for the "clean" and "tidy" targets
 
-HELPERS=forth.dic kernel.dic meta forth makebi makename forthbi
+HELPERS=forth.dic kernel.dic meta forth makebi makename forthbi *.exe
 DERIVED=dict.h dicthdr.h userarea.h init.x prims.h vars.h forth.ip
 BACKUPS=*.BAK *.CKP ,* *~
 ARTIFACTS = $(BASEOBJS) $(TBASEOBJS) $(METAOBJS) $(EMBEDOBJS) $(HOSTOBJS) \
-  $(HELPERS) $(DERIVED) $(BACKUPS) *.core
+  $(HELPERS) $(DERIVED) $(BACKUPS) *.core *.o
 
 
 # forthbi contains the same basic functionality as embed.o, but it
