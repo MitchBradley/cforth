@@ -5,8 +5,10 @@
 # instruction set, the location of system (platform) dependent code,
 # and the location of application-specific code.
 
-# Prefix for cross compiler
-CROSS=arm-elf-
+# Prefix for cross compiler, if not already set in environment
+ifeq ($(CROSS),)
+    CROSS=arm-elf-
+endif
 
 # The name of the final output file. The rule for making this is in
 # $(PLATPATH)/targets.mk
