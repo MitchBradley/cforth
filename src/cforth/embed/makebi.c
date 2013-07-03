@@ -59,7 +59,7 @@ bytes_to_file(char *filename, FILE *infile, int len)
     }
     for (i = 0; i < len; i++) {
         c = fgetc(infile);
-        fprintf(outfile, "0x%02x, ", c);
+        fprintf(outfile, "0x%02x, ", c&0xff);
         if ((i&7) == 7) {
             fputc('\n', outfile);
         }
