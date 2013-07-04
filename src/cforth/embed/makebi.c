@@ -59,7 +59,7 @@ bytes_to_file(char *filename, FILE *infile, int len)
     }
     for (i = 0; i < len; i++) {
         c = fgetc(infile);
-        fprintf(outfile, "0x%02x, ", c&0xff);
+        fprintf(outfile, "0x%02x, ", c);
         if ((i&7) == 7) {
             fputc('\n', outfile);
         }
@@ -83,7 +83,7 @@ main(argc, argv)
     else
         dictionary_file = argv[1];
 
-    if ((infile = fopen(dictionary_file, "r")) == 0) {
+    if ((infile = fopen(dictionary_file, "rb")) == 0) {
         fprintf(stderr, "Can't open input file %s\n", dictionary_file);
         exit(1);
     }
