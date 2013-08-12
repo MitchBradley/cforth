@@ -57,7 +57,7 @@ METAOBJS=meta.o compiler.o io.o dictfile.o mallocl.o lineedit.o getc-kbd.o
 
 # The following macros are for the "clean" and "tidy" targets
 
-HELPERS=kernel.dic meta makename *.exe
+HELPERS=kernel.dic meta makename meta.exe makename.exe
 DERIVED=dict.h dicthdr.h userarea.h init.x prims.h vars.h forth.ip
 BACKUPS=*.BAK *.CKP ,* *~
 ARTIFACTS = $(BASEOBJS) $(METAOBJS) $(HOSTOBJS) \
