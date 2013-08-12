@@ -14,14 +14,17 @@ TCFLAGS += -g
 
 all: default
 
-%.o: %.S
+t%.o: %.S
 	$(TCC) $(INCS) $(DEFS) $(TSFLAGS) -c $< -o $@
 
-%.o: %.s
+t%.o: %.s
 	$(TCC) $(INCS) $(DEFS) -c $< -o $@
 
-%.o: %.c
+t%.o: %.c
 	$(TCC) $(INCS) $(DEFS) $(TCFLAGS) $(TCPPFLAGS) -c $< -o $@
+
+%.o: %.c
+	$(CC) $(CFLAGS) -c $<
 
 # clean:
 #	rm -f *.o

@@ -8,18 +8,19 @@
 
 DUMPFLAGS = --disassemble-all -z -x
 
+VPATH += $(SRC)/cpu/arm $(SRC)/platform/arm-mmp2 $(SRC)/lib
 # VPATH += $(SRC)/cpu/<whatever> $(SRC)/platform/<whatever>
 # INC += -I$(SRC)/cpu/<whatever> -I$(SRC)/platform/<whatever>
 
 # Platform-specific object files for low-level startup and platform I/O
 # Add more as needed
 
-PLAT_OBJS = start.o tmain.o consoleio.o
+PLAT_OBJS = tstart.o
 
 
 # Object files for the Forth system and application-specific extensions
 
-FORTH_OBJS = embed.o textend.o
+FORTH_OBJS = ttmain.o tembed.o textend.o tconsoleio.o
 
 
 # Recipe for linking the final image
@@ -29,7 +30,8 @@ RAMTOP  = 0xd1020000
 
 TSFLAGS += -DRAMTOP=${RAMTOP}
 
-LIBGCC= $(shell gcc -print-libgcc-file-name)
+# LIBGCC= $(shell gcc -print-libgcc-file-name)
+LIBGCC= -lgcc
 
 app.elf: $(PLAT_OBJS) $(FORTH_OBJS)
 	@echo Linking $@ ... 

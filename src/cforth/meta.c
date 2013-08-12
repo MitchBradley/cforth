@@ -156,7 +156,7 @@ interpret_word(u_char *adr, cell len, cell *up)
 
     /* Undefined */
     alerror((char *)adr, len, up);
-    ERROR(" ?\n");
+    FTHERROR(" ?\n");
     return(0);
 }
 
@@ -173,7 +173,7 @@ cinterpret(cell *up)
 int
 query(cell *up)
 {
-    V(NUM_SOURCE) = caccept((char *)V(TICK_SOURCE), (cell)TIBSIZE);
+    V(NUM_SOURCE) = caccept((char *)V(TICK_SOURCE), (cell)TIBSIZE, up);
     V(TO_IN) = 0;
 }
 

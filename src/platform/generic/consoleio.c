@@ -17,7 +17,7 @@ int kbhit() {
     return 0;
 }
 
-int getchar()
+int getkey()
 {
     // return the next character from the console input device
     return 'a';

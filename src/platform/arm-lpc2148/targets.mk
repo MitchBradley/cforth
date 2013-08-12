@@ -14,12 +14,12 @@ DUMPFLAGS = --disassemble-all -z -x
 # Platform-specific object files for low-level startup and platform I/O
 # Add more as needed
 
-PLAT_OBJS =  tmain.o consoleio.o
+PLAT_OBJS =  ttmain.o tconsoleio.o
 
 
 # Object files for the Forth system and application-specific extensions
 
-FORTH_OBJS = embed.o textend.o
+FORTH_OBJS = tembed.o textend.o
 
 # Recipe for linking the final image
 
@@ -28,7 +28,7 @@ RAMTOP  = 0xd1020000
 
 TSFLAGS += -DRAMTOP=${RAMTOP}
 
-LIBGCC= $(shell gcc -print-libgcc-file-name)
+LIBGCC= -lgcc
 
 app.o: $(PLAT_OBJS) $(FORTH_OBJS)
 	@echo Linking $@ ... 

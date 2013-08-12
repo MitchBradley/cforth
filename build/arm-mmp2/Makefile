@@ -26,7 +26,6 @@ BUILDDIR=build/arm-mmp2
 OBJPATH=../../../$(BUILDDIR)
 
 # APPPATH is where your application code lives.
-# !!CHANGE!!
 APPPATH=$(TOPDIR)/src/app/arm-mmp2
 
 # APPLOADFILE is the top-level "Forth load file" for your application code.
@@ -36,8 +35,7 @@ APPLOADFILE = app.fth
 
 # APPSRCS is a list of Forth source files that your application uses,
 # i.e. the list of files that app.fth floads.  It's for dependency checking.
-# !!CHANGE!!
-APPSRCS =
+APPSRCS = $(wildcard $(APPPATH)/*.fth)
 
 # OBJPATH2 is relative to APPPATH; don't change unless your APPPATH
 # is at a different tree level
@@ -62,11 +60,15 @@ DICTSIZE=0xe000
 
 # Target compiler definitions.  Change this to a different cpu/* directory
 # if you are cross-compiling
-# !!CHANGE!!
+ifneq "$(findstring arm,$(shell uname -m))" ""
 include $(SRC)/cpu/host/compiler.mk
+else
+include $(SRC)/cpu/arm/compiler.mk
+endif
 
-include $(SRC)/common.mk                     # Probably won't need to change this
-include $(SRC)/cforth/embed/targets.mk       # Probably won't need to change this
+include $(SRC)/common.mk
+include $(SRC)/cforth/targets.mk
+include $(SRC)/cforth/embed/targets.mk
 include $(PLATPATH)/targets.mk
 
 default: $(NAME).$(EXT)

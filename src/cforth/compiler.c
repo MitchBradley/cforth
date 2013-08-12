@@ -136,7 +136,7 @@ warn(char *adr, cell len, cell *up)
     if (V(WARNING)
     && search_wid(adr, len, (vocabulary_t *)XT_FROM_CT(T(CURRENT), up), (xt_t *)&tmpxt, up)) {
         alerror((char *)adr, (u_cell)len, up);
-        ERROR(" isn't unique\n");
+        FTHERROR(" isn't unique\n");
     }
 }
 

@@ -21,7 +21,7 @@ int kbhit() {
     return 0;
 }
 
-int getchar()
+int getkey()
 {
     int retval;
     if (pending_char) {

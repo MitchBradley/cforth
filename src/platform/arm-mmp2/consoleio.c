@@ -22,7 +22,7 @@ int kbhit() {
     return (UARTREG[5] & 0x1) != 0;
 }
 
-int getchar()
+int getkey()
 {
     while (!kbhit())
         ;

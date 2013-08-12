@@ -103,7 +103,7 @@ doprim:
 
     switch (token) {
     case 0:
-        ERROR("Tried to execute a null token\n");
+        FTHERROR("Tried to execute a null token\n");
         /*                where(); */
         /*                udot((u_cell)ip); */
         goto abort;
@@ -400,7 +400,7 @@ execute:
     V(DP) += tos;
     loadtos;
     if ((cell)V(DP) > V(LIMIT))
-        ERROR( "Out of dictionary space\n");
+        FTHERROR( "Out of dictionary space\n");
     next;
 
 /*$p vfind */    case VFIND:
@@ -576,7 +576,7 @@ execute:
 
 /*$p -level */      case MINUS_LEVEL:
     if (V(STATE) == INTERPRETING)
-        ERROR("Conditionals not paired\n");
+        FTHERROR("Conditionals not paired\n");
     if (V(COMPLEVEL)) {
         --V(COMPLEVEL);
         if (V(COMPLEVEL) == 0) {      // Dropped back to level 0
@@ -734,7 +734,7 @@ execute:
 /*$p compile */ case COMPILE: compile(*ip++);    next;
 
 /*$p bye */     case BYE:  return(-1);
-/*$p lose */    case LOSE: ERROR("Undefined word encountered\n");  goto abort;
+/*$p lose */    case LOSE: FTHERROR("Undefined word encountered\n");  goto abort;
 
     // There's no need to modify sp to account for the top of stack
     // being in a register because push has already put tos on the
@@ -1204,9 +1204,9 @@ execute_word(char *s, cell *up)
     xt_t xt;
 
     if (alfind(s, strlen(s), (xt_t *)&xt, up) == 0) {
-        ERROR("Can't find '");
+        FTHERROR("Can't find '");
         alerror(s, strlen(s), up);
-        ERROR("'\n");
+        FTHERROR("'\n");
         return(-2);
     }
 

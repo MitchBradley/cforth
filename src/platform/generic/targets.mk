@@ -14,12 +14,12 @@ DUMPFLAGS = --disassemble-all -z -x
 # Platform-specific object files for low-level startup and platform I/O
 # Add more as needed
 
-PLAT_OBJS = start.o tmain.o consoleio.o
+PLAT_OBJS = tstart.o ttmain.o tconsoleio.o
 
 
 # Object files for the Forth system and application-specific extensions
 
-FORTH_OBJS = embed.o textend.o
+FORTH_OBJS = tembed.o textend.o
 
 
 # Recipe for linking the final image

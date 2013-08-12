@@ -1,4 +1,4 @@
-#define VCOM
+// #define VCOM
 // Character I/O stubs
 
 #ifdef STANDALONE
@@ -59,7 +59,7 @@ int kbhit() {
 #endif
 }
 
-int getchar()
+int getkey()
 {
 #ifdef STANDALONE
     while (!kbhit())

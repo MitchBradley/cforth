@@ -28,7 +28,7 @@ struct header {
 extern struct header file_hdr;
 extern const struct header builtin_hdr;
 
-#define ERROR(s)   alerror(s, sizeof(s), up)
+#define FTHERROR(s)   alerror(s, sizeof(s)-1, up)
 
 #ifdef BITS32
 #define MAGIC 0x581120

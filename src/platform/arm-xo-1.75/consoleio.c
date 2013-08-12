@@ -122,7 +122,7 @@ int kbhit() {
 #endif
 }
 
-int getchar()
+int getkey()
 {
     // return the next character from the console input device
     do {

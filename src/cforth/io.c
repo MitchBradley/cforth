@@ -11,9 +11,10 @@
 // char = key();		Get the next input character
 // name_input(filename);		    
 
+#include <stdio.h>
+
 #include "forth.h"
 #include "compiler.h"
-#include <stdio.h>
 
 extern int key();
 extern void exit();
@@ -28,13 +29,12 @@ char **gargv;
 
 isinteractive()
 {
-    return (input_file == stdin);
+    return isatty(fileno(input_file));
 }
 
 title(cell *up)
 {
     cprint("C Forth ", up);
-    // cprint("Version %I%");
     cprint(" Copyright (c) 2008 FirmWorks\n", up);
 }
 
@@ -51,7 +51,7 @@ init_io(int argc, char **argv, cell *up)
         input_file = open_next_file();
     }
     if (input_file == (FILE *)0) {
-        ERROR("No input stream\n");
+        FTHERROR("No input stream\n");
         exit(1);
     }
 }
@@ -89,6 +89,7 @@ int
 nextchar()
 {
     register int c;
+    unsigned char cchar;
 
     if ( input_file == STRINGINPUT ) {
         if( (c = *strptr) != '\0') {
@@ -113,28 +114,26 @@ moreinput()
 int
 caccept(char *addr, cell count, cell *up)
 {
-    int c;
-    char *p;
+    int len;
     
     if (isinteractive()) {
-        linemode();
+	len = lineedit(addr, count, up);
+    } else {
+	/* The line is coming from a file or memory; just find the line end */
+	int c;
+	char *p;
+	for (p = addr; count > 0; count--) {
+	    c = nextchar();
+	    if (c == '\n' || c == EOF) {
+		break;
+	    }
+	    *p++ = c;
+	}
+	len = ((cell)(p - addr));
     }
 
-    // Uses the operating system's terminal driver to do the line editing
-    for (p = addr; count > 0; count--) {
-        c = nextchar();
-        if (c == '\n' || c == EOF) {
-            break;
-        }
-        *p++ = c;
-    }
-    if (isinteractive()) { 
-        // We must do this because the terminal driver does the echoing,
-        // and the 'return' that ends the line puts the cursor at column 0
-        V(NUM_OUT) = 0;
-    }
-
-    return ((cell)(p - addr));
+    V(NUM_OUT) = 0;
+    return len;
 }
 
 name_input(char *filename, cell *up)
@@ -150,21 +149,12 @@ name_input(char *filename, cell *up)
 
 file_error(char *str, char *filename, cell *up)
 {
-    extern int strlen(const char *);
+    extern size_t strlen(const char *);
 
     alerror(str, strlen(str), up);
     alerror(filename, strlen(str), up);
-    ERROR("\n");
+    FTHERROR("\n");
 }
-
-int
-key()
-{
-    keymode();
-    return(getc(stdin));
-}
-
-int key_avail() { return 0; }
 
 FILE *
 open_next_file(cell *up)

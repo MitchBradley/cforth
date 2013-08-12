@@ -25,7 +25,7 @@ prepare_dictionary(int *argcp, char *(*argvp[]))
     xlimit = &origin[MAXDICT];
     if(*argcp < 2
     ||  strcmp(strrchr((*argvp)[1],'.'), ".dic") != 0 ) {
-        dictionary_file = DEFAULT_EXE;
+	dictionary_file = is_readable("app.dic") ? "app.dic" : DEFAULT_EXE;
     } else {
         dictionary_file = (*argvp)[1];
         *argcp -= 1;
@@ -55,6 +55,16 @@ move_dictionary()
     return(1);
 }
 #endif
+
+int
+is_readable(char *name)
+{
+    FILE *fd;
+    if ((fd = fopen(name, READ_MODE)) == NULL)
+	    return 0;
+    (void)fclose(fd);
+    return 1;
+}
 
 int
 read_dictionary(char *name, u_char *dictbase, cell *up)

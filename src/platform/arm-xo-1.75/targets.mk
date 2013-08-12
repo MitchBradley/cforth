@@ -15,15 +15,15 @@ VPATH += $(SRC)/cpu/arm $(SRC)/platform/arm-xo-1.75 $(SRC)/lib
 # Platform-specific object files for low-level startup and platform I/O
 # Add more as needed
 
-PLAT_OBJS = start.o
+PLAT_OBJS = tstart.o
 
 
 # Object files for the Forth system and application-specific extensions
 
 # FORTH_OBJS = tmain.o embed.o textend.o  spiread.o consoleio.o
-FORTH_OBJS = tmain.o embed.o textend.o  spiread-simpler.o consoleio.o inflate.o
+FORTH_OBJS = ttmain.o tembed.o textend.o  tspiread-simpler.o tconsoleio.o tinflate.o
 
-SHIM_OBJS = shimmain.o spiread.o
+SHIM_OBJS = tshimmain.o tspiread.o
 
 # Recipe for linking the final image
 

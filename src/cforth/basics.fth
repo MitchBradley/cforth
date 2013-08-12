@@ -4,6 +4,7 @@ fload control.fth
 
 fload postpone.fth
 \ fload dot.fth
+fload size.fth
 fload util.fth
 
 fload comment.fth	\ Multi-line comments
