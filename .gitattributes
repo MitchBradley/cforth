@@ -1,0 +1,6 @@
+* text=auto
+*.fth text
+*.c text
+*.h text
+*.mk text
+Makefile text
