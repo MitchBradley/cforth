@@ -188,7 +188,7 @@ open_next_file(cell *up)
 }
 
 cell
-freadline(cell f, cell *sp)        // Returns IO result
+freadline(cell f, cell *sp, cell *up) // Returns IO result, actual and more? on stack
 {
     // Stack: adr len -- actual more?
 
@@ -231,15 +231,51 @@ freadline(cell f, cell *sp)        // Returns IO result
 }
 
 cell
-pfclose(cell f)
+pfclose(cell f, cell *up)
 {
     return( (cell)fclose((FILE *)f) );
 }
 
+// r/o                Open existing file for reading
+// w/o                Open or create file for appending
+// r/w                Open existing for reading and writing
+// r/o create-flag or Open or create file for appending, read at beginning
+// w/o create-flag or 
+
+// 0:r/o 1:w/o 2:r/w 3: undefined
+static char *open_modes[]   = { "rb",  "ab", "r+b", "" };
 cell
-pfopen(char *name, int len, char *mode)
+pfopen(char *name, int len, int mode, cell *up)
 {
     char cstrbuf[512];
 
-    return( (cell)fopen(altocstr(name, len, cstrbuf, 512), mode) );
+    return( (cell)fopen(altocstr(name, len, cstrbuf, 512), open_modes[mode&3]) );
 }
+
+static char *create_modes[] = { "a+b", "wb", "w+b", "" };
+cell
+pfcreate(char *name, int len, int mode, cell *up)
+{
+    char cstrbuf[512];
+
+    return( (cell)fopen(altocstr(name, len, cstrbuf, 512), create_modes[mode&3]) );
+}
+
+cell
+pfread(cell *sp, size_t len, FILE *fid, cell *up)  // Returns IO result, actual in *sp
+{
+    size_t ret;
+    *sp = (cell)fread((void *)*sp, 1, len, fid);
+    
+    return (*sp == 0) ? ferror(fid) : 0;
+}
+
+cell
+pfwrite(void *adr, size_t len, FILE *fid, cell *up)  // Returns IO result, actual in *sp
+{
+    size_t ret;
+    ret = (cell)fwrite(adr, 1, len, fid);
+    
+    return (ret == 0) ? ferror(fid) : 0;
+}
+

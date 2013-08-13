@@ -72,7 +72,8 @@ extern emit(char c, cell *up);
 extern int key_avail();
 extern int key();
 extern cell dosyscall();
-extern cell pfopen(char *name, int len, char *mode, cell *up);
+extern cell pfopen(char *name, int len, int mode, cell *up);
+extern cell pfcreate(char *name, int len, int mode, cell *up);
 extern cell pfclose(cell f, cell *up);
 extern void write_dictionary(char *name, int len, char *dict, int dictsize, cell *up, int usersize);
 
@@ -1121,11 +1122,10 @@ execute:
     tos = freadline(tos, sp, up);
     next;
 
-/*$p r/o */         case R_O:  push((cell)READ_MODE);  next;
+/*$p r/o */         case R_O:  push(0);  next;
 /*$p open-file */   case OPEN_FILE:
-    ascr1 = (u_char *)tos;   // mode in ascr1
-    loadtos;
-    tos = pfopen((char *)*sp, tos, (char *)ascr1, up);
+    scr = pop;   // mode
+    tos = pfopen((char *)*sp, tos, scr, up);
     *sp = tos;
     tos = tos ? 0 : OPENFAIL;
     next;
@@ -1138,6 +1138,27 @@ execute:
     V(RAMTOKENS) = pop;
     V(RAMCT) = (cell)CT_FROM_XT((xt_t)V(DP), up);
     V(DP) = V(RAMTOKENS);
+    next;
+
+/*$p read-file */  case READ_FILE:      /* adr len fid -- actual ior */
+    ascr = (void *)pop;    // fid
+    tos = pfread(sp, tos, ascr, up);
+    next;
+
+/*$p write-file */  case WRITE_FILE:      /* adr len fid -- ior */
+    ascr = (void *)pop;    // fid
+    scr = pop;             // len
+    tos = pfwrite((void *)tos, scr, ascr, up);
+    next;
+
+/*$p w/o */         case W_O:  push(1);  next;
+/*$p r/w */         case R_W:  push(2);  next;
+/*$p bin */         case BIN:  push(4);  next;
+/*$p create-file */ case CREATE_FILE:
+    scr = pop;   // mode
+    tos = pfcreate((char *)*sp, tos, scr, up);
+    *sp = tos;
+    tos = tos ? 0 : OPENFAIL;
     next;
 
 default:   // Non-primitives - colon defs, constants, etc.

@@ -132,25 +132,6 @@ typedef token_t *xt_t;
 #define CNEWLINE '\n'
 #endif
 
-#ifdef UNIX
-/* Some Unix systems don't allow the "b" modifier; no Unix system needs it */
-#define READ_MODE   "r"
-#define WRITE_MODE  "w"
-#define MODIFY_MODE "r+"
-#define CREATE_MODIFY_MODE "w+"
-#endif
-
-#ifndef READ_MODE
-#define READ_MODE   "rb"
-#define WRITE_MODE  "wb"
-#define MODIFY_MODE "rb+"
-#define CREATE_MODIFY_MODE "wb+"
-#endif
-
-#ifdef DOSTURBO
-#define inportw inport
-#endif
-
 #define TIBSIZE 132
 #define PSSIZE 100
 #define RSSIZE 100

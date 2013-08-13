@@ -63,13 +63,28 @@ void write_dictionary(char *name, int len, char *dict, int dictsize,
     FTHERROR("No file I/O\n");
 }
 
-cell pfopen(char *name, char *mode)  {  return (0);  }
+cell pfopen(char *name, int mode, cell *up)  {  return (0);  }
+cell pfcreate(char *name, int mode, cell *up)  {  return (0);  }
 
-cell pfclose(cell fd) {  return (0);  }
+cell pfclose(cell fd, cell *up) {  return (0);  }
 
-cell freadline(cell f, cell *sp)        /* Returns IO result */
+cell freadline(cell f, cell *sp, cell *up)        /* Returns IO result */
 {
     sp[0] = 0;
     sp[1] = 0;
     return (READFAIL);
+}
+
+cell
+pfread(cell *sp, cell len, void *fid, cell *up)  // Returns IO result, actual in *sp
+{
+    sp[0] = 0;
+    return (READFAIL);
+}
+
+cell
+pfwrite(cell *sp, cell len, void *fid, cell *up)  // Returns IO result, actual in *sp
+{
+    sp[0] = 0;
+    return (WRITEFAIL);
 }

@@ -60,7 +60,7 @@ int
 is_readable(char *name)
 {
     FILE *fd;
-    if ((fd = fopen(name, READ_MODE)) == NULL)
+    if ((fd = fopen(name, "rb")) == NULL)
 	    return 0;
     (void)fclose(fd);
     return 1;
@@ -72,7 +72,7 @@ read_dictionary(char *name, u_char *dictbase, cell *up)
     FILE *fd;
     struct header file_hdr;
 
-    if ((fd = fopen(name, READ_MODE)) == NULL)
+    if ((fd = fopen(name, "rb")) == NULL)
         fatal("Can't open dictionary file\n", up);
 
     if (fread((char *)&file_hdr, 1, sizeof(file_hdr), fd) != sizeof(file_hdr))
@@ -142,7 +142,7 @@ write_dictionary(char *name, int len, char *dict, int dictsize, cell *up, int us
     struct header file_hdr;
     char cstrbuf[512];
 
-    if ((fd = fopen(altocstr(name, len, cstrbuf, 512), WRITE_MODE)) == NULL)
+    if ((fd = fopen(altocstr(name, len, cstrbuf, 512), "wb")) == NULL)
         fatal("Can't create dictionary file\n", up);
 
     file_hdr.magic = MAGIC;
