@@ -2,14 +2,17 @@
 
 default: app.dic
 
-# APPLOADFILEE is the top-level "Forth load file" for the application code.
+# Application code directory - i.e. this directory
+APPPATH=$(TOPDIR)/src/app/host-serial
+
+# OBJPATH2 is the build directory relative to here
+OBJPATH2=../../../$(BUILDDIR)
+
+# APPLOADFILE is the top-level "Forth load file" for the application code.
 APPLOADFILE = app.fth
 
 # APPSRCS is a list of Forth source files for dependency checking
 APPSRCS = $(APPPATH)/app.fth
-
-app.dic:  forth forth.dic $(APPSRCS)
-	(cd $(APPPATH); $(OBJPATH2)/forth $(OBJPATH2)/forth.dic $(APPLOADFILE); mv app.dic $(OBJPATH2))
 
 SRC=$(TOPDIR)/src
 include $(SRC)/common.mk
@@ -25,11 +28,8 @@ endif
 # EXTENDSRC is the source file for extensions; it is compiled to extend.o
 EXTENDSRC = $(APPPATH)/extend-$(API).c
 
-# OBJPATH is the build directory relative to $(SRC)/cforth
-OBJPATH=../../$(BUILDDIR)
-
-# OBJPATH2 is the build directory relative to APPPATH
-OBJPATH2=../../../$(BUILDDIR)
-
 VPATH += $(APPPATH)
 INCS += -I$(APPPATH)
+
+app.dic:  forth forth.dic $(APPSRCS)
+	(cd $(APPPATH); $(OBJPATH2)/forth $(OBJPATH2)/forth.dic $(APPLOADFILE); mv $@ $(OBJPATH2))

@@ -6,7 +6,7 @@ INCS += -I. -I$(SRC)/cforth
 # SYSCALL=
 SYSCALL=-DNOSYSCALL
 
-EXTENDSRC ?= extend.c
+EXTENDSRC ?= $(SRC)/cforth/extend.c
 
 # To omit floating point support
 FP=
@@ -79,7 +79,7 @@ FORTHSRCS = misc.fth compiler.fth control.fth postpone.fth \
             size.fth ccalls.fth split.fth rstrace.fth
 
 forth.dic: load.fth forth kernel.dic $(FORTHSRCS)
-	(cd $(SRC)/cforth; $(OBJPATH)/forth $(OBJPATH)/kernel.dic load.fth; mv $@ $(OBJPATH))
+	(cd $(SRC)/cforth; ../../$(BUILDDIR)/forth ../../$(BUILDDIR)/kernel.dic load.fth; mv $@ ../../$(BUILDDIR))
 
 # kernel.dic is a primitive Forth dictionary file with extremely rudimentary
 # Forth interpretation capabilities; it is missing a significant number

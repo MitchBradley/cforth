@@ -1,36 +1,44 @@
 # Makefile fragment for the final target application
 
-# This generic version is quite abbreviated, assuming nothing about
-# the CPU or the I/O system.  A typical real version would include
-# various object files, some from appropriate src/cpu/* directories
-# and some from the platform-specific directory (src/platform/*).
+SRC=$(TOPDIR)/src
 
+# Target compiler definitions
+ifneq "$(findstring arm,$(shell uname -m))" ""
+include $(SRC)/cpu/host/compiler.mk
+else
+include $(SRC)/cpu/arm/compiler.mk
+endif
 
-DUMPFLAGS = --disassemble-all -z -x
+include $(SRC)/common.mk
+include $(SRC)/cforth/targets.mk
+include $(SRC)/cforth/embed/targets.mk
 
-VPATH += $(SRC)/cpu/arm $(SRC)/platform/arm-mmp2 $(SRC)/lib
-# VPATH += $(SRC)/cpu/<whatever> $(SRC)/platform/<whatever>
-# INC += -I$(SRC)/cpu/<whatever> -I$(SRC)/platform/<whatever>
+DUMPFLAGS = --disassemble -z -x -s
+
+VPATH += $(SRC)/cpu/arm $(SRC)/lib
+VPATH += $(SRC)/platform/arm-mmp2 
+INCS += -I$(SRC)/platform/arm-mmp2 
 
 # Platform-specific object files for low-level startup and platform I/O
-# Add more as needed
 
 PLAT_OBJS = tstart.o
-
 
 # Object files for the Forth system and application-specific extensions
 
 FORTH_OBJS = ttmain.o tembed.o textend.o tconsoleio.o
 
-
 # Recipe for linking the final image
+
+# On XO-1.75, a masked-ROM loader copies CForth from SPI FLASH into SRAM
+DICTIONARY=RAM
+
+DICTSIZE=0xe000
 
 RAMBASE = 0xd1000000
 RAMTOP  = 0xd1020000
 
 TSFLAGS += -DRAMTOP=${RAMTOP}
 
-# LIBGCC= $(shell gcc -print-libgcc-file-name)
 LIBGCC= -lgcc
 
 app.elf: $(PLAT_OBJS) $(FORTH_OBJS)

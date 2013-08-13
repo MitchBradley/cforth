@@ -104,19 +104,6 @@ base_dict.h base_dicthdr.h base_userarea.h: forth.dic makebi
 	mv dicthdr.h base_dicthdr.h
 	mv userarea.h base_userarea.h
 
-# forth.dic is a Forth dictionary file that includes basic Forth compilation
-# capabilities
-
-FORTHSRCS = ../misc.fth ../compiler.fth ../control.fth ../postpone.fth \
-            ../util.fth ../rambuffer.fth ../config.fth ../comment.fth \
-            ../case.fth ../th.fth ../format.fth ../words.fth ../dump.fth \
-            ../patch.fth ../brackif.fth ../decompm.fth ../decomp.fth \
-            ../callfind.fth ../needs.fth ../sift.fth ../stringar.fth \
-            ../size.fth ../ccalls.fth ../split.fth ../rstrace.fth aliases.fth
-
-forth.dic: load.fth forth kernel.dic $(FORTHSRCS)
-	(cd $(SRC)/cforth/embed; $(OBJPATH)/forth $(OBJPATH)/kernel.dic load.fth; mv $@ $(OBJPATH))
-
 # tconsio.o is a simplified Forth I/O module that supports only console I/O
 # (i.e. getchar() and putchar()).
 

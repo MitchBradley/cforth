@@ -1,22 +1,27 @@
 # Makefile fragment for the final target application
 
-# This generic version is quite abbreviated, assuming nothing about
-# the CPU or the I/O system.  A typical real version would include
-# various object files, some from appropriate src/cpu/* directories
-# and some from the platform-specific directory (src/platform/*).
+SRC=$(TOPDIR)/src
 
+# Target compiler definitions
+ifneq "$(findstring arm,$(shell uname -m))" ""
+include $(SRC)/cpu/host/compiler.mk
+else
+include $(SRC)/cpu/arm/compiler.mk
+endif
+
+include $(SRC)/common.mk
+include $(SRC)/cforth/targets.mk
+include $(SRC)/cforth/embed/targets.mk
 
 DUMPFLAGS = --disassemble -z -x -s
 
-VPATH += $(SRC)/cpu/arm $(SRC)/platform/arm-xo-1.75 $(SRC)/lib
-# VPATH += $(SRC)/cpu/<whatever> $(SRC)/platform/<whatever>
-# INC += -I$(SRC)/cpu/<whatever> -I$(SRC)/platform/<whatever>
+VPATH += $(SRC)/cpu/arm $(SRC)/lib
+VPATH += $(SRC)/platform/arm-xo-1.75
+INCS += -I$(SRC)/platform/arm-xo-1.75
 
 # Platform-specific object files for low-level startup and platform I/O
-# Add more as needed
 
 PLAT_OBJS = tstart.o
-
 
 # Object files for the Forth system and application-specific extensions
 
@@ -26,6 +31,11 @@ FORTH_OBJS = ttmain.o tembed.o textend.o  tspiread-simpler.o tconsoleio.o tinfla
 SHIM_OBJS = tshimmain.o tspiread.o
 
 # Recipe for linking the final image
+
+# On XO-1.75, a masked-ROM loader copies CForth from SPI FLASH into SRAM
+DICTIONARY=RAM
+
+DICTSIZE=0xe000
 
 RAMBASE  = 0xd1000000
 IRQSTACKSIZE = 0x100
@@ -39,6 +49,8 @@ LIBGCC= -lgcc
 
 version:
 	git log -1 --format=format:"%H" >>$@ 2>/dev/null || echo UNKNOWN >>$@
+	pwd
+	echo VPATH = ${VPATH}
 
 cforth.elf: version $(PLAT_OBJS) $(FORTH_OBJS)
 	@echo 'const char version[] = "'`cat version`'" ;' >date.c

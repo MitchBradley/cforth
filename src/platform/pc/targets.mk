@@ -1,18 +1,20 @@
-# Makefile fragment for the final target application
+# Makefile fragment for CForth to run as an embedded app on a PC motherboard
 
-# This generic version is quite abbreviated, assuming nothing about
-# the CPU or the I/O system.  A typical real version would include
-# various object files, some from appropriate src/cpu/* directories
-# and some from the platform-specific directory (src/platform/*).
+SRC=$(TOPDIR)/src
 
+include $(SRC)/cpu/host/compiler.mk
 
-DUMPFLAGS = --disassemble-all -z -x
+include $(SRC)/common.mk
+include $(SRC)/cforth/targets.mk
+include $(SRC)/cforth/embed/targets.mk
 
-# VPATH += $(SRC)/cpu/<whatever> $(SRC)/platform/<whatever>
-# INC += -I$(SRC)/cpu/<whatever> -I$(SRC)/platform/<whatever>
+DUMPFLAGS = --disassemble -z -x -s
+
+VPATH += $(SRC)/lib
+VPATH += $(SRC)/platform/pc
+INCS += -I$(SRC)/platform/pc
 
 # Platform-specific object files for low-level startup and platform I/O
-# Add more as needed
 
 PLAT_OBJS = tstart.o ttmain.o tconsoleio.o
 
@@ -23,6 +25,10 @@ FORTH_OBJS = tembed.o textend.o
 
 
 # Recipe for linking the final image
+
+DICTIONARY=ROM
+
+DICTSIZE=0x7000
 
 ROMBASE = 0xffff0000
 RAMBASE = 0xfff08000

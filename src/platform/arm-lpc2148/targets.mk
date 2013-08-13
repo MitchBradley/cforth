@@ -1,27 +1,41 @@
 # Makefile fragment for the final target application
 
-# This generic version is quite abbreviated, assuming nothing about
-# the CPU or the I/O system.  A typical real version would include
-# various object files, some from appropriate src/cpu/* directories
-# and some from the platform-specific directory (src/platform/*).
+# Prefix for cross compiler, if not already set in environment
+ifeq ($(CROSS),)
+    CROSS=arm-elf-
+endif
 
+SRC=$(TOPDIR)/src
 
-DUMPFLAGS = --disassemble-all -z -x
+# Target compiler definitions
+ifneq "$(findstring arm,$(shell uname -m))" ""
+include $(SRC)/cpu/host/compiler.mk
+else
+include $(SRC)/cpu/arm/compiler.mk
+endif
 
-# VPATH += $(SRC)/cpu/<whatever> $(SRC)/platform/<whatever>
-# INC += -I$(SRC)/cpu/<whatever> -I$(SRC)/platform/<whatever>
+include $(SRC)/common.mk
+include $(SRC)/cforth/targets.mk
+include $(SRC)/cforth/embed/targets.mk
+
+DUMPFLAGS = --disassemble -z -x -s
+
+VPATH += $(SRC)/cpu/arm $(SRC)/lib
+VPATH += $(SRC)/platform/arm-lpc2148
+INCS += -I$(SRC)/platform/arm-lpc2148
 
 # Platform-specific object files for low-level startup and platform I/O
-# Add more as needed
 
 PLAT_OBJS =  ttmain.o tconsoleio.o
-
 
 # Object files for the Forth system and application-specific extensions
 
 FORTH_OBJS = tembed.o textend.o
 
 # Recipe for linking the final image
+
+DICTIONARY=ROM
+DICTSIZE=0x7000
 
 RAMBASE = 0xd1000000
 RAMTOP  = 0xd1020000

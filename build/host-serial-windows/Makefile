@@ -1,12 +1,7 @@
 # Builds a Windows host Forth application with serial port tools
 
-# Top of tree relative to this directory
+# Location of this directory in the tree
 TOPDIR=../..
-
-# This directory relative to TOPDIR
 BUILDDIR=build/host-serial-windows
 
-# Application code directory
-APPPATH=$(TOPDIR)/src/app/host-serial
-
-include $(APPPATH)/targets.mk
+include $(TOPDIR)/src/app/host-serial/targets.mk
