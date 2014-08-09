@@ -2,102 +2,82 @@
 
 fl ../../lib/misc.fth
 fl ../../lib/dl.fth
-fl ../../lib/random.fth
-fl ../../lib/ilog2.fth
-fl ../../lib/tek.fth
 
-1 [if]
-fl gpio.fth
-fl adcpins.fth
+#0 ccall: spins       { i.nspins -- }
+#1 ccall: wfi         { -- }
+#2 ccall: get-msecs   { -- n }
+#3 ccall: a@          { i.pin -- n }
+#4 ccall: p!          { i.val i.pin -- }
+#5 ccall: p@          { i.pin -- n }
+#6 ccall: m!          { i.mode i.pin -- }
+#7 ccall: get-usecs   { -- n }
+#8 ccall: delay       { n -- }
+#9 ccall: bye         { -- }
+#10 ccall: /nv        { -- n }
+#11 ccall: nv-base    { -- n }
+#12 ccall: nv-length  { -- n }
+#13 ccall: nv@        { i.adr -- i.val }
+#14 ccall: nv!        { i.val i.adr -- }
 
-2 constant water-gpio
-3 constant spritz-gpio
-4 constant recirc-gpio
-5 constant nutrient-gpio
-6 constant pH-up-gpio
-7 constant pH-down-gpio
-6 constant #gpios
+fl ../../platform/arm-teensy3/watchdog.fth
+fl ../../platform/arm-teensy3/timer.fth
+fl ../../platform/arm-teensy3/pcr.fth
+fl ../../platform/arm-teensy3/i2c.fth
+fl ../../platform/arm-teensy3/gpio.fth
+fl ../../platform/arm-teensy3/nv.fth
 
-[ifdef] float
-\ Test for analogWrite to DAC0
-decimal
-3.1415926535E0 fconstant pi
-pi 2E f* fconstant 2pi
-2E-2 fvalue phaseinc
+: be-in      0 swap m!  ;
+: be-out     1 swap m!  ;
+: be-pullup  2 swap m!  ;
 
-: sinewave  ( -- )
-   ." Sine wave on DAC0 pin; type a key to stop" cr
-   #12 analogWriteRes
-   2pi
-   begin        ( phase )
-      fdup fsin 2000E0 f*  2050E0 f+
-      int pinA14 analogWrite 
-      phaseinc f-  fdup f0<  if  2pi f+  then
-   key? until
-   fdrop
-;
-[then]
+: go-on      1 swap p!  ;
+: go-off     0 swap p!  ;
 
-: init-i2c  ( -- )  #10 9 i2c-setup  ;
-
-\ I2C devices
-fl ina219.fth
-fl mcp23008.fth
-fl mcp23017.fth
-fl fixture.fth
-fl ../bluez/colors.fth
-fl ../bluez/rgblcd.fth
-fl ../esp8266/pca9685.fth
-fl ../esp8266/ms5803.fth
-fl ../esp8266/bme280.fth
-fl ../esp8266/vl6180x.fth
-fl ../esp8266/ads1115.fth \ Possibly unnecessary since Teensy3 has good ADCs
-fl sht21.fth
-
-fl ../esp8266/ds18x20.fth  \ Onewire temperature probe
-#23 to ds18x20-pin  \ Needs 4.7K pullup
-
-: pump-setup  ( -- )
-   water-gpio #gpios  bounds  do  0 i gpio-pin!  i gpio-is-output  loop
-;
-
-fl ph.fth    \ pH probe via ADC
-fl pump.fth  \ Pump controller via GPIOs and motor driver
-fl ../../cforth/printf.fth
-fl esp8266_at.fth \ esp8266 HTTP server
-fl ec.fth \ electrical conductivity sensor
-fl pump-ctl.fth \ pump control state machine
-
-: init-all
-   pump-setup
-   init-i2c
-   init-vl6180x
-   init-pump-ctl
-   init-bme
-   start-server
-;
-
-: main-loop
-   1
+: wait  ( ms -- )
+   get-msecs +
    begin
-     handle-request
-     \ blah
-     1- dup 0= if
-       drop #500
-       pump-ctl
-       .pump-ctl
-     then
-     #1 ms
-     key?
+      dup get-msecs - 0<  key?  or
    until
    drop
-   init-pump-ctl \ resets pumps
 ;
 
-\ Replace 'quit' to make CForth auto-run some application code
-\ instead of just going interactive.
-: app  ." CForth" cr decimal  pump-setup  init-i2c quit  ;
-[else]
-: app ." CForth" cr decimal  quit  ;
-[then]
+: lb
+   d be-out  e be-out
+   begin
+      d go-on  d# 125 wait  d go-off
+      e go-on  d# 125 wait  e go-off
+      key?
+   until
+;
+
+\ tsl2561 luminosity sensor
+: .tsl
+   h# 39 i2c-open
+   3 80 i2c-reg! \ power up sensor
+   d# 402 ms \ nominal integration time
+   h# 8c i2c-reg@ h# 8d i2c-reg@ bwjoin . \ ADC channel 0
+   h# 8e i2c-reg@ h# 8f i2c-reg@ bwjoin . \ ADC channel 1
+   0 80 i2c-reg! \ power down sensor
+   i2c-close
+;
+
+\ blink the led
+: go
+   $1 $d m!  $1 $d p!   \ mode output, drive on
+   #10 ms		\ pause
+   $0 $d p!  $0 $d m!   \ drive off, mode input
+;
+
+\ to prevent execution of non-volatile buffer, tie pin 13 to ground.
+: confirm?  ( -- flag )
+   $0 $d m!  $1 $d p!  $2 ms    \ mode input, pullup on, stabilise
+   $d p@                        \ read pin
+   $1 $d m!  $0 $d p!           \ mode output, force low
+;
+
+: app
+   confirm?  if  go  nv-evaluate  then
+   ." CForth" cr hex quit
+;
+
 " app.dic" save
