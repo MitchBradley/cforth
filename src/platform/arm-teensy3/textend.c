@@ -9,6 +9,7 @@
 cell get_msecs();
 cell wfi();
 cell spins();
+cell analogWriteDAC0();
 cell analogRead();
 cell digitalWrite();
 cell digitalRead();
@@ -23,16 +24,17 @@ cell eeprom_read_byte();
 cell eeprom_write_byte();
 
 cell ((* const ccalls[])()) = {
-    (cell (*)())spins,        // Entry # 0
-    (cell (*)())wfi,          // Entry # 1
-    (cell (*)())get_msecs,    // Entry # 2
-    (cell (*)())analogRead,   // Entry # 3
-    (cell (*)())digitalWrite, // Entry # 4
-    (cell (*)())digitalRead,  // Entry # 5
-    (cell (*)())pinMode,      // Entry # 6
-    (cell (*)())micros,       // Entry # 7
-    (cell (*)())delay,        // Entry # 8  // fixme: hangs
-    (cell (*)())_reboot_Teensyduino_, // Entry # 9
+    (cell (*)())spins,            // Entry # 0
+    (cell (*)())wfi,              // Entry # 1
+    (cell (*)())get_msecs,        // Entry # 2
+    (cell (*)())analogWriteDAC0,  // Entry # 3
+    (cell (*)())analogRead,       // Entry # 4
+    (cell (*)())digitalWrite,     // Entry # 5
+    (cell (*)())digitalRead,      // Entry # 6
+    (cell (*)())pinMode,          // Entry # 7
+    (cell (*)())micros,           // Entry # 8
+    (cell (*)())delay,            // Entry # 9  // fixme: hangs
+    (cell (*)())_reboot_Teensyduino_, // Entry # 10
     (cell (*)())eeprom_size,
     (cell (*)())eeprom_base,
     (cell (*)())eeprom_length,
