@@ -47,9 +47,7 @@ h# 282000 value ic-base  \ Interrupt controller
    h# f7 0 send-ps2
    4 ms
    event?  if  ( byte port )
-      bwjoin  h# fa  =  if
-	 ." Matrix mode on" cr
-      else
+      bwjoin  h# fa  <>  if
 	 ." Strange response to matrix mode" cr
       then
    else
