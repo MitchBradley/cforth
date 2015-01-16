@@ -168,7 +168,7 @@ d# 905 value resumeline  \ Configurable; should be set from args
 : dcon-enable  ( -- )
    dcon-setup
    true set-color
-   h# f bright!
+   h# a bright!
 ;
 
 : video-save
