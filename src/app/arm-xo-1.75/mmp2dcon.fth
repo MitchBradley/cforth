@@ -160,9 +160,7 @@ d# 905 value resumeline  \ Configurable; should be set from args
 
    h# 0101  h# 41 dcon!
    h# 0101  h# 42 dcon!
-[ifdef] cl4
    h# 1b70  h# 4c dcon!   \ low drive strength for DETTL clock and data
-[then]
    h# 12 mode!
 ;
 : dcon-enable  ( -- )
