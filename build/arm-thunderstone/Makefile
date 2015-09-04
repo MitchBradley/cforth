@@ -1,8 +1,6 @@
 # Builds CForth for Marvell Thunderstone MMP3 development board
 
-# TOPDIR is relative to this directory
 TOPDIR=../..
-BUILDDIR=build/arm-thunderstone
 
 # PLATPATH is where the platform-specific code lives.  You might need to
 # make a new platform directory and populate it with drivers and startup

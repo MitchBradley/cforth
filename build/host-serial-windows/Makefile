@@ -1,7 +1,6 @@
 # Builds a Windows host Forth application with serial port tools
 
-# Location of this directory in the tree
 TOPDIR=../..
-BUILDDIR=build/host-serial-windows
 
+CONFIG += -DBITS32 -DT16 -m32
 include $(TOPDIR)/src/app/host-serial/targets.mk
