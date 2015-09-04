@@ -447,70 +447,6 @@ cell get_msecs(void)
 #include <errno.h>
 cell errno_val(void) {  return (cell)errno;  }
 
-#ifdef __APPLE__
-cell open_scanner() { return -1; }
-#else
-#include <linux/input.h>
-
-char *scanner_names[] = {
-  "scanner",                                 // catch-all, e.g. factory scanners
-  "barcode",                                 // catch-all, e.g. Black Long USB Laser Barcode Scanner
-  "HID Keyboard Device HID Keyboard Device", // Taotronics
-  NULL,
-};
-
-cell open_scanner()
-{
-  int i;
-  int fid;
-  int ret;
-  char devname[20];
-  char scannername[128];
-  char **p;
-
-  for (i = 0; i<20; i++) {
-    sprintf(devname, "/dev/input/event%d", i);
-    fid = open(devname, O_RDONLY, 0);
-    if (fid < 0) {
-      continue;
-    }
-    ret = ioctl(fid, EVIOCGNAME(sizeof(scannername)), scannername);
-    if (ret < 0) {
-      close(fid);
-      continue;
-    }
-    for (p=scanner_names; *p; p++) {
-      if (strcasestr(scannername, *p)) {
-        ret = ioctl(fid, EVIOCGRAB, 1);  // Exclusive
-        printf("Grabbed device %d as fid %d, exc %d named %s.\n",i, fid, ret, scannername);
-        return fid;
-      }
-    }
-    fprintf(stdout, "Rejecting input device %d with name %s.\n", i, scannername);
-    close(fid);
-  }
-  return -1;
-}
-#endif
-
-#include <sched.h>
-void sched_fifo(void)
-{
-  struct sched_param fifo_param;
-  fifo_param.sched_priority = 50;
-#ifdef __APPLE__
-  fprintf(stderr, "sched_fifo not implemented on MAC OS.\n");
-#else
-  sched_setscheduler(0, SCHED_FIFO, &fifo_param);
-#endif
-
-  return;
-}
-
-void sfc_reconnect(void);
-void sfc_transact(void);
-void sfc_set_address(void);
-
 cell ((* const ccalls[])()) = {
   // OS-independent functions
   C(ms)                //c ms             { i.ms -- }
@@ -563,14 +499,4 @@ cell ((* const ccalls[])()) = {
   C(open_sha256)       //c sha256-open    { -- a.context }
   C(SHA256Update)      //c sha256-update  { i.len a.data a.context -- }
   C(close_sha256)      //c sha256-close   { a.hash a.context -- }
-
-  // Miscellaneous
-  C(open_scanner)      //c open-scanner   { -- i.fd }
-
-  C(sfc_reconnect)     //c sfc-reconnect  { -- }
-  C(sfc_transact)      //c (sfc-transact) { i.len a.msg -- a.response }
-  C(sfc_set_address)   //c sfc-server     { $.port $.ip -- }
-
-  // Scheduling
-  C(sched_fifo)        //c sched-fifo     { -- }
 };
