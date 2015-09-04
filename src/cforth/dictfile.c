@@ -6,56 +6,6 @@
 
 cell variables[MAXVARS];
 
-// Initialize the Forth environment.  This must be called once, prior to
-// calling inner_interpreter() the first time.
-
-cell *
-prepare_dictionary(int *argcp, char *(*argvp[]))
-{
-    u_char *origin;
-    u_char *here;
-    u_char *xlimit;
-    int dict_size;
-
-    char *dictionary_file = "";
-
-    // Allocate space for the Forth dictionary and read its initial contents
-    origin = aln_alloc(MAXDICT, variables);
-
-    xlimit = &origin[MAXDICT];
-    if(*argcp < 2
-    ||  strcmp(strrchr((*argvp)[1],'.'), ".dic") != 0 ) {
-	dictionary_file = is_readable("app.dic") ? "app.dic" : DEFAULT_EXE;
-    } else {
-        dictionary_file = (*argvp)[1];
-        *argcp -= 1;
-        *argvp += 1;
-    }
-
-    dict_size = read_dictionary(dictionary_file, origin, variables);
-    here = &origin[dict_size];
-
-    init_compiler(origin, xlimit, 0xfffe, here, xlimit, variables);
-    return variables;
-}
-
-#ifdef notdef
-int
-move_dictionary()
-{
-    if (builtin_hdr.magic != MAGIC)
-        return(0);
-
-    memcpy((char *)V(TORIGIN), dict, builtin_hdr.dsize);
-
-    V(DP) = (cell)((u_char *)V(TORIGIN) + builtin_hdr.dsize);
-
-    memcpy((char *)variable, dict+builtin_hdr.dsize, builtin_hdr.usize);
-
-    return(1);
-}
-#endif
-
 int
 is_readable(char *name)
 {
@@ -166,8 +116,59 @@ write_dictionary(char *name, int len, char *dict, int dictsize, cell *up, int us
     (void)fclose(fd);
 }
 
-fatal(char *str, cell *up)
-    
+// Initialize the Forth environment.  This must be called once, prior to
+// calling inner_interpreter() the first time.
+
+cell *
+prepare_dictionary(int *argcp, char *(*argvp[]))
+{
+    u_char *origin;
+    u_char *here;
+    u_char *xlimit;
+    int dict_size;
+    char *extension;
+
+    char *dictionary_file = "";
+
+    // Allocate space for the Forth dictionary and read its initial contents
+    origin = aln_alloc(MAXDICT, variables);
+
+    xlimit = &origin[MAXDICT];
+    if(*argcp < 2
+       || (extension = strrchr((*argvp)[1],'.')) == NULL
+       || strcmp(extension, ".dic") != 0 ) {
+	dictionary_file = is_readable("app.dic") ? "app.dic" : DEFAULT_EXE;
+    } else {
+        dictionary_file = (*argvp)[1];
+        *argcp -= 1;
+        *argvp += 1;
+    }
+
+    dict_size = read_dictionary(dictionary_file, origin, variables);
+    here = &origin[dict_size];
+
+    init_compiler(origin, xlimit, 0xfffe, here, xlimit, variables);
+    return variables;
+}
+
+#ifdef notdef
+int
+move_dictionary()
+{
+    if (builtin_hdr.magic != MAGIC)
+        return(0);
+
+    memcpy((char *)V(TORIGIN), dict, builtin_hdr.dsize);
+
+    V(DP) = (cell)((u_char *)V(TORIGIN) + builtin_hdr.dsize);
+
+    memcpy((char *)variable, dict+builtin_hdr.dsize, builtin_hdr.usize);
+
+    return(1);
+}
+#endif
+
+void fatal(char *str, cell *up)
 {
     alerror(str, strlen(str), up);
     (void)exit(1);

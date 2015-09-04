@@ -66,7 +66,7 @@ void send(unsigned int u)
 		sendbyte((u >> 21) | 0x80);
 		goto tail3;
 	}
-       
+
 	sendbyte((u >> 28) | 0x80);
 	sendbyte((u >> 21) & 0x7f);
 tail3:

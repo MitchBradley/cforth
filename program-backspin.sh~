@@ -1,0 +1,7 @@
+#!/bin/bash
+
+BIN_FILE = `osascript -e 'POSIX path of ( choose file with prompt "Backspin Binary File" default location "." of type {"com.apple.macbinary-archive"})'`
+
+echo bin_file = $BIN_FILE
+
+

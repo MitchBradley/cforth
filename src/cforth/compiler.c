@@ -33,6 +33,7 @@ init_compiler(const u_char *origin, u_char *ramorigin, token_t topct, u_char *he
 {
     V(UPZERO) = (cell)up;
 
+    *(token_t *)origin = 0;
     V(TORIGIN) = (cell)origin;
     V(DP) = (cell)here;
 
@@ -94,6 +95,18 @@ place_name(char *adr, cell len, token_t previous, cell *up)
     tokstore(CT_FROM_XT((xt_t)V(DP), up), (token_t *)&V(LASTP));
 }
 
+static void
+cfwarn(char *adr, cell len, cell *up)
+{
+    token_t *tmpxt;
+
+    if (V(WARNING)
+    && search_wid(adr, len, (vocabulary_t *)XT_FROM_CT(T(CURRENT), up), (xt_t *)&tmpxt, up)) {
+        alerror((char *)adr, (u_cell)len, up);
+        FTHERROR(" isn't unique\n");
+    }
+}
+
 void
 header(char *adr, cell len, cell *up)
 {
@@ -103,7 +116,7 @@ header(char *adr, cell len, cell *up)
 
     canonstr = alcanonical(adr, len, strbuf, up);
 
-    warn(canonstr, len, up);
+    cfwarn(canonstr, len, up);
 
     place_name(canonstr, len, *threadp, up);
 
@@ -129,18 +142,6 @@ create_word(token_t cf, cell *up)
 }
 
 void
-warn(char *adr, cell len, cell *up)
-{
-    token_t *tmpxt;
-    
-    if (V(WARNING)
-    && search_wid(adr, len, (vocabulary_t *)XT_FROM_CT(T(CURRENT), up), (xt_t *)&tmpxt, up)) {
-        alerror((char *)adr, (u_cell)len, up);
-        FTHERROR(" isn't unique\n");
-    }
-}
-
-void
 tokstore(token_t token, token_t *adr)
 {
 #ifdef RELOCATE
@@ -150,7 +151,7 @@ tokstore(token_t token, token_t *adr)
 #endif
     *adr = token;
 }
-        
+
 #ifdef RELOCATE
 set_relocation_bit(cell *adr)
 {
@@ -254,11 +255,11 @@ search_wid(char *adr, cell len, vocabulary_t *wid, xt_t *xtp, cell *up)
     register u_char *str,*ptr;
     register int length;
     register xt_t dictp;
- 
+
     for ( dictp = XT_FROM_CT(*hash(wid, adr, len), up);
           dictp != (xt_t)V(TORIGIN);
         ) {
- 
+
         length = name_len(dictp);
 
         if ( len != length ) {

@@ -3,9 +3,6 @@ APPPATH=$(TOPDIR)/src/app/arm-xo-3.0
 APPPATH2=$(TOPDIR)/src/app/arm-mmp2
 APPPATH3=$(TOPDIR)/src/app/arm-xo-1.75
 
-# OBJPATH2 is relative to APPPATH
-OBJPATH2=../../../$(BUILDDIR)
-
 # APPLOADFILE is the top-level "Forth load file" for the application code.
 APPLOADFILE = app.fth
 

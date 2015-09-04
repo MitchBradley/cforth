@@ -1,3 +1,4 @@
+#include "forth.h"
 #include "specialkeys.h"
 
 extern int key();
@@ -57,8 +58,8 @@ void erase_line(void *up) {
 }
 
 #define MAXHISTORY 400
-static int saved_length;
-static char lastline[MAXHISTORY];
+static int saved_length = 31;
+static char lastline[MAXHISTORY] = "self-test\0test-gpios\0reset-all\0";
 
 void validate_history()
 {
@@ -125,7 +126,7 @@ int already_in_history(char *adr, int len)
     return 0;
 }
 
-add_to_history(char *adr, int len)
+void add_to_history(char *adr, int len)
 {
     int i;
     int new_length;
@@ -185,7 +186,7 @@ int get_history(int history_num, void *up)
     return 1;
 }
 
-int backward_char(void *up)
+void backward_char(void *up)
 {
     if (thisaddr > startaddr) {
         emit(BS, up);
@@ -193,7 +194,7 @@ int backward_char(void *up)
     }
 }
 
-int forward_char(void *up)
+void forward_char(void *up)
 {
     if (thisaddr < endaddr) {
         emit(*thisaddr, up);
@@ -202,13 +203,13 @@ int forward_char(void *up)
 }
 
 // Line editor with history and intra-line editing
-int lineedit(char *addr, int count, int *up)
+int lineedit(char *addr, int count, void *up)
 {
     int c;
     int escaping;
     int length;
     int history_num = -1;
-    
+
     startaddr = endaddr = thisaddr = addr;
     escaping = 0;
     maxaddr = addr + count;

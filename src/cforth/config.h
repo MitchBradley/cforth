@@ -24,13 +24,6 @@
 #endif
 
 /*
- * BITS32 should be defined for a 32 bit machine
- * and not defined for a 16 bit machine.
- * Usually, this is set in the Makefile.
- */
-/* #define BITS32 */
-
-/*
  * If ALLOCDICT is defined, the space for the Forth dictionary will
  * be dynamically allocated at startup time.  Otherwise, the dictionary
  * will be a static array in the BSS section of the program.
@@ -90,7 +83,7 @@
  * address on your machine.  You will probably not need to change this,
  * assuming that you have set BITS32 appropriately.
  */
-#ifdef BITS32
+#if defined(BITS64) || defined(BITS32)
  #define cell long
  #ifdef T16
   #define token_t unsigned short
@@ -141,10 +134,14 @@ typedef token_t *xt_t;
 #define MAXUSER (MAXVARS * sizeof(cell))
 
 #ifndef MAXDICT
-#ifdef BITS32
-#define MAXDICT (0x20000L)	/* XXX should be somewhere else */
-#else
-#define MAXDICT (45000)
-#endif
+  #ifdef BITS64
+    #define MAXDICT (0x40000L)
+  #else
+    #ifdef BITS32
+      #define MAXDICT (0x20000L)
+    #else
+      #define MAXDICT (45000)
+    #endif
+  #endif
 #endif
 

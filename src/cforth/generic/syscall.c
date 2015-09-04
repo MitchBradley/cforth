@@ -5,15 +5,15 @@
 
 // const int errno = 0;
 
-perror(char *s) { }
+void prerror(const char *s, cell *up) { }
 
-dosyscall()  { return(-1); }
-system() { return(-1); }
-chdir()  { return(-1); }
+cell dosyscall()  { return(-1); }
+int system() { return(-1); }
+int  chdir()  { return(-1); }
 
 void linemode() {}
 void keymode() {}
 void restoremode() {}
 
-filetruncate() { return(-1); }
-getstat() { return(-1); }
+int filetruncate() { return(-1); }
+int getstat() { return(-1); }

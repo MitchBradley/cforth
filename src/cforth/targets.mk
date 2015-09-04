@@ -21,9 +21,9 @@ OPTIMIZE=-O
 RELOCATE=
 # RELOCATE=-DRELOCATE
 
-CONFIG= $(INCS) $(FP) $(RELOCATE) $(SYSCALL) -DBITS32 -DT16
+CONFIG += $(INCS) $(FP) $(RELOCATE) $(SYSCALL) -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=0
 
-CFLAGS= -g $(OPTIMIZE) $(CONFIG)
+CFLAGS += -g $(OPTIMIZE) $(CONFIG)
 
 FINC=config.h forth.h vars.h 
 
@@ -48,7 +48,11 @@ else
   ifeq ($(UNAME_S),Linux)
     HOSTOBJS += linux-kbd.o
   else
-    HOSTOBJS += getc-kbd.o
+    ifeq ($(UNAME_S),Darwin)
+      HOSTOBJS += linux-kbd.o
+    else
+      HOSTOBJS += getc-kbd.o
+    endif
   endif
 endif
 
@@ -57,8 +61,8 @@ METAOBJS=meta.o compiler.o io.o dictfile.o mallocl.o lineedit.o getc-kbd.o
 
 # The following macros are for the "clean" and "tidy" targets
 
-HELPERS=kernel.dic meta makename meta.exe makename.exe
-DERIVED=dict.h dicthdr.h userarea.h init.x prims.h vars.h forth.ip
+HELPERS=kernel.dic meta makename meta.exe makename.exe makeccalls
+DERIVED=dict.h dicthdr.h userarea.h init.x prims.h vars.h forth.ip ccalls.fth
 BACKUPS=*.BAK *.CKP ,* *~
 ARTIFACTS = $(BASEOBJS) $(METAOBJS) $(HOSTOBJS) \
   $(HELPERS) $(DERIVED) $(BACKUPS) *.core *.o
@@ -74,12 +78,12 @@ forth.o: prims.h vars.h
 FORTHSRCS = misc.fth compiler.fth control.fth postpone.fth \
             util.fth rambuffer.fth config.fth comment.fth \
             case.fth th.fth format.fth words.fth dump.fth \
-            patch.fth brackif.fth decompm.fth decomp.fth \
+            patch.fth brackif.fth decompm.fth decomp2.fth \
             callfind.fth needs.fth sift.fth stringar.fth \
             size.fth ccalls.fth split.fth rstrace.fth
 
 forth.dic: load.fth forth kernel.dic $(FORTHSRCS)
-	(cd $(SRC)/cforth; ../../$(BUILDDIR)/forth ../../$(BUILDDIR)/kernel.dic load.fth; mv $@ ../../$(BUILDDIR))
+	(cd $(SRC)/cforth; $(BUILDDIR)/forth $(BUILDDIR)/kernel.dic load.fth; mv $@ $(BUILDDIR))
 
 # kernel.dic is a primitive Forth dictionary file with extremely rudimentary
 # Forth interpretation capabilities; it is missing a significant number
@@ -97,7 +101,8 @@ kernel.dic: interp.fth meta init.x
 # Forth execution environment, resulting in a smaller kernel.
 
 meta: $(METAOBJS)
-	$(CC) -o $@ $(METAOBJS)
+	@echo CC $<
+	@$(CC) $(CFLAGS) -o $@ $(METAOBJS)
 
 # meta.o is an object module that is a component of "meta"
 
@@ -109,8 +114,9 @@ meta: $(METAOBJS)
 # images to and from ordinary files.
 
 forth: $(BASEOBJS) $(HOSTOBJS)
-	echo MAKING FORTH
-	$(CC) $(CFLAGS) -o $@ $(HOSTOBJS) $(BASEOBJS)
+	@echo MAKING FORTH
+	@echo CC $(HOSTOBJS) $(BASEOBJS) $(LIBS) -o $@
+	@$(CC) $(CFLAGS) -o $@ $(HOSTOBJS) $(BASEOBJS) $(LIBS)
 
 # main.o is the main() entry point for the self-contained applications above
 
@@ -129,8 +135,10 @@ forth: $(BASEOBJS) $(HOSTOBJS)
 # and file I/O.  It is used in the compilation tools but not in the
 # embeddable version (embed.o).
 
-extend.o: $(EXTENDSRC) $(FINC)
-	$(CC) $(CFLAGS) -c $(EXTENDSRC) -o $@
+extend.o: $(EXTENDSRC) $(FINC) makeccalls
+	@echo CC $<
+	@$(CC) $(CFLAGS) -c $(EXTENDSRC) -o $@
+	@$(CC) $(CFLAGS) -E -C -c $(EXTENDSRC) | ./makeccalls >ccalls.fth
 
 # These files are automatically-generated header files containing
 # information extracted from the C source file "forth.c".  They
@@ -139,7 +147,8 @@ extend.o: $(EXTENDSRC) $(FINC)
 init.x prims.h vars.h: forth.c
 	make makename
 	rm -f init.x prims.h vars.h
-	cpp -C -DMAKEPRIMS $(CONFIG) $< >forth.ip
+	@echo CPP $<
+	@$(CPP) -C -DMAKEPRIMS $(CONFIG) $< >forth.ip
 	./makename forth.ip
 
 # makename is a self-contained application whose purpose is to
@@ -153,7 +162,12 @@ init.x prims.h vars.h: forth.c
 # those three files.
 
 makename: makename.c
-	$(CC) -o makename $<
+	@echo CC $<
+	@$(CC) -o makename $<
+
+makeccalls: makeccalls.c
+	@echo CC $<
+	@$(CC) -o makeccalls $<
 
 clean:
 	@rm -f $(ARTIFACTS) forth forth.dic app.dic $(EXTRA_CLEAN)

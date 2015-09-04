@@ -4,31 +4,31 @@
  */
 
 #include "forth.h"
+#include "compiler.h"
 
 int errno = 0;
 
-unimplemented()
+int unimplemented()
 {
     errno = -1;
     return(-1);
 }
 
-perror(s)
-    char *s;
+void prerror(const char *s, cell *up)
 {
-    cprint(s);
+    cprint(s, up);
     if (errno == -1)
-	cprint("Unimplemented system call\n");
+        cprint("Unimplemented system call\n", up);
     else
-	cprint("I don't know.\n");
+        cprint("I don't know.\n", up);
 }
 
-dosyscall()  { return(unimplemented()); }
-system() { return(unimplemented()); }
-chdir()  { return(unimplemented()); }
+cell dosyscall()  { return(unimplemented()); }
+int system() { return(unimplemented()); }
+int chdir()  { return(unimplemented()); }
 
 void linemode() {}
 void keymode() {}
 void restoremode() {}
 
-getstat() { return(unimplemented()); }
+int getstat() { return(unimplemented()); }

@@ -25,19 +25,19 @@ FILE *open_next_file();
 int gargc;
 char **gargv;
 
-isinteractive()
+int isinteractive()
 {
     return (input_file == stdin);
 }
 
-title(int up)
+void title(int up)
 {
     cprint("C Forth 93 ", up);
     // cprint("Version %I%");
     cprint(" Copyright (c) 1992 by Bradley Forthware\n", up);
 }
 
-init_io(int argc, char **argv, int up)
+void init_io(int argc, char **argv, int up)
 {
     gargc = argc; gargv = argv;
 
@@ -55,7 +55,7 @@ init_io(int argc, char **argv, int up)
     }
 }
 
-emit(char c, int up)
+void emit(char c, int up)
 {
     if ( c == '\n' || c == '\r' ) {
         V(NUM_OUT) = 0;
@@ -66,7 +66,7 @@ emit(char c, int up)
         (void)putc((char)c, output_file);
 }
 
-void cprint(char *str, int up)
+void cprint(const char *str, int up)
 {
     while (*str)
         emit(*str++, up);
@@ -84,7 +84,7 @@ void strerror(char *s, int up)
 void alerror(int adr, int len, int up)
 {
     char cstrbuf[32];
-    
+
     (void)strerror(altostr(adr, len, cstrbuf, 32), up);
 }
 
@@ -134,7 +134,7 @@ caccept(int addr, cell count, int up)
         }
         CHARS(p++) = c;
     }
-    if (isinteractive()) { 
+    if (isinteractive()) {
         // We must do this because the terminal driver does the echoing,
         // and the 'return' that ends the line puts the cursor at column 0
         V(NUM_OUT) = 0;

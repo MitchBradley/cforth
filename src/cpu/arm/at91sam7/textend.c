@@ -3,8 +3,7 @@
 
 #include "types.h"   // u_xxx shorthands for unsigned xxx
 
-// This is the only thing that we need from forth.h
-#define cell long
+#include "forth.h"
 
 // Prototypes
 
@@ -58,62 +57,50 @@ short tones_next();
 
 cell ((* const ccalls[])()) = {
     // Add your own routines here
-    (cell (*)())index_fetch,          // Entry # 0
-    (cell (*)())index_store,          // Entry # 1
-    (cell (*)())data_fetch,           // Entry # 2
-    (cell (*)())data_store,           // Entry # 3
+    C(index_fetch)          //c cindex@      { -- i.byte }
+    C(index_store)          //c cindex!      { i.byte -- }
+    C(data_fetch)           //c cdata@       { -- i.byte }
+    C(data_store)           //c cdata!       { i.byte -- }
 
-    (cell (*)())ram_serial_to_flash,  // Entry # 4
-    (cell (*)())ram_erase_flash_range,// Entry # 5
-    (cell (*)())ram_write_flash_range, // Entry # 6
+    C(ram_serial_to_flash)  //c serial-flash { a.flash-adr -- i.length }
+    C(ram_erase_flash_range)//c erase-flash  { a.flash-adr i.len -- i.length }
+    C(ram_write_flash_range)//c write-flash  { a.buf a.flash-adr i.len -- i.length }
 
-    (cell (*)())rem_mayget,           // Entry # 7
-    (cell (*)())rem_key,              // Entry # 8
-    (cell (*)())rem_emit,             // Entry # 9
-    (cell (*)())rem_init,             // Entry # 10
+    C(rem_mayget)           //c rem-mayget   { a.buf -- i.gotone? }
+    C(rem_key)              //c rem-key      { -- i.char }
+    C(rem_emit)             //c rem-emit     { i.char -- }
+    C(rem_init)             //c rem-init     { -- }
 
-    (cell (*)())rcv_navail,           // Entry # 11
-    (cell (*)())rcv_key,              // Entry # 12
-    (cell (*)())rcv_emit,             // Entry # 13
-    (cell (*)())rcv_init,             // Entry # 14
+    C(rcv_navail)           //c rcv-key?     { -- i.numavail }
+    C(rcv_key)              //c rcv-key      { -- i.char }
+    C(rcv_emit)             //c rcv-emit     { i.char -- }
+    C(rcv_init)             //c rcv-init     { -- }
 
-    (cell (*)())dbgu_mayget,          // Entry # 15
-    (cell (*)())ukey,                 // Entry # 16
-    (cell (*)())tx,                   // Entry # 17
+    C(dbgu_mayget)          //c dbgu-mayget  { a.buf -- i.gotone? }
+    C(ukey)                 //c dbgu-key     { -- i.char }
+    C(tx)                   //c dbgu-emit    { i.char -- }
 
-    (cell (*)())xtoa,                 // Entry # 18
+    C(xtoa)                 //c xtoa         { i.digits i.num -- a.cstr }
 
-    (cell (*)())setup_tones,          // Entry # 19
-    (cell (*)())tones_next,           // Entry # 20
+    C(setup_tones)          //c setup-tones  { a.bins a.nbins -- }
+    C(tones_next)           //c tones-next   { -- i.sample }
 
-    (cell (*)())shift_lsbs,           // Entry # 21
-    (cell (*)())shift_33msbs,         // Entry # 22
-    (cell (*)())spi_byte,             // Entry # 23
-    (cell (*)())psoc_clocks,          // Entry # 24
-    (cell (*)())psoc_bits,            // Entry # 25
-    (cell (*)())psoc_read_byte,       // Entry # 26
-    (cell (*)())fast_spi_byte,        // Entry # 27
-    (cell (*)())rf_write,             // Entry # 28
-    (cell (*)())rf_read,              // Entry # 29
+    C(shift_lsbs)           //c shift-lsbs   { i.bits i.nbits i.last i.first -- i.bits }
+    C(shift_33msbs)         //c shift-33msbs { i.bits i.first -- i.bits }
+    C(spi_byte)             //c spi-byte     { i.write -- i.read }
+    C(psoc_clocks)          //c psoc-poll    { -- }
+    C(psoc_bits)            //c capture      { i.delay i.match i.mask i.len a.adr -- }
+    C(psoc_read_byte)       //c vectors      { i.num a.adr -- }
+    C(fast_spi_byte)        //c fast-spi-write { i.write -- i.read }
+    C(rf_write)             //c rf-write     { a.buf i.len i.? -- )
+    C(rf_read)              //c rf-read      { a.buf i.len i.? -- )
 
-    (cell (*)())end_addr,             // Entry # 30
+    C(end_addr)             //c end-addr     { -- i }
 
 #if 0
-    (cell (*)())realfft,              // Entry # 28
-
-    (cell (*)())psoc_poll,            // Entry # 29
-    (cell (*)())capture,              // Entry # 30
-    (cell (*)())vectors,              // Entry # 31
+    C(realfft)              //c realfft      { i.logn a.out a.in -- i.val }
+    C(psoc_poll)            //c psoc-poll    { -- }
+    C(capture)              //c capture      { i.? i.? i.? i.? a.? -- }
+    C(vectors)              //c vectors      { i.? a.? -- }
 #endif
 };
-
-// Forth words to call the above routines may be created by:
-//
-//  system also
-//  0 ccall: sum      { i.a i.b -- i.sum }
-//  1 ccall: byterev  { s.in -- s.out }
-//
-// and could be used as follows:
-//
-//  5 6 sum .
-//  p" hello"  byterev  count type

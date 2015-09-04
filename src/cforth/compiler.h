@@ -22,7 +22,7 @@ extern int search_wid(char *adr, cell len, vocabulary_t *wid, xt_t *xtp, cell *u
 extern int canon_search_wid(char *adr, cell len, vocabulary_t *wid, xt_t *xtp, cell *up);
 extern void warn(char *adr, cell len, cell *up);
 extern void alerror(char *str, int len, cell *up);
-extern void cprint(char *str, cell *up);
+extern void cprint(const char *str, cell *up);
 extern char* getmem(u_cell nbytes, cell *up);
 extern int isinteractive(void);
 extern int moreinput(void);

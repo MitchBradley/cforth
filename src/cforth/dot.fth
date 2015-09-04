@@ -8,7 +8,7 @@ create digits
    char c c,  char d c,  char e c,  char f c,  
 
 : space  bl emit  ;
-: spaces  0  ?do  space  loop  ;
+: spaces  0 max  0  ?do  space  loop  ;
 : u.r   ( n #digits -- )
    0 >r  swap               ( #digits n r: 0 )
    begin                    ( #digits n r: 0 ascii .. )

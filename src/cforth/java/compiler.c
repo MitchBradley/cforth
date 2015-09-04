@@ -83,6 +83,16 @@ place_name(int adr, int len, int previous, int up)
 }
 
 SCOPE2 void
+cfwarn(int adr, int len, int up)
+{
+    if (V(WARNING) != 0
+    && 0 != search_wid(adr, len, T(CURRENT), up)) {
+        alerror(adr, len, up);
+        ERROR(" isn't unique\n");
+    }
+}
+
+SCOPE2 void
 header(int adr, int len, int up)
 {
     int canstr;
@@ -90,7 +100,7 @@ header(int adr, int len, int up)
 
     canstr = alcanonical(adr, len, up);
 
-    warn(canstr, len, up);
+    cfwarn(canstr, len, up);
 
     place_name(canstr, len, TOKEN(threadp), up);
 
@@ -110,16 +120,6 @@ create_word(int cf, int up)
 {
     int len = parse_word(up+TMP1, up);
     str_create(V(TMP1), len, cf, up);
-}
-
-SCOPE2 void
-warn(int adr, int len, int up)
-{
-    if (V(WARNING) != 0
-    && 0 != search_wid(adr, len, T(CURRENT), up)) {
-        alerror(adr, len, up);
-        ERROR(" isn't unique\n");
-    }
 }
 
 SCOPE2 void

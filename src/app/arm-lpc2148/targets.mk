@@ -1,9 +1,6 @@
 # APPPATH is the path to the application code, i.e. this directory
 APPPATH=$(TOPDIR)/src/app/arm-lpc2148
 
-# OBJPATH2 is relative to APPPATH
-OBJPATH2=../../../$(BUILDDIR)
-
 # APPLOADFILE is the top-level "Forth load file" for the application code.
 APPLOADFILE = app.fth
 

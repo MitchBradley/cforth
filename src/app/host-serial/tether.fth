@@ -8,18 +8,18 @@
 
 hex
 
-h# 10 buffer: sbuf
+h# 10 buffer: tbuf
 
 \ Receive a byte from the target serial line, timing out after
 \ a configurable number of milliseconds
 d# 1000 value trcv-timeout-ms
 : trcv  ( -- b )
-   sbuf 1 trcv-timeout-ms timed-serial-read  1 <> abort" Read timed out"
-   sbuf c@
+   tbuf 1 trcv-timeout-ms timed-serial-read  1 <> abort" Read timed out"
+   tbuf c@
 ;
 
 \ Send a byte over the target serial line
-: tsend  ( b -- )  sbuf c!  sbuf 1 serial-write  ;
+: tsend  ( b -- )  tbuf c!  tbuf 1 serial-write  ;
 
 \ Receive a 32-bit number from the target serial line.
 \ Reception ends when an ACK (c0) is received.
@@ -74,19 +74,21 @@ d# 1000 value trcv-timeout-ms
    dup d# 28 rshift send0  dup d# 21 rshift send1 send3
 ;
 
+: tcmd  ( cmd -- result )  tsend tread  ;
+
 \ Basic target operations
 
-\ Read the top of the target stack.  Mostly useful for debugging
-: target-get  ( -- tval )  h# c7 tsend  tread  ;
+\ Pops and returns the top of the target stack
+: tpop  ( -- tval )  h# c7 tcmd  ;
 
 \ Read a 32-bit number from target address tadr
-: t@  ( tadr -- tval )  tpush  h# c1 tsend  tread  ;
+: t@  ( tadr -- tval )  tpush  h# c1 tcmd  ;
 
 \ Read a 16-bit number from target address tadr
-: tw@ ( tadr -- tval )  tpush  h# c2 tsend  tread  ;
+: tw@ ( tadr -- tval )  tpush  h# c2 tcmd  ;
 
 \ Read an 8-bit number from target address tadr
-: tc@ ( tadr -- tval )  tpush  h# c3 tsend  tread  ;
+: tc@ ( tadr -- tval )  tpush  h# c3 tcmd  ;
 
 \ Write a 32-bit number to target address tadr
 : t!  ( tval tadr -- )  swap tpush  tpush  h# c4 tsend  ;
@@ -98,17 +100,33 @@ d# 1000 value trcv-timeout-ms
 : tc! ( tval tadr -- )  swap tpush  tpush  h# c6 tsend  ;
 
 \ Tell the target communications stub to exit
-: target-exit  ( -- )  h# c8 tsend  ;
+: texit  ( -- )
+   h# c8 tsend
+   tbuf 1 d# 1000 timed-serial-read  1 =  if
+      tbuf c@ dup  h# c0  if
+	 drop  ." Tether loop reconnected" cr
+      else
+[ifdef] display
+	 ." Displaying" cr
+	 emit
+	 display
+[else]
+         drop
+[then]
+      then
+   then
+;
+
 
 \ Execute the target subroutine at tadr and wait for ACK, but
 \ do not return a result value.  Subroutine arguments must
 \ already have been pushed onto the target stack.
-: texec0  ( tadr -- )  tpush  h# e0 tsend  tread drop  ;
+: texec0  ( tadr -- )  tpush  h# e0 tcmd drop  ;
 
 \ Execute the target subroutine at tadr and wait for ACK,
 \ returning the subroutines result value.  Subroutine arguments
 \ must already have been pushed onto the target stack.
-: texec1  ( tadr -- tval )  tpush  h# e1 tsend  tread  ;
+: texec1  ( tadr -- tval )  tpush  h# e1 tcmd  ;
 
 \ Push the address of the first target scratch buffer onto the
 \ target stack.
@@ -136,11 +154,20 @@ d# 1000 value trcv-timeout-ms
    bounds ?do  trcv i c!  loop  ( )  
 ;
 
+: tmove-in  ( tadr hadr len -- )  rot tpush tin  ;
+: tmove-out  ( hadr tadr len -- )  swap tpush tout  ;
+: tin-s0  ( hadr len -- )  tscratch0  tin  ;
+: tin-s1  ( hadr len -- )  tscratch1  tin  ;
+: tout-s0  ( hadr len -- )  tscratch0  tout  ;
+: tout-s1  ( hadr len -- )  tscratch1  tout  ;
+
 : sync  ( -- )
    \ Discard any queued characters
-   begin  sbuf 1 1 timed-serial-read  0<= until
-   h# cd tsend tread drop
+   begin  tbuf 1 1 timed-serial-read  0<= until
+   h# cd tcmd drop
 ;
+
+: /scratch  ( -- n )  h# ce tcmd  ;
 
 alias tp tpush   \ For interactive convenience
 
@@ -157,21 +184,27 @@ also hidden
    local-buf 8 + 8 d.2 space           ( )
    local-buf d# 16 bounds  do   i c@ emit.  loop
 ;
+
+\ Dump target memory as bytes
 : tdump  ( tadr len -- )
    base @ -rot hex .head  dup 0= if  1+  then
    bounds  ?do  i tdln exit? ?leave  d# 16 +loop
    base !
 ;
+
 : tl-dln  ( tadr -- )  \ Helper
    ??cr dup 8 u.r 2 spaces  tread16   ( )
    local-buf d# 16 bounds  do  i @ .8 4 +loop  space
    local-buf d# 16 bounds  do  i c@ emit.  loop
 ;
+
+\ Dump target memory as 32-bit longwords
 : tldump  ( tadr len -- )
    push-hex l.head
    bounds  ?do   i tl-dln exit? ?leave  d# 16 +loop
    pop-base
 ;
+
 : .4  ( n -- )  <# u# u# u# u# u#> type space  ;  \ Helper
 : tw-dln  ( tadr -- )  \ Helper
    ??cr dup 8 u.r 2 spaces  tread16   ( )
@@ -184,6 +217,8 @@ also hidden
    d# 16 0  do  2 spaces  i ?.n  2 +loop space
    d# 16 0  do    i ?.a  loop  rot +
 ;
+
+\ Dump target memory as 16-bit halfwords
 : twdump  ( tadr len -- )
    push-hex w.head   ( tadr len )
    bounds  ?do   i tw-dln exit? ?leave  d# 16 +loop

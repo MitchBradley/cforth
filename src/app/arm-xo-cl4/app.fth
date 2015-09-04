@@ -57,7 +57,7 @@ fl ../arm-xo-1.75/ofw.fth
    init-drivers
    board-config
    early-activate-cforth?  0=  if
-      ['] ofw catch ?dup  if  .error  then
+      ['] ofw catch .error
    then
    ." Skipping OFW" cr
    hex protect-fw quit

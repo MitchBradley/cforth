@@ -8,7 +8,7 @@ test_little_endian()
     return *(char *)&cell == 1;
 }
 
-longs_to_file(char *filename, FILE *infile, int len, int *dsizep, int *usizep)
+void longs_to_file(char *filename, FILE *infile, int len, int *dsizep, int *usizep)
 {
     FILE *outfile;
     int val;
@@ -46,8 +46,7 @@ longs_to_file(char *filename, FILE *infile, int len, int *dsizep, int *usizep)
     fclose(outfile);
 }
 
-void
-bytes_to_file(char *filename, FILE *infile, int len)
+void bytes_to_file(char *filename, FILE *infile, int len)
 {
     int i;
     int c;
@@ -70,7 +69,7 @@ bytes_to_file(char *filename, FILE *infile, int len)
     fclose(outfile);
 }
 
-main(argc, argv)
+int main(argc, argv)
     int argc;
     char **argv;
 {
@@ -93,5 +92,5 @@ main(argc, argv)
     bytes_to_file("userarea.h", infile, uasize);
 
     fclose(infile);
-    exit(0);
+    return 0;
 }

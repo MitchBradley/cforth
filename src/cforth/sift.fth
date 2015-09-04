@@ -2,14 +2,16 @@ only forth also hidden also definitions
 decimal
 variable sift-string
 : vsift  ( adr len voc-cfa -- )
-   ??cr ." ** Vocabulary: " dup .name cr
+   ??cr ."    In vocabulary " dup .name cr
    follow  2>r                         ( r: test$ )
-   begin  another?  while              ( acf )
-      >name$                           ( this$ )
-      2dup 2r@ search  if              ( this$ this$' )
-         2drop ?cr type space          ( )
-      else                             ( this$ this$' )
-         2drop 2drop                   ( )
+   begin  another?  while              ( xt )
+      dup >name$                       ( xt this$ )
+      2dup 2r@ search  if              ( xt this$ this$' )
+         2drop ?cr                     ( xt this$ )
+         ." (" rot (u.) type ." ) "    ( this$ )
+	 type 3 spaces                 ( )
+      else                             ( xt this$ this$' )
+         2drop 3drop                   ( )
       then                             ( )
    repeat                              ( r: test$ )
    2r> 2drop                           ( )

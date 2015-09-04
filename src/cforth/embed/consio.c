@@ -24,7 +24,7 @@ void emit(u_char c, cell *up)
     (void)putchar((char)c);
 }
 
-void cprint(char *str, cell *up)
+void cprint(const char *str, cell *up)
 {
     while (*str)
         emit((u_char)*str++, up);
@@ -58,13 +58,13 @@ int key_avail() {  return kbhit();  }
 void read_dictionary(char *name, cell *up) {  FTHERROR("No file I/O\n");  }
 
 void write_dictionary(char *name, int len, char *dict, int dictsize,
-                 char *user, int usersize, cell *up)
+                      cell *up, int usersize)
 {
     FTHERROR("No file I/O\n");
 }
 
-cell pfopen(char *name, int mode, cell *up)  {  return (0);  }
-cell pfcreate(char *name, int mode, cell *up)  {  return (0);  }
+cell pfopen(char *name, int len, int mode, cell *up)  {  return (0);  }
+cell pfcreate(char *name, int len, int mode, cell *up)  {  return (0);  }
 
 cell pfclose(cell fd, cell *up) {  return (0);  }
 
@@ -83,8 +83,12 @@ pfread(cell *sp, cell len, void *fid, cell *up)  // Returns IO result, actual in
 }
 
 cell
-pfwrite(cell *sp, cell len, void *fid, cell *up)  // Returns IO result, actual in *sp
+pfwrite(void *adr, cell len, void *fid, cell *up)
 {
-    sp[0] = 0;
     return (WRITEFAIL);
 }
+
+void clear_log(cell *up) { }
+void start_logging(cell *up) { }
+void stop_logging(cell *up) { }
+cell log_extent(cell *log_base, cell *up) { *log_base = 0; return 0; }

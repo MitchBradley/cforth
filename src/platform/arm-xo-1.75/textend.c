@@ -1,8 +1,7 @@
 // Edit this file to include C routines that can be called as Forth words.
 // See "ccalls" below.
 
-// This is the only thing that we need from forth.h
-#define cell long
+#include "forth.h"
 
 // Prototypes
 
@@ -360,41 +359,41 @@ extern int kbhit4(void);
 
 cell ((* const ccalls[])()) = {
 // Add your own routines here
-    (cell (*)())spi_send,        // Entry # 0
-    (cell (*)())spi_send_only,   // Entry # 1
-    (cell (*)())spi_read_slow,   // Entry # 2
-    (cell (*)())spi_read_status, // Entry # 3
-    (cell (*)())spi_send_page,   // Entry # 4
-    (cell (*)())spi_read,        // Entry # 5
-    (cell (*)())lfill,           // Entry # 6
-    (cell (*)())lcheck,          // Entry # 7
-    (cell (*)())incfill,         // Entry # 8
-    (cell (*)())inccheck,        // Entry # 9
-    (cell (*)())randomfill,      // Entry # 10
-    (cell (*)())randomcheck,     // Entry # 11
-    (cell (*)())inflate,         // Entry # 12
-    (cell (*)())get_control_reg, // Entry # 13
-    (cell (*)())set_control_reg, // Entry # 14
-    (cell (*)())get_tcm_size,    // Entry # 15
-    (cell (*)())inflate_adr,     // Entry # 16
-    (cell (*)())byte_checksum,   // Entry # 17
-    (cell (*)())wfi,             // Entry # 18
-    (cell (*)())rdpsr,           // Entry # 19
-    (cell (*)())wrpsr,           // Entry # 20
-    (cell (*)())kbd_bit_in,      // Entry # 21
-    (cell (*)())kbd_bit_out,     // Entry # 22
-    (cell (*)())ps2_devices_adr, // Entry # 23
-    (cell (*)())init_ps2,        // Entry # 24
-    (cell (*)())ps2_out,         // Entry # 25
-    (cell (*)())one_uart_adr,    // Entry # 26
-    (cell (*)())reset_reason_val,// Entry # 27
-    (cell (*)())version_adr,     // Entry # 28
-    (cell (*)())build_date_adr,  // Entry # 29
-    (cell (*)())wfi_loop,        // Entry # 30
-    (cell (*)())kbhit1,          // Entry # 31
-    (cell (*)())kbhit2,          // Entry # 32
-    (cell (*)())kbhit3,          // Entry # 33
-    (cell (*)())kbhit4,          // Entry # 34
+  C(spi_send)        //c spi-send        { a.adr i.len -- }
+  C(spi_send_only)   //c spi-send-only   { a.adr i.len -- }
+  C(spi_read_slow)   //c spi-read-slow   { a.adr i.len i.offset -- }
+  C(spi_read_status) //c spi-read-status { -- i.status }
+  C(spi_send_page)   //c spi-send-page   { a.adr i.len i.offset -- }
+  C(spi_read)        //c spi-read        { a.adr i.len i.offset -- }
+  C(lfill)           //c lfill           { a.adr i.len i.value -- }
+  C(lcheck)          //c lcheck          { a.adr i.len i.value -- i.erraddr }
+  C(incfill)         //c inc-fill        { a.adr i.len -- }
+  C(inccheck)        //c inc-check       { a.adr i.len -- i.erraddr }
+  C(randomfill)      //c random-fill     { a.adr i.len -- }
+  C(randomcheck)     //c random-check    { a.adr i.len -- i.erraddr }
+  C(inflate)         //c (inflate)       { a.compadr a.expadr i.nohdr a.workadr -- i.expsize }
+  C(get_control_reg) //c control@        { -- i.value }
+  C(set_control_reg) //c control!        { i.value -- }
+  C(get_tcm_size)    //c tcm-size@       { -- i.value }
+  C(inflate_adr)     //c inflate-adr     { -- a.value }
+  C(byte_checksum)   //c byte-checksum   { a.adr i.len -- i.checksum }
+  C(wfi)             //c wfi             { -- }
+  C(rdpsr)           //c psr@            { -- i.value }
+  C(wrpsr)           //c psr!            { i.value -- }
+  C(kbd_bit_in)      //c kbd-bit-in      { -- i.value }
+  C(kbd_bit_out)     //c kbd-bit-out     { i.value -- }
+  C(ps2_devices_adr) //c ps2-devices     { -- a.value }
+  C(init_ps2)        //c init-ps2        { -- }
+  C(ps2_out)         //c ps2-out         { i.byte i.device# -- i.ack? }
+  C(one_uart_adr)    //c 'one-uart       { -- a.value }
+  C(reset_reason_val)//c reset-reason    { -- i.value }
+  C(version_adr)     //c 'version        { -- a.value }
+  C(build_date_adr)  //c 'build-date     { -- a.value }
+  C(wfi_loop)        //c wfi-loop        { -- }
+  C(kbhit1)          //c ukey1?          { -- i.value }
+  C(kbhit2)          //c ukey2?          { -- i.value }
+  C(kbhit3)          //c ukey3?          { -- i.value }
+  C(kbhit4)          //c ukey4?          { -- i.value }
 };
 
 

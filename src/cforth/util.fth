@@ -37,7 +37,7 @@ decimal
 : (s  ( -- )  postpone (  ; immediate
 : pad  ( -- adr )  here 100 +  ;
 : space  ( -- )  bl emit  ;
-: spaces  ( n -- )  0 ?do space loop  ;
+: spaces  ( n -- )  0 max 0 ?do space loop  ;
 \ : c,  ( char -- )   here  1 allot  c!  ;
 
 : fm/mod  ( d.dividend n.divisor -- n.rem n.quot )
@@ -99,9 +99,20 @@ decimal
 : <<  ( n count -- n' )  shift  ;
 : >>  ( n count -- n' )  negate shift  ;
 
+: cf@  ( acf -- n )  
+\t16 w@
+\t32  @
+\t64  @
+;
+: cf!  ( n acf -- )
+\t16 w!
+\t32  !
+\t64  !
+;
 : unum@  ( apf -- user# )
 \t16 w@
 \t32  @
+\t64  @
 ;
 : >user#  ( acf -- user# )  >body unum@  ;
 : >user  ( apf -- user-adr )  unum@ up@ +  ;
@@ -110,9 +121,7 @@ decimal
 decimal
 : word-type  ( acf -- word-type )
    dup primitive?  if  drop -1 ( code word ) exit  then
-\t16 w@
-\t32  @
-   dup primitive?  if  drop -1 ( code word )  then
+   cf@ dup primitive?  if  drop -1 ( code word )  then
 ;
 : ualloc  ( size -- user-number )  #user @  swap #user +!  ;
 : nuser  \ name  ( -- )
@@ -139,6 +148,7 @@ decimal
    (defer) here body>
 \t16 w!
 \t32  !
+\t64  !
    here /n ualloc ,
 
    >user ['] crash token!
@@ -180,24 +190,26 @@ defer defxx
 
 : value  ( "name" n -- )
    create             ( n )
+   (value) here body> cf!
+
    #user @  /n ,unum  ( n user# )
    up@ + !            ( )
-   does> >user @
 ;
-0 value myval
+0 value isvalue
 
-: useradr  ( acf type -- data-adr )  drop >body >user  ;
-: (to)  ( n acf -- data-adr )
-   dup word-type               ( n acf code-field-word )
-   dup ['] myval word-type  =  if  useradr !      exit  then
-   dup ['] defxx word-type  =  if  useradr token! exit  then
-   dup ['] #user word-type  =  if  useradr !      exit  then
-   dup ['] forth word-type  =  if  useradr token! exit  then
-   drop >body !
+: (to)  ( n xt -- data-adr )
+   dup >body  swap cf@         ( n 'body cf )
+   dup (value)      =  if  drop >user !      exit  then
+   dup (defer)      =  if  drop >user token! exit  then
+   dup (user)       =  if  drop >user !      exit  then
+   dup (vocabulary) =  if  drop >user token! exit  then
+   drop !
 ;
 : to  ( "name" [ val ] -- )	\ val is present only in interpret state
    state @  if   postpone ['] postpone (to)  else  ' (to)  then
 ; immediate
+
+' noop to status
 
 : header  ( "name" -- )  safe-parse-word $header  ;
 
@@ -266,7 +278,13 @@ defer exit?  ( -- flag )
 
 : ,"  ( "string" -- )  [char] " parse ",  ;
 
-: ."  ( "string" -- )  postpone (.") ,"  ; immediate
+: ."  ( "string" -- )
+   state @  if
+      postpone (.") ,"
+   else
+      [char] " parse type
+   then
+; immediate
 
 nuser 'abort$
 : (abort")  ( flag -- )
@@ -279,8 +297,6 @@ nuser 'abort$
 
 : abort"  ( "string" -- )  postpone (abort") ,"  ; immediate
 
-32\ : l0=  ( l -- flag )  0=  ;
-16\ : l0=  ( l -- flag )  0= swap 0= and  ;
 defer error-output  ( -- )
 ' noop to error-output  \ XXX Should select standard error
 
@@ -329,86 +345,31 @@ nuser csp
    create hide  'i  reveal  setalias
 ;
 
+64\ : 64-bit ; immediate
+64\ : 32-bit 1 abort" Not a 32 bit forth" ; immediate
+64\ : 16-bit 1 abort" Not a 16 bit forth" ; immediate
+64\ : l,  ( l -- )  here  /l allot  l!  ;
+64\ : w->n  ( w -- l )  #48 << #48 >>a  ;
+64\ : n->w  ( n -- w )  $ffff and ;
+64\ : l->n  ( l -- n )  #32 << #32 >>a  ;
+64\ : n->l  ( n -- w )  $ffffffff and ;
+
+32\ : 64-bit 1 abort" Not a 64 bit forth" ; immediate
 32\ : 32-bit ; immediate
 32\ : 16-bit 1 abort" Not a 16 bit forth" ; immediate
-32\ alias ldrop drop   ( l -- )
-32\ alias ldup  dup    ( l -- l l )
-32\ alias l+ +         ( l1 l2 -- l3 )
-32\ alias ul* *        ( ul1 ul2 -- ul3 )
-32\ alias l+! +!       ( l adr -- )
-32\ alias lnover over  ( l n -- l n l )
-32\ alias nlover over  ( n l -- n l n )
-32\ alias nlswap swap  ( n l -- l n )
-32\ alias lnswap swap  ( l n -- n l )
-32\ alias lswap swap   ( l1 l2 -- l2 l1 )
-32\ alias l= =         ( l1 l2 -- flag )
-32\ alias l< <         ( l1 l2 -- flag )
-32\ alias l>= >=       ( l1 l2 -- flag )
-32\ alias lliteral literal  ( l -- )
-32\ alias land and          ( l1 l2 -- l3 )
-32\ alias lnegate negate    ( l1 -- l2 )
-\ 32\ alias l@ @         ( adr -- l )
-\ 32\ alias l! !         ( l adr -- )     
 32\ alias l, ,         ( l -- )
-32\ alias lr> r>       ( -- l )
-32\ alias l>r >r       ( l -- )
+32\ : w->n  ( w -- l )  #16 << #16 >>a  ;
+32\ : n->w  ( n -- w )  $ffff and ;
 32\ : l->n ; immediate ( l -- n )
-32\ : w->l ; immediate ( w -- l )
-32\ hex
-32\ : s->l  ( w -- l )
-32\   dup  00008000 and
-32\   if   ffff0000 or
-32\   else 0000ffff and
-32\   then
-32\  ;
-32\ alias lvariable variable
-32\ alias lconstant constant
-32\ : n->w  ( n -- w )  ffff and  ;
+32\ : n->l ; immediate ( n -- l )
 
 16\ : 16-bit ; immediate
 16\ : 32-bit 1 abort" Not a 32 bit forth" ; immediate
-16\ alias ldrop 2drop
-16\ alias ldup  2dup
-16\ alias l+ d+
-16\ alias ul* um*
-16\ : lnover 2 pick 2 pick  ;
-16\ : nlover 2 pick  ;
-16\ alias nlswap rot
-16\ alias lnswap -rot
-16\ alias lswap 2swap
-16\ : l=  rot = >r  = r>  and  ;
-16\ : l<  ( l1 l2 -- flag )
-16\    2 pick over <  if   ( l1 l2 )
-16\      2drop 2drop true  ( true )
-16\    else
-16\    2 pick over >  if   ( l1 l2 )
-16\      2drop 2drop false ( false )
-16\    else
-16\      drop nip <        ( flag )
-16\    then then
-16\  ;
-16\ : l>= l< 0=  ;
-16\ : lliteral  ( l -- )
-16\   state @
-16\   if   swap postpone (lit) , postpone (lit) ,  then
-16\  ;
-16\ : land  ( l1 l2 -- l3 )  rot and >r and r>  ;
-16\ alias lnegate dnegate
-16\ : labs  ( l1 -- l2 )  dup 0<  if  lnegate  then  ;
-\ 16\ alias l@ 2@
-\ 16\ alias l! 2!
-16\ : l+!  ( l adr -- )  dup >r l@  l+  r> l!  ;
 16\ : l, , ,  ;
-16\ : lr> r> r>  ;
-16\ : l>r >r >r  ;
-16\ alias l->n drop
-16\ : w->l 0  ;
-16\ hex
-16\ : s->l  ( w -- l )  dup  8000 and 0<>  ;
-16\ : lvariable variable /n allot  ;
-16\ : lconstant  create l,  does> l@  ;
+16\ : w->n ; immediate
 16\ : n->w ; immediate
-alias n->l w->l
+16\ : n->l  ( w -- l )  dup 0<  ;
+16\ alias l->n drop
 decimal
 
 : s>d  ( n -- d )  dup 0<  ;
@@ -419,7 +380,9 @@ alias ca+ +  ( adr1 n -- adr2 )
 : la+  ( adr1 n -- adr2 )  /l* +  ;
 
 : w,  ( w -- )  here /w allot w!  ;
-: <w@  ( adr -- signed.w )  w@ s->l  ;
+: <w@  ( adr -- signed.w )  w@ w->n  ;
+
+: <l@  ( adr -- signed.l )  l@ l->n  ;
 
 alias is to
 
@@ -449,11 +412,14 @@ warning on
 : s.  ( n -- )  (.)   type space  ;
 : .  ( n -- ) base @ 10 =  if  s.  else  u.  then  ;
 : .r  ( n l -- )  >r  (.)  r> over - spaces  type  ;
-16\ : l.  ( l -- )  tuck labs  <# #s nlswap sign #> type space  ;
-16\ : ul.  ( l -- )  <# #s #> type space  ;
-32\ alias l. .         ( l -- )
+\ 16\ : l.  ( l -- )  tuck labs  <# #s nlswap sign #> type space  ;
+\ 16\ : ul.  ( l -- )  <# #s #> type space  ;
+\ 32\ alias l. .         ( l -- )
+\ 64\ alias l. .         ( l -- )
 : (.s  ( -- )  depth 0 ?do  depth i - 1- pick .  loop  ;
 : .s  ( -- )  ?stack  depth  if  (.s  else  ." Empty "  then  ;
+: showstack  ( -- )  ['] (.s to status  ;
+: noshowstack  ( -- )  ['] noop to status  ;
 
 : ?  ( adr -- )  @ .  ;
 
@@ -536,12 +502,16 @@ vocabulary hidden
 : dp!  ( adr -- )  here - allot  ;
 nuser fence
 : trim  ( fadr voc-adr -- )
-   #threads 0  do
-      2dup  begin  link@  2dup u>  until  ( fadr thread  fadr link' )
-      nip over link!                      ( fadr thread )
-      /link +
-   loop
-   2drop
+   #threads 0  do          ( fadr thread-adr )
+      2dup  begin          ( fadr thread-adr  fadr link-adr )
+         link@  2dup u<=   ( fadr thread-adr  fadr word-adr flag )
+      while                ( fadr thread-adr  fadr word-adr )
+         >link             ( fadr thread-adr  fadr link-adr )
+      repeat               ( fadr thread-adr   fadr link' )
+      nip over link!       ( fadr thread-adr )
+      /link +              ( fadr thread-adr' )
+   loop                    ( fadr thread-adr' )
+   2drop                   ( )
 ;
 \ It is a bad idea to do a forget that will result in the forgetting of
 \ vocabularies that are presently in the search order.
@@ -561,12 +531,12 @@ nuser fence
    while
       2dup  >threads  ( adr voc-link-adr adr voc-threads-adr )
       trim            ( adr voc-link-adr )
-      link@           ( adr new-voc-link-adr )
+      >voc-link link@ ( adr new-voc-link-adr )
    repeat
    drop   dp!
 ;
 : forget   ( -- )
-   safe-parse-word current @ search-wordlist
+   safe-parse-word current token@ search-wordlist
    0= abort" Can't find word to forget"
    (forget
 ;
@@ -576,6 +546,7 @@ only forth also definitions
 : ?exec  ( -- )  state @     abort" Execution Only "  ;
 : ?pairs  ( -- )  - abort" Conditionals not paired "  ;
 
+64\ : /n*  ( n1 -- n2 )  3 <<  ;
 32\ : /n*  ( n1 -- n2 )  2 <<  ;
 16\ : /n*  ( n1 -- n2 )  dup +  ;
 \ : ??cr  ( -- )  #out @  if  cr  then  ;
@@ -592,7 +563,8 @@ alias not invert   ( x -- x' )
 : unloop  ( -- )  r>  r> drop r> drop  r> drop  >r  ;
 : blank  ( c-addr u -- )  bl fill  ;
 
-alias " s"
+\ alias " s"
+\ fload stresc.fth
 
 defer pause
 ' noop to pause		\ No multitasking for now
@@ -607,12 +579,14 @@ defer pause
 
 : .abort  ( -- )  'abort$ @ count type  ;
 : (.error)  ( throw-code -- )
-   dup -2 =  if
-      .abort
-   else
-      dup -1 =  if  drop ." Aborted"  else  ." Error " .d  then
+   ?dup  if
+      dup -2 =  if
+         drop .abort
+      else
+         dup -1 =  if  drop ." Aborted"  else  ." Error " .d  then
+      then
+      cr
    then
-   cr
 ;
 ' (.error) to .error
 
@@ -631,3 +605,14 @@ create nullstring 0 c,
 : u2/  ( n1 -- n2 )  1 rshift  ;
 
 : round-up  ( n boundary -- n' )  1- tuck + swap invert and  ;
+
+: alloc-mem  ( len -- adr )  allocate throw  ;
+: free-mem  ( adr len -- adr )  drop free throw  ;
+
+alias purpose: \
+alias headerless noop
+alias headers noop
+: (emit  ( n -- )  #out @ swap  emit  #out !  ;
+: (type  ( adr len -- )  #out @ -rot  type  #out !  ;
+: upc  ( char -- char' )  dup 'a' 'z' between  if  $20 invert and  then  ;
+alias #-buf pad

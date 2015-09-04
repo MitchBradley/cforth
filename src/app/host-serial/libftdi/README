@@ -1,0 +1,10 @@
+The files in this directory are from version 1.2 of the libftdi distribution
+from http://www.intra2net.com/developer/libftdi .  The full distribution
+contains various pieces that we do not need, including interfaces to
+Python and C++ plus a complex library build and testing infrastructure
+that requires the installation of numerous packages.  The only thing we
+care about is the one C source file ftdi.c plus its include files, which
+we compile and link directly instead of packaging it as a library, thus
+avoiding all of the extra complexity and the need for those packages.
+
+The license is LGPL, a copy of which is included in COPYING.GPL herein.

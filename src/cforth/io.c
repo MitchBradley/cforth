@@ -9,13 +9,17 @@
 // error(s, up);			Print a string on the error stream
 // n = caccept(addr, count);	Collect a line of input
 // char = key();		Get the next input character
-// name_input(filename);		    
+// name_input(filename);
 
 #include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <unistd.h>
 
 #include "forth.h"
 #include "compiler.h"
 
+int ansi_emit(int c, FILE *fd);
 extern int key();
 extern void exit();
 extern FILE *fopen();
@@ -27,18 +31,23 @@ FILE *open_next_file();
 int gargc;
 char **gargv;
 
+#define STRINGINPUT (FILE *) -1
+
+int
 isinteractive()
 {
+    if ( input_file == STRINGINPUT )
+	return 0;
     return isatty(fileno(input_file));
 }
 
-title(cell *up)
+void title(cell *up)
 {
     cprint("C Forth ", up);
     cprint(" Copyright (c) 2008 FirmWorks\n", up);
 }
 
-init_io(int argc, char **argv, cell *up)
+void init_io(int argc, char **argv, cell *up)
 {
     gargc = argc; gargv = argv;
 
@@ -56,18 +65,80 @@ init_io(int argc, char **argv, cell *up)
     }
 }
 
-emit(u_char c, cell *up)
+static int logging = 0;
+static u_char *log_buf = NULL;
+static size_t log_index = 0;
+static size_t log_buf_size = 0;
+static const int log_increment = 0x4000;
+void log_char(u_char c)
 {
+    if (!logging) {
+        return;
+    }
+    if (log_index == log_buf_size) {
+        u_char *new_log_buf;
+        new_log_buf = realloc(log_buf, log_buf_size + log_increment);
+        if (new_log_buf) {
+            log_buf = new_log_buf;
+            log_buf_size += log_increment;
+            log_buf[log_index++] = c;
+        } else {
+            // Do nothing; just leave things as-is
+        }
+    } else {
+        log_buf[log_index++] = c;
+    }
+}
+
+void stop_logging(cell *up)
+{
+    logging = 0;
+}
+
+void start_logging(cell *up)
+{
+    logging = 1;
+}
+
+void clear_log(cell *up)
+{
+    free(log_buf);
+    log_buf = NULL;
+    log_buf_size = 0;
+    log_index = 0;
+}
+
+cell log_extent(cell *log_base, cell *up)
+{
+    *log_base = (cell)log_buf;
+    return log_index;
+}
+
+void emit(u_char c, cell *up)
+{
+    int advance;
+
+    log_char(c);
+
+    if (output_file) {
+	advance = ansi_emit(c, output_file);
+	if (advance == -1) {
+	    (void)putc((char)c, output_file);
+	    if ( c == '\r')
+		(void)fflush(output_file);
+	    advance = 1;
+	}
+    } else {
+	advance = 1;
+    }
     if ( c == '\n' || c == '\r' ) {
         V(NUM_OUT) = 0;
         V(NUM_LINE)++;
     } else
-        V(NUM_OUT)++;
-    if (output_file)
-        (void)putc((char)c, output_file);
+        V(NUM_OUT) += advance;
 }
 
-void cprint(char *str, cell *up)
+void cprint(const char *str, cell *up)
 {
     while (*str)
         emit((u_char)*str++, up);
@@ -82,7 +153,6 @@ void alerror(char *str, int len, cell *up)
     V(NUM_OUT) = 0;
 }
 
-#define STRINGINPUT (FILE *) -1
 char *strptr;
 
 int
@@ -115,7 +185,7 @@ int
 caccept(char *addr, cell count, cell *up)
 {
     int len;
-    
+
     if (isinteractive()) {
 	len = lineedit(addr, count, up);
     } else {
@@ -136,7 +206,16 @@ caccept(char *addr, cell count, cell *up)
     return len;
 }
 
-name_input(char *filename, cell *up)
+void file_error(char *str, char *filename, cell *up)
+{
+    extern size_t strlen(const char *);
+
+    alerror(str, strlen(str), up);
+    alerror(filename, strlen(str), up);
+    FTHERROR("\n");
+}
+
+void name_input(char *filename, cell *up)
 {
     FILE *file;
 
@@ -145,15 +224,6 @@ name_input(char *filename, cell *up)
     } else {
         input_file = file;
     }
-}
-
-file_error(char *str, char *filename, cell *up)
-{
-    extern size_t strlen(const char *);
-
-    alerror(str, strlen(str), up);
-    alerror(filename, strlen(str), up);
-    FTHERROR("\n");
 }
 
 FILE *
@@ -187,6 +257,13 @@ open_next_file(cell *up)
     return((FILE *)0);
 }
 
+int
+next_arg(cell *up)
+{
+    input_file = open_next_file(up);
+    return input_file != (FILE *)0;
+}
+
 cell
 freadline(cell f, cell *sp, cell *up) // Returns IO result, actual and more? on stack
 {
@@ -214,7 +291,7 @@ freadline(cell f, cell *sp, cell *up) // Returns IO result, actual and more? on 
         if (c == CNEWLINE) {    // Last character of an end-of-line sequence
             break;
         }
-        
+
         // Don't store the first half of a 2-character newline sequence
         if (c == SNEWLINE[0])
             continue;
@@ -236,6 +313,61 @@ pfclose(cell f, cell *up)
     return( (cell)fclose((FILE *)f) );
 }
 
+cell
+pfflush(cell f, cell *up)
+{
+    return( (cell)fflush((FILE *)f) );
+}
+
+#define MAXPATHLEN 2048
+char *
+expand_name(char *name)
+{
+  char envvar[64], *fnamep, *envp, paren, *fullp;
+  static char fullname[MAXPATHLEN];
+  int ndx;
+
+  fullp = fullname;
+  fullname[0] = '\0';
+
+  fnamep = name;
+
+  while (*fnamep) {
+    if (*fnamep == '$') {
+      fnamep++;
+      ndx = 0;
+      if (*fnamep == '{' || *fnamep == '(') {	// multi char env var
+        paren = (*fnamep++ == '{') ? '}' : ')';
+
+        while (*fnamep != paren && ndx < MAXPATHLEN && *fnamep != '\0') {
+          envvar[ndx++] = *(fnamep++);
+        }
+        if (*fnamep == paren) {
+          fnamep++;
+        } else {
+          ndx = 0;
+          fnamep = name;
+        }
+      } else		/* single char env. var. */
+        envvar[ndx++] = *(fnamep++);
+      envvar[ndx] = '\0';
+
+      if (ndx > 0 && (envp = getenv(envvar)) != NULL) {
+        strcpy(fullp, envp);
+        fullp += strlen(envp);
+      } else {
+        printf("Can't find environment variable %s in %s\n", envvar,name);
+        exit(1);
+      }
+      ndx = 0;
+    } else {
+      *fullp++ = *fnamep++;
+    }
+  }
+  *fullp = '\0';
+  return (fullname);
+}
+
 // r/o                Open existing file for reading
 // w/o                Open or create file for appending
 // r/w                Open existing for reading and writing
@@ -244,38 +376,44 @@ pfclose(cell f, cell *up)
 
 // 0:r/o 1:w/o 2:r/w 3: undefined
 static char *open_modes[]   = { "rb",  "ab", "r+b", "" };
-cell
-pfopen(char *name, int len, int mode, cell *up)
+static char *popen_modes[]  = { "r",  "w", "rw", "" };
+cell pfopen(char *name, int len, int mode, cell *up)
 {
     char cstrbuf[512];
+    char *s;
+    s = expand_name(altocstr(name, len, cstrbuf, 512));
 
-    return( (cell)fopen(altocstr(name, len, cstrbuf, 512), open_modes[mode&3]) );
+    if (!strncmp("popen:", s, 6)) {
+	FILE *stream;
+	stream = popen(s+6, popen_modes[mode&3]);
+	setbuf(stream, 0);
+        return (cell)stream;
+    }
+
+    return( (cell)fopen(s, open_modes[mode&3]) );
 }
 
 static char *create_modes[] = { "a+b", "wb", "w+b", "" };
-cell
-pfcreate(char *name, int len, int mode, cell *up)
+cell pfcreate(char *name, int len, int mode, cell *up)
 {
     char cstrbuf[512];
 
-    return( (cell)fopen(altocstr(name, len, cstrbuf, 512), create_modes[mode&3]) );
+    return( (cell)fopen(expand_name(altocstr(name, len, cstrbuf, 512)), create_modes[mode&3]) );
 }
 
-cell
-pfread(cell *sp, size_t len, FILE *fid, cell *up)  // Returns IO result, actual in *sp
+cell pfread(cell *sp, cell len, void *fid, cell *up)  // Returns IO result, actual in *sp
 {
     size_t ret;
-    *sp = (cell)fread((void *)*sp, 1, len, fid);
-    
-    return (*sp == 0) ? ferror(fid) : 0;
+    *sp = (cell)fread((void *)*sp, 1, (size_t)len, (FILE *)fid);
+
+    return (*sp == 0) ? ferror((FILE *)fid) : 0;
 }
 
-cell
-pfwrite(void *adr, size_t len, FILE *fid, cell *up)  // Returns IO result, actual in *sp
+cell pfwrite(void *adr, cell len, void *fid, cell *up)  // Returns IO result, actual in *sp
 {
     size_t ret;
-    ret = (cell)fwrite(adr, 1, len, fid);
-    
-    return (ret == 0) ? ferror(fid) : 0;
+    ret = (cell)fwrite(adr, 1, (size_t)len, (FILE *)fid);
+
+    return (ret == 0) ? ferror((FILE *)fid) : 0;
 }
 

@@ -91,16 +91,16 @@ void clstore(cell cfgadr, cell value)
 }
 
 cell ((* const ccalls[])()) = {
-    (cell (*)())pcfetch,      // Entry # 0
-    (cell (*)())pcstore,      // Entry # 1
-    (cell (*)())pwfetch,      // Entry # 2
-    (cell (*)())pwstore,      // Entry # 3
-    (cell (*)())plfetch,      // Entry # 4
-    (cell (*)())plstore,      // Entry # 5
-    (cell (*)())cbfetch,      // Entry # 6
-    (cell (*)())cbstore,      // Entry # 7
-    (cell (*)())cwfetch,      // Entry # 8
-    (cell (*)())cwstore,      // Entry # 9
-    (cell (*)())clfetch,      // Entry # 10
-    (cell (*)())clstore,      // Entry # 11
+    C(pcfetch)  //c pc@        { i.port -- i.byte }
+    C(pcstore)  //c pc!        { i.byte i.port -- }
+    C(pwfetch)  //c pw@        { i.port -- i.word }
+    C(pwstore)  //c pw!        { i.word i.port -- }
+    C(plfetch)  //c pl@        { i.port -- i.long }
+    C(plstore)  //c pl!        { i.long i.port -- }
+    C(cbfetch)  //c config-b@  { i.cfgadr -- i.byte }
+    C(cbstore)  //c config-b!  { i.byte i.cfgadr -- }
+    C(cwfetch)  //c config-w@  { i.cfgadr -- i.word }
+    C(cwstore)  //c config-w!  { i.word i.cfgadr -- }
+    C(clfetch)  //c config-l@  { i.cfgadr -- i.word }
+    C(clstore)  //c config-l!  { i.long i.cfgadr -- }
 };

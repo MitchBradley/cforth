@@ -3,8 +3,12 @@
 
 // prims.h and vars.h must be included externally - see the makefile
 
+#define DEBUGGER
+
 #include <stdio.h>
+#include <stdint.h>
 #include "forth.h"
+#include "string.h"
 
 #include "compiler.h"
 
@@ -43,8 +47,7 @@ static int compare(u_char *adr1, u_cell len1, u_char *adr2, u_cell len2);
 static void reveal(cell *up);
 static void hide(cell *up);
 static int alnumber(char *adr, cell len, cell *nhigh, cell *nlow, cell *up);
-
-int strlen(const char *);
+static int split_string(char c, cell *sp, void *up);
 
 const token_t freelocbuf[] = { FREELOC, UNNEST};
 
@@ -55,32 +58,18 @@ u_char bit[8] = { 128, 64, 32, 16, 8, 4, 2, 1 };
 #endif
 const u_char nullrelmap[1] = { 0 };
 
-#ifndef BITS32
-#define LOW(a) ((a) & 0xffff)
-#define HIGH(a)((a) >> 16)
+#if defined(BITS64) || defined(BITS32)
+#else
+  #define LOW(a) ((a) & 0xffff)
+  #define HIGH(a)((a) >> 16)
 #endif
 
 /* System call error reporting */
 extern int errno;
 
-extern int system();
-extern set_input();
-extern void exit(int);
-
-extern int caccept(char *addr, cell count, cell *up);
-extern emit(char c, cell *up);
-extern int key_avail();
-extern int key();
-extern cell dosyscall();
-extern cell pfopen(char *name, int len, int mode, cell *up);
-extern cell pfcreate(char *name, int len, int mode, cell *up);
-extern cell pfclose(cell f, cell *up);
-extern void write_dictionary(char *name, int len, char *dict, int dictsize, cell *up, int usersize);
-
-extern void memfree(char *, cell *up);
-extern char * memresize(char *, u_cell, cell *up);
-
+// int printing = 0;
 // Execute an array of Forth execution tokens.
+int
 inner_interpreter(up)
     cell *up;
 {
@@ -93,11 +82,24 @@ inner_interpreter(up)
     cell scr;
     u_char *ascr;
     u_char *ascr1;
-#ifndef BITS32
+#if defined(BITS64) || defined(BITS32)
+#else
     long lscr, lscr1;
 #endif
 
     while(1) {
+#ifdef DEBUGGER
+	if (V(LESSIP)
+	    && (token_t *)V(LESSIP) <= ip
+	    && (token_t *)V(IPGREATER) > ip
+	    && ++(V(CNT)) == 2)
+	{
+	    V(CNT) = 0;
+	    token = *(token_t *) &V(TICK_DEBUG);
+//	    printing = 3;
+	    goto doprim;
+	}
+#endif
         token = *ip++;
 
 doprim:
@@ -141,7 +143,7 @@ doprim:
     next;
 
 /*$p pick */    case PICK:      tos = sp[tos]; next;
-/*$p roll */    case ROLL:      
+/*$p roll */    case ROLL:
     for (scr = sp[tos]; tos; --tos)
         sp[tos] = sp[tos-1];
     tos = scr;
@@ -170,11 +172,11 @@ doprim:
     next;
 
 /*$p ip! */     case IP_STORE:
-    *--rp = (token_t *)tos;
+    *rp = (token_t *)tos;
     loadtos;
     next;
 
-/*$p ip@ */     case IP_FETCH:  push((cell)(*rp++) );    next;
+/*$p ip@ */     case IP_FETCH:   push((cell)(*rp) );    next;
 
     /* We don't have to account for the tos in a register, because */
     /* push has already pushed tos onto the stack before */
@@ -187,7 +189,7 @@ doprim:
 /*$p 0< */      case ZERO_LESS:         uncmp (<);      next;
 /*$p 0= */      case ZERO_EQUAL:        uncmp (==);     next;
 /*$p 0> */      case ZERO_GREATER:      uncmp (>);      next;
-/*$p u< */      case U_LESS: 
+/*$p u< */      case U_LESS:
     tos = ((u_cell) * sp++ < (u_cell) tos) ? -1 : 0;
     next;
 
@@ -196,7 +198,7 @@ doprim:
 /*$p 2- */      case TWO_MINUS:    tos -= 2;     next;
 /*$p um* */     case U_M_TIMES:
 
-#ifdef BITS32
+#if defined(BITS64) || defined(BITS32)
     --sp;
     umtimes((u_cell *)sp, (u_cell *)sp+1,
             (u_cell)*(sp+1), (u_cell)tos);
@@ -211,7 +213,7 @@ doprim:
 
 /*$p m* */      case M_TIMES:
 
-#ifdef BITS32
+#if defined(BITS64) || defined(BITS32)
     scr = 1;        /* Sign */
     if (*sp < 0) {
         *sp = -*sp;
@@ -251,7 +253,7 @@ doprim:
     next;
 /*$p c@ */      case C_FETCH:   tos = *(u_char *)tos;    next;
 /*$p w@ */      case W_FETCH:   tos = *(unsigned short *)tos; next;
-/*$p l@ */      case L_FETCH:   tos = *(unsigned long *)tos; next;
+/*$p l@ */      case L_FETCH:   tos = *(uint32_t *)tos; next;
 
 /*$p token@ */  case TOK_FETCH:
 token_fetch:
@@ -278,7 +280,7 @@ token_fetch:
     next;
 
 /*$p l! */      case L_STORE:
-    *(unsigned long *)tos = *sp++;
+    *(uint32_t *)tos = *sp++;
     loadtos;
     next;
 
@@ -321,7 +323,7 @@ token_fetch:
     loadtos;
     next;
 
-/*$p fill */    case FILL: 
+/*$p fill */    case FILL:
     scr  = *sp++;
     ascr = (u_char *)(*sp++);
     fill_bytes((u_char *)ascr,(u_cell)scr,(u_char)tos);
@@ -335,13 +337,13 @@ token_fetch:
     tos = compare(ascr1, (u_cell)scr, ascr, (u_cell)tos);
     next;
 
-/*$p count */   case COUNT: 
+/*$p count */   case COUNT:
     *--sp = (cell)(tos + 1);
     ascr = (u_char *)tos;
     tos = (cell)(*ascr);
     next;
 
-/*$p -trailing */ case DASH_TRAILING: 
+/*$p -trailing */ case DASH_TRAILING:
     ascr  = (u_char *) (*sp + tos);
     tos++;
     while ((--tos != 0) && (*--ascr == ' '));
@@ -391,7 +393,7 @@ execute:
 /*$p emit */    case EMIT:    emit ((u_char)tos, up);    loadtos;    next;
 /*$p cr */      case CR:    emit ('\n', up);    next;
 
-/*$p type */    case TYPE: 
+/*$p type */    case TYPE:
     type( (u_char *)(*sp++), tos, up);
     loadtos;
     next;
@@ -430,7 +432,7 @@ execute:
         ++sp;    /* No xt if word not found */
     next;
 
-/*$p $canonical */      case CANONICAL: 
+/*$p $canonical */      case CANONICAL:
     ip_canonical ((char *)(*sp), tos, up);
     next;
 
@@ -491,7 +493,7 @@ execute:
     // rp = (token_t **)V(HANDLER);
     V(HANDLER) = (cell)*rp++;
     /* Error num remains in tos */
-    sp = ((cell *)*rp++) + 1;  // Saved SP included acf location 
+    sp = ((cell *)*rp++) + 1;  // Saved SP included acf location
     ip = *rp++;
 
     next;
@@ -517,7 +519,7 @@ execute:
 
 /*$p , */       case COMMA:     comma;  next;
 
-/*$i ; */       case SEMICOLON:    
+/*$i ; */       case SEMICOLON:
     compile(UNNEST);
     reveal(up);
     V(STATE) = INTERPRETING;
@@ -597,22 +599,24 @@ execute:
 /*$p (') */     case PAREN_TICK:        push( XT_FROM_CT(*ip++, up));      next;
 /*$p (char) */  case PAREN_CHAR:
     scr = nfetch((cell *)ip);
-    ip   = (token_t *)((u_char *)ip + 2*sizeof(u_short));
+    ip = (token_t *)((u_char *)ip + sizeof(cell));
     push(scr);
     next;
 
 /*$p (lit) */   case PAREN_LIT:
     scr = nfetch((cell *)ip);
-    ip   = (token_t *)((u_char *)ip + 2*sizeof(u_short));
+    ip = (token_t *)((u_char *)ip + sizeof(cell));
     push(scr);
     next;
 
-#ifdef T16
-/*$p (lit16) */ case PAREN_LIT16:
+/*$p (wlit) */ case PAREN_LIT16:
     push( *(branch_t *)ip );
+#ifdef T16
     ip   = (token_t *)((u_char *)ip + sizeof(branch_t));
-    next;
+#else
+    ip   = (token_t *)((u_char *)ip + sizeof(cell));
 #endif
+    next;
 
 /*$p xtliteral */ case XTLITERAL:
     compile(PAREN_TICK);
@@ -659,7 +663,7 @@ execute:
     loadtos;
     next;
 
-/*$p (do) */    case P_DO: 
+/*$p (do) */    case P_DO:
     scr = *sp++;
 
     *--rp = ip;                  // Addr of offset to end
@@ -669,7 +673,7 @@ execute:
     loadtos;
     next;
 
-/*$p (loop) */  case PAREN_LOOP: 
+/*$p (loop) */  case PAREN_LOOP:
     if (++(*(cell *)rp) != 0) {
         branch;
         next;
@@ -679,7 +683,7 @@ execute:
     ++ip;
     next;
 
-/*$p (+loop) */ case PAREN_PLUS_LOOP: 
+/*$p (+loop) */ case PAREN_PLUS_LOOP:
 
     // The loop terminates when the index crosses the boundary between
     // limit-1 and limit.  We have biased the internal copy of the index
@@ -787,7 +791,7 @@ execute:
         quot = dividend/tos;
         rem  = dividend - tos*quot;
         if (FLOORFIX(dividend,tos,rem)) {
-            *--sp = rem  + tos; 
+            *--sp = rem  + tos;
             tos = quot - 1;
         } else {
             *--sp = rem ;
@@ -807,7 +811,7 @@ execute:
     next;
 
 /*$p dnegate */ case DNEGATE:
-#ifdef BITS32
+#if defined(BITS64) || defined(BITS32)
     tos = ~tos + ((*sp = -*sp) == 0);  /* 2's complement */
 #else
     lscr = ((long)((int)tos)) << 16;
@@ -819,7 +823,7 @@ execute:
 
 /*$p d- */      case DMINUS:
 
-#ifdef BITS32
+#if defined(BITS64) || defined(BITS32)
 /* Borrow calculation assumes 2's complement arithmetic */
 #define BORROW(a,b)  ((u_cell)a < (u_cell)b)
 
@@ -846,7 +850,7 @@ execute:
     next;
 
 /*$p d+ */      case DPLUS:
-#ifdef BITS32
+#if defined(BITS64) || defined(BITS32)
 
 /* Carry calculation assumes 2's complement arithmetic. */
 #define CARRY(res,b)  ((u_cell)res < (u_cell)b)
@@ -874,7 +878,7 @@ execute:
     next;
 
 /*$p um/mod */  case U_M_DIVIDE_MOD:
-#ifdef BITS32
+#if defined(BITS64) || defined(BITS32)
     (void)umdivmod((u_cell *)sp, (u_cell *)sp+1, (u_cell)tos);
     loadtos;
 #else
@@ -886,18 +890,18 @@ execute:
     next;
 
 /*$p sm/rem */  case S_M_DIVIDE_REM:
-#ifdef BITS32
+#if defined(BITS64) || defined(BITS32)
     scr = 0;        /* Sign */
 
     if (*sp < 0) {  /* dividend */
         *sp = ~*sp + ((sp[1] = -sp[1]) == 0);
         scr = 1;        /* dividend is negative */
-    }                               
+    }
     if (tos < 0) {
         tos = -tos;
         scr += 2;       /* divisor is negative */
     }
-                        
+
     (void)umdivmod((u_cell *)sp, (u_cell *)sp+1, (u_cell)tos);
     loadtos;
 
@@ -977,7 +981,7 @@ execute:
     next;
 
 /*$p errno */   case PERRNO:    push(V(ERRNO)); next;  /* Self fetching */
-/*$p why */     case WHY:       perror(""); next;
+/*$p why */     case WHY:       prerror("", up); next;
 #endif
 
 /*$p bl */      case BL:        push(' ');  next;
@@ -1134,6 +1138,10 @@ execute:
     tos = pfclose(tos, up);     /* EOF on error */
     next;
 
+/*$p flush-file */  case FLUSH_FILE:
+    tos = pfflush(tos, up);     /* EOF on error */
+    next;
+
 /*$p to-ram */  case TO_RAM:
     V(RAMTOKENS) = pop;
     V(RAMCT) = (cell)CT_FROM_XT((xt_t)V(DP), up);
@@ -1161,19 +1169,46 @@ execute:
     tos = tos ? 0 : OPENFAIL;
     next;
 
+/*$p split-string */ case SPLIT_STRING:  // a1 l1 char -- a1 l2 a1+l2 l1-l2
+    tos = split_string(tos, --sp, up);
+    next;
+
+// Logging captures everything that goes out via emit.  Usage:
+//   log{ <logged> }log  <not_logged>  log{ <logged> }log
+//   log$ type
+//   clear-log
+// Subsequent uses of log{ append to the log until clear-log
+
+/*$p clear-log */ case CLEAR_LOG: // --
+    clear_log(up);
+    next;
+
+/*$p log{ */ case START_LOGGING: // --
+    start_logging(up);
+    next;
+
+/*$p }log */ case STOP_LOGGING: // --
+    stop_logging(up);
+    next;
+
+/*$p log$ */ case LOG_EXTENT: // -- adr len
+    push(log_extent(--sp, up));
+    next;
+
 default:   // Non-primitives - colon defs, constants, etc.
     ascr = (u_char *)XT_FROM_CT(token, up);  // Code field address
     scr  = (cell)*(token_t *)ascr;       // Code field value
     ascr += sizeof(token_t);             // Body address
     switch (scr) {
 
-/*$c (:) */         case DOCOLON:  *--rp = ip;  ip = (token_t *)ascr;  next;
+/*$c (:) */         case DOCOLON:
+    *--rp = ip;  ip = (token_t *)ascr;  next;
 /*$c (constant) */  case DOCON:
     push(nfetch((cell *)ascr));
     next;
 
 /*$c (variable) */  case DOVAR:   /* push(ascr); */
-                           push( *(unum_t *)ascr + (cell)up );  
+                           push( *(unum_t *)ascr + (cell)up );
                             next;
 /*$c (create) */    case DOCREATE: push(ascr); next;
 /*$c (user) */      case DOUSER:  push( *(unum_t *)ascr + (cell)up );  next;
@@ -1183,6 +1218,7 @@ default:   // Non-primitives - colon defs, constants, etc.
 
 /*$c (vocabulary) */case DOVOC:   tokstore(token, (xt_t)&V(CONTEXT));  next;
 /*$c (code) */      case DOCODE:  (*(void (*) ())ascr)();  next;
+/*$c (value) */     case DOVALUE:  push( *(cell *)(*(unum_t *)ascr + (cell)up) );  next;
 
 default:    /* DOES> word */
     /* Push parameter field address */
@@ -1231,7 +1267,7 @@ execute_word(char *s, cell *up)
         return(-2);
     }
 
-    execute_xt(xt, up);
+    return execute_xt(xt, up);
 }
 
 /* Forth variables */
@@ -1282,6 +1318,10 @@ execute_word(char *s, cell *up)
 /*$u locnum     e LOCNUM:       */
 /*$u 'sysptr    e SYSPTR:       */
 /*$u boundary   e BOUNDARY:     */
+/*$u <ip        e LESSIP:       */
+/*$u ip>        e IPGREATER:    */
+/*$u cnt        e CNT:          */
+/*$u 'debug     e TICK_DEBUG:   */
 /*$t current    e CURRENT:      */
 /*$t context    e CONTEXT:      *$UUUUUUUUUUUUUUU */ /* 15 extra voc slots */
 
@@ -1408,7 +1448,7 @@ tryagain: ;
     return(-1);
 }
 
-int
+size_t
 strlen(const char *s)
 {
     const char *p = s;
@@ -1424,14 +1464,15 @@ doccall(cell (*function_adr)(), u_char *format, cell *up)
     cell arg0, arg1, arg2, arg3, arg4,  arg5,
            arg6, arg7, arg8, arg9, arg10, arg11;
     cell ret;
-    char cstr[128];
+    char cstr[4][128];
+    int strn = 0;
 
 /* The following cases are ordered by expected frequency of occurrence */
 #define CONVERT(var) \
     switch(*format++) {\
         case 'i': var = *sp++; break;\
         case '-': goto doccall;\
-        case '$': ret = *sp++; var = (cell) altocstr((char *)(*sp++), ret, cstr, 128); break;\
+        case '$': ret = *sp++; var = (cell) altocstr((char *)(*sp++), ret, cstr[strn++], 128); break;\
         case 'a': var = (cell) (*sp++); break;\
         case 'l': var = *sp++; break;\
     }
@@ -1479,29 +1520,64 @@ alnumber(char *adr, cell len, cell *nhigh, cell *nlow, cell *up)
     u_char c;
     int d;
     int isminus = 0;
-    cell accum = 0;
+#ifdef BITS64
+    __int128_t accum = 0;
+#else
+  #ifdef BITS32
+    long long accum = 0;
+  #else
+    long accum = 0;
+  #endif
+#endif
 
     V(DPL) = -100;
-    if( *adr == '-' ) {
-        isminus = 1;
-        len--;
-        ++adr;
-    }
-    for( ; len > 0; len-- ) {
-        c = *adr++;
-        if( c == '.' )
-            V(DPL) = 0;
-        else {
-            if( -1 == (d = digit( (cell)base, c )) )
-                break;
-            ++V(DPL);
-            accum = accum * base + d;
-        }
+    if ( len >= 3 && adr[0] == '\'' && adr[len-1] == '\'') {
+	adr++; len -= 2;
+	for ( ; len > 0; len-- ) {
+	    accum = (accum << 8) | *adr++;
+	}
+    } else {
+	if( len ) {
+	    switch (*adr)
+	    {
+	    case '%': base = 2; len--; adr++; break;
+	    case '#': base = 10; len--; adr++; break;
+	    case '$': base = 16; len--; adr++; break;
+	    }
+	}
+	if( len && *adr == '-' ) {
+	    isminus = 1;
+	    len--;
+	    ++adr;
+	}
+	for( ; len > 0; len-- ) {
+	    c = *adr++;
+	    if( c == '.' )
+		V(DPL) = 0;
+	    else {
+		if( -1 == (d = digit( (cell)base, c )) )
+		    break;
+		++V(DPL);
+		accum = accum * base + d;
+	    }
+	}
     }
     if (V(DPL) < 0)
         V(DPL) = -1;
-    *nlow  = isminus ? -accum : accum;
-    *nhigh = isminus ? -1 : 0;
+    if (isminus)
+	accum = -accum;
+#ifdef BITS64
+    *nlow  = accum & 0xffffffffffffffff;
+    *nhigh = (accum >> 64) & 0xffffffffffffffff;
+#else
+  #ifdef BITS32
+    *nlow  = accum & 0xffffffff;
+    *nhigh = (accum >> 32) & 0xffffffff;
+  #else
+    *nlow  = accum & 0xffff;
+    *nhigh = (accum >> 16) & 0xffff;
+  #endif
+#endif
     return( len ? 0 : -1 );
 }
 
@@ -1545,26 +1621,41 @@ mplus(cell *dhighp, cell *dlowp, cell n)
 void
 umtimes(u_cell *dhighp, u_cell *dlowp, u_cell u1, u_cell u2)
 {
-#ifdef BITS32
-    register u_cell ah, al, bh, bl, tmp;
+#if defined(BITS64)
+    u_cell ah, al, bh, bl, tmp;
+
+    ah = u1>>32;  al = u1 & 0xffffffff;
+    bh = u2>>32;  bl = u2 & 0xffffffff;
+
+    *dhighp = ah*bh;  *dlowp = al*bl;
+
+    tmp = ah*bl;
+    dplus((cell *)dhighp, (cell *)dlowp, (cell)(tmp>>32), (cell)(tmp<<32));
+
+    tmp = al*bh;
+    dplus((cell *)dhighp, (cell *)dlowp, (cell)(tmp>>32), (cell)(tmp<<32));
+#else
+#if defined(BITS32)
+    u_cell ah, al, bh, bl, tmp;
 
     ah = u1>>16;  al = u1 & 0xffff;
     bh = u2>>16;  bl = u2 & 0xffff;
 
     *dhighp = ah*bh;  *dlowp = al*bl;
-    
+
     tmp = ah*bl;
     dplus((cell *)dhighp, (cell *)dlowp, (cell)(tmp>>16), (cell)(tmp<<16));
 
     tmp = al*bh;
     dplus((cell *)dhighp, (cell *)dlowp, (cell)(tmp>>16), (cell)(tmp<<16));
 #else
-    register unsigned long ulscr;
+    unsigned long ulscr;
 
     ulscr = ((unsigned long)u1);
     ulscr = ulscr * u2;
     *dlowp   = (u_cell)LOW(ulscr);
     *dhighp  = (u_cell)HIGH(ulscr);
+#endif
 #endif
 }
 
@@ -1595,7 +1686,7 @@ dutimes(u_cell *dhighp, u_cell *dlowp, u_cell u)
 
 // quotient in dhighp, remainder in dlowp
 static void
-umdivmod(u_cell *dhighp, u_cell *dlowp, u_cell u) 
+umdivmod(u_cell *dhighp, u_cell *dlowp, u_cell u)
 {
     register u_cell ulow, uhigh;
     register u_cell guess;
@@ -1615,7 +1706,7 @@ umdivmod(u_cell *dhighp, u_cell *dlowp, u_cell u)
     }
 
     uhigh = u >> 16; ulow = u & 0xffff;
-    
+
     if (uhigh == 0) {
         guess = ((errhigh << 16) + (errlow >> 16)) / ulow;
         *dhighp = guess << 16;
@@ -1668,7 +1759,7 @@ mtimesdiv(cell *dhighp, cell *dlowp, cell n1, cell n2)
 
     if (*dhighp < 0)            /* Make d positive */
         *dhighp = ~*dhighp + ((*dlowp = -*dlowp) == 0);         /* dnegate */
-        
+
     umtimes(&tmid, &tlow, *dlowp, n1);  /* now we have tlow and partial tmid */
     umtimes(&thigh, &temp, *dhighp, n1);
     mplus((cell *)&thigh, (cell *)&tmid, temp);
@@ -1740,4 +1831,18 @@ ip_canonical(char *adr, cell len, cell *up)   // Canonicalize string "in place"
         c = *p;
         *p++ = (c >= 'A' && c <= 'Z') ? (c - 'A' + 'a') : c;
     }
+}
+
+static int
+split_string(char c, cell *sp, void *up)
+{
+    char *adr = (char *)sp[2];
+    int len = sp[1];
+    int i;
+    for (i=0; i<len; i++)
+	if (adr[i] == c)
+	    break;
+    sp[1] = i;
+    sp[0] = (cell)&adr[i];
+    return len-i;
 }

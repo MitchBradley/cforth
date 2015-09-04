@@ -16,6 +16,7 @@
  */
 
 #include "forth.h"
+#include "compiler.h"
 #include "prims.h"
 
 extern void exit(int);
@@ -48,7 +49,7 @@ void signal_handler(int sig) {
      siglongjmp(jmp_buffer, sig);
 }
 
-main(int argc, char **argv)
+int main(int argc, char **argv)
 {
     int retval;
     cell *up;
@@ -65,12 +66,16 @@ main(int argc, char **argv)
 	{
 	case SIGFPE:  FTHERROR("Numeric exception\n");   break;
 	case SIGILL:  FTHERROR("Illegal instruction\n"); break;
-	case SIGSEGV: FTHERROR("Address exception\n");   break;
+          case SIGSEGV: FTHERROR("Address exception\n");   exit(0); break;
 	}
 	(void)signal(caught, signal_handler);
     }
-    retval = execute_word("quit", up);
+    do {
+	retval = execute_word("quit", up);
+	if (retval != -1 && retval != 0)
+	    break;
+    } while (next_arg(up));
     restoremode();
     // -1 is the return value for "bye"; map it to 0 process exit status
-    exit(retval == -1 ? 0 : retval);
+    return retval == -1 ? 0 : retval;
 }

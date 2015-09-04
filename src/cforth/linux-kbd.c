@@ -1,5 +1,7 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <termios.h>
+#include <unistd.h>
 #define STDIN_FILENO 0
 
 static int rawmode = 0; /* For atexit() function to check if restore is needed*/
@@ -53,6 +55,8 @@ fatal:
 #include <poll.h>
 int key_avail()
 {
+    if(!isatty(STDIN_FILENO))
+        return 0;
     struct pollfd fd = { STDIN_FILENO, POLLIN, 0 };
     fflush(stdout);
     return poll(&fd, 1, 0) > 0;
@@ -74,4 +78,50 @@ int key(void)
     // Exit if the keyboard has disappeared
     exit(0);
     return(0);  /* To avoid compiler warnings */
+}
+
+// Returns -1 to indicate that ansi_emit did nothing
+// On Linux and similar systems, terminal windows typically
+// emulate ANSI terminals, so there is no need to do ANSI
+// escape sequence processing inside CForth.
+int ansi_state = 0;
+
+// Returns -1 if stdout is not a console,
+// 0 if the character was part of an escape sequence,
+// 1 if a character was written to the screen, thus advancing the cursor
+// We can use the system's terminal emulator to do the real work, but
+// we need to track the escape sequence to determine the cursor position.
+int ansi_emit(int c, FILE *fd)
+{
+    switch (ansi_state)
+    {
+    case 0:  // Normal state, not in an escape sequence
+	if (c == 0x1b) // ESC
+	    ansi_state = 1;
+	else
+	    if (c == 0x9b)
+		ansi_state = 2;
+	    else {
+		putc(c,fd);
+                (void)fflush(fd);
+		return 1;
+	    }
+	break;
+    case 1: // Received ESC but not yet [
+	ansi_state = (c == '[') ? 2 : 0;
+	break;
+    case 2: // Received ESC[ or 0x9b and possibly some digits
+	if (c == ';')
+	    ansi_state = 3;
+	else if (c < '0' || c > '9')
+	    ansi_state = 0; // End received, return to normal
+	break;
+    case 3: // Received ; and possibly some more digits
+	if (c < '0' || c > '9')
+	    ansi_state = 0; // End received, return to normal
+	break;
+    }
+    putc(c,fd);
+    (void)fflush(fd);
+    return 0;
 }

@@ -1,9 +1,6 @@
 # APPPATH is the path to the application code, i.e. this directory
 APPPATH=$(TOPDIR)/src/app/arm-xo-1.75
 
-# OBJPATH2 is relative to APPPATH
-OBJPATH2=../../../$(BUILDDIR)
-
 # APPLOADFILE is the top-level "Forth load file" for the application code.
 APPLOADFILE = app175.fth
 

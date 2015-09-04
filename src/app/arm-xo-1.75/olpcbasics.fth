@@ -19,7 +19,6 @@ fl ../arm-xo-3.0/panel.fth
 
 : short-delay ;
 
-fl ../arm-xo-1.75/ccalls.fth
 fl ../arm-xo-1.75/banner.fth
 
 : enable-interrupts  ( -- )  psr@ h# 80 invert and psr!  ;

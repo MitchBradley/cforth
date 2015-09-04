@@ -30,10 +30,14 @@ extern const struct header builtin_hdr;
 
 #define FTHERROR(s)   alerror(s, sizeof(s)-1, up)
 
+#ifdef BITS64
+#define MAGIC 0x58112000570821
+#else
 #ifdef BITS32
 #define MAGIC 0x581120
 #else
 #define MAGIC 0x5820
+#endif
 #endif
 
 #define ALLOCFAIL -10	/* XXX - out of the hat */
@@ -48,3 +52,39 @@ extern const struct header builtin_hdr;
 #define RESIZEFAIL -19	/* XXX - out of the hat */
 #define STATFAIL  -20	/* XXX - out of the hat */
 #define CREATEFAIL -21	/* XXX - out of the hat */
+
+cell pfread(cell *sp, cell len, void *fid, cell *up);
+cell pfwrite(void *adr, cell len, void *fid, cell *up);
+void init_io(int argc, char **argv, cell *up);
+int next_arg(cell *up);
+void linemode(void);
+void keymode(void);
+void restoremode(void);
+void title(cell *up);
+int lineedit(char *addr, int count, void *up);
+void emit(u_char c, cell *up);
+int system();
+void set_input();
+void exit(int);
+
+int caccept(char *addr, cell count, cell *up);
+int key_avail();
+int key();
+cell dosyscall();
+cell pfopen(char *name, int len, int mode, cell *up);
+cell pfcreate(char *name, int len, int mode, cell *up);
+cell pfclose(cell f, cell *up);
+cell pfflush(cell f, cell *up);
+void write_dictionary(char *name, int len, char *dict, int dictsize, cell *up, int usersize);
+
+void memfree(char *, cell *up);
+char * memresize(char *, u_cell, cell *up);
+void fatal(char *str, cell *up);
+void name_input(char *filename, cell *up);
+
+void clear_log(cell *up);
+void start_logging(cell *up);
+void stop_logging(cell *up);
+cell log_extent(cell *log_base, cell *up);
+
+#define C(cname)  (cell (*)())cname,

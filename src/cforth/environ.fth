@@ -5,6 +5,7 @@ vocabulary environment  environment definitions
 #align constant /align
 1 chars constant /char
 td 255 constant /counted-string
+64\  h# 40000
 32\  h# 20000
 16\  d# 45000
 constant /data-space

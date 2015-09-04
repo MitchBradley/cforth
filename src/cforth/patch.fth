@@ -85,9 +85,33 @@
    tsearch                 ( apf [ loc ] f )
    0= if  here  then
 ;
+\t16 : fits16?  ( n -- )  d# 15 >>a -1 0 between  ;
+\t16 : npatch-t16  ( newn oldn xt -- )
+\t16    word-bounds swap   ( newn oldn end start )
+\t16    begin  ( newn oldn end curr )
+\t16       2dup u<= abort" Can't find it"    \ if curr=end exit
+\t16       dup @ 3 pick                  ( newn oldn end curr curr@ oldn )
+\t16       =  if                         ( newn oldn end curr )
+\t16          nip nip ! exit             ( -- )
+\t16       then                          ( newn oldn end curr )
+\t16       dup token@ ['] (wlit) =  if   ( newn oldn end curr )
+\t16          ta1+                       ( newn oldn end curr' )
+\t16          dup <w@                    ( newn oldn end curr curr@ )
+\t16          3 pick =  if               ( newn oldn end curr )
+\t16             nip nip                 ( newn curr )
+\t16             over fits16?  if        ( newn curr )
+\t16                w! exit              ( -- )
+\t16             then                    ( newn curr )
+\t16             drop .  ." does not fit in the available space" abort
+\t16          then                       ( newn oldn end curr )
+\t16       then                          ( newn oldn end curr )
+\t16       1+ aligned                    ( newn oldn end curr' )
+\t16    again
+\t16 ;
 : (npatch  ( newn oldn acf -- )
-   word-bounds   nsearch
-   if  !  else  ." Couldn't find it" drop  then
+\t16   npatch-t16
+\t32   word-bounds   nsearch
+\t32   if  !  else  ." Couldn't find it" drop  then
 ;
 : (wpatch  ( new old acf -- )
    word-bounds   wsearch

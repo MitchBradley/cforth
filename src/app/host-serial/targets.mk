@@ -5,9 +5,6 @@ default: app.dic
 # Application code directory - i.e. this directory
 APPPATH=$(TOPDIR)/src/app/host-serial
 
-# OBJPATH2 is the build directory relative to here
-OBJPATH2=../../../$(BUILDDIR)
-
 # APPLOADFILE is the top-level "Forth load file" for the application code.
 APPLOADFILE = app.fth
 
@@ -17,12 +14,16 @@ APPSRCS = $(APPPATH)/app.fth
 SRC=$(TOPDIR)/src
 include $(SRC)/common.mk
 include $(SRC)/cforth/targets.mk
-CFLAGS += -m32
 
 ifeq ($(OS),Windows_NT)
   API = win32
 else
-  API = linux
+  UNAME_S := $(shell uname -s)
+ifeq ($(UNAME_S),Darwin)
+	API = posix
+ else
+	API = posix
+endif
 endif
 
 # EXTENDSRC is the source file for extensions; it is compiled to extend.o
@@ -31,5 +32,23 @@ EXTENDSRC = $(APPPATH)/extend-$(API).c
 VPATH += $(APPPATH)
 INCS += -I$(APPPATH)
 
+VPATH += $(TOPDIR)/src/lib
+INCS += -I$(TOPDIR)/src/lib
+
+MYOBJS += sha256.o
+
+ifeq ($(FTDI),y)
+	FTDIDIR = $(APPPATH)/libftdi
+	VPATH += $(FTDIDIR)
+	INCS += -I$(FTDIDIR)
+	CFLAGS += -DUSE_FTDI
+	MYOBJS += ftdi.o
+endif
+
+HOSTOBJS += $(MYOBJS)
+
+forth: $(MYOBJS)
+extend.o: $(EXTENDSRC)
+
 app.dic:  forth forth.dic $(APPSRCS)
-	(cd $(APPPATH); $(OBJPATH2)/forth $(OBJPATH2)/forth.dic $(APPLOADFILE); mv $@ $(OBJPATH2))
+	(cd $(APPPATH); $(BUILDDIR)/forth $(BUILDDIR)/forth.dic $(BUILDDIR)/ccalls.fth $(APPLOADFILE); mv $@ $(BUILDDIR))

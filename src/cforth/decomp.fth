@@ -173,6 +173,7 @@ variable extent  extent off
 
 : skip-char ( ip -- ip' )  ta1+  ta1+  ;
 : scan-unnest ( ip -- ip' | 0 )  drop 0  ;
+[ifdef] (;code)
 : scan-;code ( ip -- ip' | 0 )
   does-ip?  0=  if  drop 0  then
 ;
@@ -182,6 +183,7 @@ variable extent  extent off
    else  0 lmargin ! indent .." ;code "  cr disassemble     0
    then
 ;
+[then]
 : .branch ( ip -- ip' )
   dup forward-branch?
   if   <indent .." else  " indent
@@ -221,7 +223,7 @@ variable extent  extent off
 : .word         (s ip -- ip' )  dup token@ check-postpone ?cr .name   ta1+  ;
 : skip-word     (s ip -- ip' )  ta1+ ;
 : .inline       (s ip -- ip' )  ta1+ dup @  .  na1+   ;
-: .lit16        (s ip -- ip' )  ta1+ dup branch@  .  /branch +   ;
+: .wlit         (s ip -- ip' )  ta1+ dup branch@  .  /branch +   ;
 : skip-inline   (s ip -- ip' )  ta1+ na1+ ;
 : .flit         (s ip -- ip' )
    ta1+ >r
@@ -259,11 +261,10 @@ float?  ?\  r@ la1+ l@   r@ l@   fpush e.
 : .char       (s ip -- ip' )
    .." [char] " ta1+  dup @ emit space  na1+
 ;
+: .does>      (s ip -- ip' )  .." does> "  ta1+  ;
 : .unnest     (s ip -- 0 )
    0 lmargin ! indent .." ; " drop   0
 ;
-
-\ XXX exit doesn't really need to be a special case
 
 \ classify each word in a definition
 23 tassociative: execution-class  ( token -- index )
@@ -271,29 +272,29 @@ float?  ?\  r@ la1+ l@   r@ l@   fpush e.
    (  2 ) [compile]  branch          (  3 ) [compile]  (loop)
    (  4 ) [compile]  (+loop)         (  5 ) [compile]  (do)
    (  6 ) [compile]  compile         (  7 ) [compile]  (.")
-   (  8 ) [compile]  (abort")        (  9 ) [compile]  (;code)
+   (  8 ) [compile]  (abort")        (  9 ) [compile]  dummy
    ( 10 ) [compile]  unnest          ( 11 ) [compile]  (")
-   ( 12 ) [compile]  (?do)           ( 13 ) [compile]  (;uses)
+   ( 12 ) [compile]  (?do)           ( 13 ) [compile]  (does)
    ( 14 ) [compile]  (char)          ( 15 ) [compile]  (fliteral)
    ( 16 ) [compile]  (')             ( 17 ) [compile]  (of)
    ( 18 ) [compile]  (endof)         ( 19 ) [compile]  (endcase)
-   ( 20 ) [compile]  ("s)            ( 21 ) [compile]  (does>)
-   ( 22 ) [compile]  (lit16)
+   ( 20 ) [compile]  ("s)            ( 21 ) [compile]  (wlit)
+   ( 22 ) [compile]  dummy
 
 \ Print a word which has been classified by  execution-class
 24 case: .execution-class  ( ip index -- ip' )
    (  0 )     .inline                (  1 )     .?branch
    (  2 )     .branch                (  3 )     .loop
-   (  4 )     .+loop                 (  6 )     .do
+   (  4 )     .+loop                 (  5 )     .do
    (  6 )     .compile               (  7 )     .(.")
-   (  8 )     .abort"                (  9 )     .;code
+   (  8 )     .abort"                (  9 )     dummy
    ( 10 )     .unnest                ( 11 )     .(")
-   ( 12 )     .?do                   ( 13 )     .finish
+   ( 12 )     .?do                   ( 13 )     .does>
    ( 14 )     .char                  ( 15 )     .flit
    ( 16 )     .[']                   ( 17 )     .of
    ( 18 )     .endof                 ( 19 )     .endcase
-   ( 20 )     .("s)                  ( 21 )     .;code
-   ( 22 )     .lit16                 ( default ) .word
+   ( 20 )     .("s)                  ( 21 )     .wlit
+   ( 22 )     dummy                  ( default ) .word
 ;
 
 \ Determine the control structure implications of a word
@@ -303,14 +304,14 @@ float?  ?\  r@ la1+ l@   r@ l@   fpush e.
    (  2 )     scan-branch            (  3 )     skip-branch
    (  4 )     skip-branch            (  6 )     skip-branch
    (  6 )     skip-compile           (  7 )     skip-string
-   (  8 )     skip-string            (  9 )     scan-;code
+   (  8 )     skip-string            (  9 )     dummy
    ( 10 )     scan-unnest            ( 11 )     skip-string
-   ( 12 )     skip-branch            ( 13 )     scan-unnest
+   ( 12 )     skip-branch            ( 13 )     scan-does>
    ( 14 )     skip-char              ( 15 )     skip-llit
    ( 16 )     skip-[']               ( 17 )     scan-of
    ( 18 )     skip-branch            ( 19 )     skip-word
-   ( 20 )     skip-string            ( 21 )     scan-;code
-   ( 22 )     skip-branch            ( default ) skip-word
+   ( 20 )     skip-string            ( 21 )     skip-branch
+   ( 22 )     dummy                  ( default ) skip-word
 ;
 
 \ Scan the parameter field of a colon definition and determine the

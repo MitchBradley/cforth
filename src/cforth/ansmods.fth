@@ -113,7 +113,7 @@ missing: at-xy
 : c"  \ string   ( -- pstr )
    [compile] p"
 ; immediate
-: page  ( -- )  control L emit  ;
+\needs page : page  ( -- )  control L emit  ;
 
 nameless
 : limit  ( -- adr )

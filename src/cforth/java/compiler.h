@@ -17,7 +17,6 @@ extern int alfind(int adr, cell len, int up);
 extern int find_local(int adr, int plen, int up);
 extern int search_wid(int adr, cell len, int wid, int up);
 extern int canon_search_wid(int adr, cell len, int wid, int up);
-extern void warn(int adr, cell len, int up);
 extern void alerror(int str, int len, int up);
 extern int isinteractive(void);
 extern int moreinput(void);

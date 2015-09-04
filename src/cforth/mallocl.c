@@ -3,26 +3,22 @@
  * Getmem which uses the C library malloc.
  */
 
+#include <stdlib.h>
+
 char *
 getmem(unsigned int nbytes)
 {
-    extern void *malloc();
-
-    return( malloc(nbytes) );
+    return( calloc(nbytes, 1) );
 }
 
 void
 memfree(char *ptr)
 {
-    extern void free(void *);
-
     free(ptr);
 }
 
 char *
 memresize(char *ptr, unsigned int nbytes)
 {
-    extern void *realloc(void *, unsigned int);
-
     return( realloc(ptr, nbytes) );
 }
