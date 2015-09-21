@@ -1,9 +1,0 @@
-#!/bin/bash
-
-if [ ${1##*.} != "bin" ]; then
-   echo Usage: ./program-backspin backspin-<version>.bin
-   sleep 4
-   exit
-fi
-
-sudo ./forth backspin-programmer.dic -s "program-backspin: $1"
