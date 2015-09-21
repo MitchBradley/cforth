@@ -173,7 +173,9 @@ char *make_path(char *name)
     }
 
     char *new = malloc(len + strlen(name) + 1);
-    strcpy(stpncpy(new, current, len), name);
+    // The next two lines could use stpncpy but many platforms lack it
+    strncpy(new, current, len);
+    strcpy(new+len, name);
     return new;
 }
 
@@ -558,7 +560,9 @@ cell pfopen(char *name, int len, int mode, cell *up)
         size_t len;
         char *current = input_dir(&len);
         if (len) {
-            strcpy(stpncpy(absbuf, current, len), s);
+            // The next two lines could use stpncpy but many platforms lack it
+            stpncpy(absbuf, current, len);
+            strcpy(absbuf+len, s);
             s = absbuf;
         }
     }
