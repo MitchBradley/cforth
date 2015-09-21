@@ -31,6 +31,161 @@ FILE *open_next_file();
 int gargc;
 char **gargv;
 
+// The following input-marking mechanism maintains the path name
+// for the current input file so that relative paths can be based
+// on the path to the current input file.
+// It works as follows:
+// Whenever a file is opened:
+// a) If its name is relative, the name is appended to the directory
+//    name of the current input file.
+// b) Its full path is recorded in a open file list.
+// If a file is then used for interpreter input its path record
+
+// is moved from the open file list and pushed on a stack of input
+// files.  The top of that stack is the current input file.
+// When a file is closed its record is removed from whichever
+// list or stack it is on.
+
+typedef struct filepath {
+    struct filepath *next;
+    FILE *fp;
+    char *path;
+} filepath_t;
+
+void free_filepath(filepath_t *p)
+{
+    free(p->path);
+    free(p);
+}
+
+filepath_t filepaths = { NULL, NULL, NULL } ;
+filepath_t input_stack = { NULL, NULL, NULL } ;
+
+static filepath_t *remove_path(FILE *fp)
+{
+    filepath_t *prev, *this;
+
+    for (prev = &filepaths; (this = prev->next) != NULL; prev = this) {
+        if (this->fp == fp) {
+            prev->next = this->next;  // Unlink
+            return this;
+        }
+    }
+    return NULL;
+}
+
+void delete_path(FILE *fp)
+{
+    filepath_t *this = remove_path(fp);
+    if (this) {
+        free_filepath(this);
+    }
+}
+
+// Pushes the path record for fp onto the input stack
+void pfmarkinput(void *fp, cell *up)
+{
+    filepath_t *this = remove_path((FILE *)fp);
+    if (this) {
+        this->next = input_stack.next;
+        input_stack.next = this;
+    }
+}
+
+void pfprint_input_stack(void)
+{
+    filepath_t *this;
+
+    for (this = input_stack.next; this; this = this->next) {
+        printf("%s\n", this->path);
+    }
+}
+
+void delete_input(FILE *fp)
+{
+    filepath_t *prev, *this;
+
+    for (prev = &input_stack; (this = prev->next) != NULL; prev = this) {
+        if (this->fp == fp) {
+            if (prev != &input_stack) {
+                printf("Warning - funny file unnesting\n");
+            }
+            prev->next = this->next;  // Unlink
+            free_filepath(this);
+            return;
+        }
+    }
+}
+
+char *input_dir(size_t *len)
+{
+    *len = 0;
+    if (input_stack.next) {
+        char *input_path = input_stack.next->path;
+
+        char *end1 = strrchr(input_path, '/');
+        char *end2 = strrchr(input_path, '\\');
+        if (end2 > end1) {
+            end1 = end2;
+        }
+        if (end1) {
+            *len = 1 + end1 - input_path;
+        }
+        return input_path;
+    } else {
+        char *wd = getcwd(NULL, 0);
+        char *wpath = malloc(strlen(wd) + 2);
+        strcpy(wpath, wd);
+        free(wd);
+        strcat(wpath, "/");
+        *len = strlen(wpath);
+        return wpath;
+    }
+}
+
+// absolute paths begin with '/' or '\\' or e.g. "C:\"
+int isabsolute(char *name)
+{
+    if (!name)
+        return 0;
+    if (*name == '/' || *name == '\\')
+        return 1;
+    if ((strlen(name) > 2) && name[1] == ':' && (name[2] == '/' || name[2] == '\\'))
+        return 1;
+    return 0;
+}
+
+// Given a filename name, return its absolute path.  If name is already
+// absolute, there is no more to be done.  Otherwise, append name to
+// the path of the current input.
+char *make_path(char *name)
+{
+    if (isabsolute(name)) {
+        return strdup(name);
+    }
+
+    // input_dir() includes the final '/' if len is nonzero
+    size_t len;
+    char *current = input_dir(&len);
+    if (len == 0) {
+        printf("Warning - empty base path\n");
+        return strdup(current);
+    }
+
+    char *new = malloc(len + strlen(name) + 1);
+    strcpy(stpncpy(new, current, len), name);
+    return new;
+}
+
+void add_path(FILE *fp, char *name)
+{
+    filepath_t *new = malloc(sizeof(filepath_t));
+    new->fp = fp;
+    new->next = filepaths.next;
+    filepaths.next = new;
+    new->path = make_path(name);
+}
+
 #define STRINGINPUT (FILE *) -1
 
 int
@@ -222,6 +377,8 @@ void name_input(char *filename, cell *up)
     if ((file = fopen(filename, "r")) == (FILE *)0) {
         file_error("Can't open ", filename, up);
     } else {
+        add_path(file, filename);
+        pfmarkinput(file, up);
         input_file = file;
     }
 }
@@ -250,6 +407,8 @@ open_next_file(cell *up)
                 file_error("Can't open ",*gargv, up);
                 continue;
             } else {
+                add_path(file, *gargv);
+                pfmarkinput(file, up);
                 return(file);
             }
         }
@@ -260,6 +419,9 @@ open_next_file(cell *up)
 int
 next_arg(cell *up)
 {
+    if (input_file && input_file != STRINGINPUT && !isinteractive()) {
+        pfclose((cell)input_file, up);
+    }
     input_file = open_next_file(up);
     return input_file != (FILE *)0;
 }
@@ -310,6 +472,8 @@ freadline(cell f, cell *sp, cell *up) // Returns IO result, actual and more? on 
 cell
 pfclose(cell f, cell *up)
 {
+    delete_input((FILE *)f);
+    delete_path((FILE *)f);
     return( (cell)fclose((FILE *)f) );
 }
 
@@ -372,16 +536,15 @@ expand_name(char *name)
 // w/o                Open or create file for appending
 // r/w                Open existing for reading and writing
 // r/o create-flag or Open or create file for appending, read at beginning
-// w/o create-flag or 
+// w/o create-flag or ???
 
 // 0:r/o 1:w/o 2:r/w 3: undefined
 static char *open_modes[]   = { "rb",  "ab", "r+b", "" };
 static char *popen_modes[]  = { "r",  "w", "rw", "" };
 cell pfopen(char *name, int len, int mode, cell *up)
 {
-    char cstrbuf[512];
-    char *s;
-    s = expand_name(altocstr(name, len, cstrbuf, 512));
+    char cstrbuf[MAXPATHLEN];
+    char *s = expand_name(altocstr(name, len, cstrbuf, MAXPATHLEN));
 
     if (!strncmp("popen:", s, 6)) {
 	FILE *stream;
@@ -390,7 +553,21 @@ cell pfopen(char *name, int len, int mode, cell *up)
         return (cell)stream;
     }
 
-    return( (cell)fopen(s, open_modes[mode&3]) );
+    if (!isabsolute(s)) {
+        char absbuf[MAXPATHLEN];
+        size_t len;
+        char *current = input_dir(&len);
+        if (len) {
+            strcpy(stpncpy(absbuf, current, len), s);
+            s = absbuf;
+        }
+    }
+
+    FILE *res = fopen(s, open_modes[mode&3]);
+    if (res) {
+        add_path(res, s);
+    }
+    return (cell)res;
 }
 
 static char *create_modes[] = { "a+b", "wb", "w+b", "" };

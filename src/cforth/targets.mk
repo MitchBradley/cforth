@@ -83,7 +83,7 @@ FORTHSRCS = misc.fth compiler.fth control.fth postpone.fth \
             size.fth ccalls.fth split.fth rstrace.fth
 
 forth.dic: load.fth forth kernel.dic $(FORTHSRCS)
-	(cd $(SRC)/cforth; $(BUILDDIR)/forth $(BUILDDIR)/kernel.dic load.fth; mv $@ $(BUILDDIR))
+	./forth kernel.dic $(SRC)/cforth/load.fth
 
 # kernel.dic is a primitive Forth dictionary file with extremely rudimentary
 # Forth interpretation capabilities; it is missing a significant number

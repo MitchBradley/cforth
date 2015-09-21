@@ -83,8 +83,8 @@ void doconstant(cell *up)
 void docftok(cell *up)
 {
 	create_word((token_t)DOCON, up);
-    ncomma(next_prim);  // Don't do ++ here because ncomma has side effects
-    ++next_prim;  // 
+	ncomma(next_prim);  // Don't do ++ here because ncomma has side effects
+	++next_prim;
 }
 
 void doload(cell *up)

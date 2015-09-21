@@ -1169,6 +1169,16 @@ execute:
     tos = tos ? 0 : OPENFAIL;
     next;
 
+/*$p mark-input */ case MARK_INPUT:  // fid --
+    pfmarkinput((void *)tos, up);
+    loadtos;
+    next;
+
+/*$p .input-stack */ case PRINT_INPUT_STACK:  // --
+    pfprint_input_stack();
+    next;
+
+
 /*$p split-string */ case SPLIT_STRING:  // a1 l1 char -- a1 l2 a1+l2 l1-l2
     tos = split_string(tos, --sp, up);
     next;

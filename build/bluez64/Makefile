@@ -1,4 +1,4 @@
-# Builds a Linux host Forth application with serial port tools and Bluetooth tools with Nod device support
+# Builds a Linux host Forth application with serial port tools and Bluetooth tools
 
 TOPDIR=../..
 

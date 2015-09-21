@@ -157,7 +157,8 @@ nuser 'exit-interact?
 
    save-input 2>r 2>r 2>r       ( fid adr )
 
-   /tib rot set-input
+   over mark-input              ( fid adr )
+   /tib rot set-input           ( )
 
    ['] interpret-lines catch    ( error# )
 

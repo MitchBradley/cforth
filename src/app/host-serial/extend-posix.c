@@ -233,11 +233,11 @@ cell open_com(cell portnum)		// Open COM port
 {
 	cell res;
 
-	res = ft_open_serial(portnum, 0x4e4c);
+	res = ft_open_serial(portnum, 0x4e4c);	// Nod Ring
 	if (res)
 		return res;
 
-	res = ft_open_serial(portnum, 0x4e4d);
+	res = ft_open_serial(portnum, 0x4e4d);	// Nod Backspin
 	if (res)
 		return res;
 

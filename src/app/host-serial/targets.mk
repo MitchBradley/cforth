@@ -51,4 +51,4 @@ forth: $(MYOBJS)
 extend.o: $(EXTENDSRC)
 
 app.dic:  forth forth.dic $(APPSRCS)
-	(cd $(APPPATH); $(BUILDDIR)/forth $(BUILDDIR)/forth.dic $(BUILDDIR)/ccalls.fth $(APPLOADFILE); mv $@ $(BUILDDIR))
+	./forth forth.dic ccalls.fth $(APPPATH)/$(APPLOADFILE)
