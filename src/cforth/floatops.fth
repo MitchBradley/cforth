@@ -88,6 +88,7 @@ alias faln   fexp
 alias places set-precision
 alias fix    fround
 
+64\ d# 64 constant cell-bits
 32\ d# 32 constant cell-bits
 16\ d# 16 constant cell-bits
 
@@ -147,6 +148,7 @@ patch $fnumber? $number? compile-word
 : falign    ( -- )  here faligned  here -  allot  ;
 
 : f,  ( real -- )  here /f allot f!  ;
+
 : fvariable  \ name  ( -- )
    create  0E0 f,
 ;
@@ -170,6 +172,8 @@ alias dfloats    floats
 
 /l constant /sf
 /sf constant #sfalign	\ This is safe, but perhaps pessimistic.
+
+: sf,  ( f -- )  here /sf allot  sf!  ;
 
 : sfloats  ( #floats -- #bytes )  /sf *  ;
 : sfloat+  ( adr1 -- adr2 )       /sf +  ;

@@ -23,8 +23,8 @@
 #define pop              tos; loadtos
 #define comma            ncomma(tos);   loadtos
 
-extern void floatop(int op);
-extern cell *fintop(int op, cell *sp);
+extern void floatop(int op, cell *up);
+extern cell *fintop(int op, cell *sp, cell *up);
 extern token_t *fparenlit(token_t *ip);
 
 extern cell (*ccalls[])();
@@ -1052,11 +1052,11 @@ execute:
 
 #ifdef FLOATING
 /*$p floatop */ case FLOATOP:
-     floatop((int)tos);  tos = pop;
+     floatop((int)tos, up);  loadtos;
      next;
 
 /*$p fintop */  case FINTOP:
-     sp = fintop((int)tos, sp);  tos = pop;
+     sp = fintop((int)tos, sp, up);  loadtos;
      next;
 
 /*$p (fliteral) */      case FPAREN_LIT:
@@ -1064,6 +1064,20 @@ execute:
      next;
 
 #endif
+
+#ifdef OPENGL
+/*$p glop */ case GLOP:
+     {
+     extern double *fsp, ftos;
+     extern void glop(int, cell **, double **, cell *);
+     *--fsp = ftos;
+     glop((int)tos, &sp, &fsp, up);
+     ftos = *fsp++;
+     loadtos;
+     next;
+     }
+#endif
+
 /*$i float? */  case FPRESENT:
 #ifdef FLOATING
      push(-1);
@@ -1073,7 +1087,7 @@ execute:
      next;
 
 /*$p get-local */   case GETLOC:  tos = ((cell *)V(XFP))[tos];  next;
-/*$p set-local */   case SETLOC:  ((cell *)V(XFP))[tos] = (cell)(*sp++);  tos = pop;  next;
+/*$p set-local */   case SETLOC:  ((cell *)V(XFP))[tos] = (cell)(*sp++);  loadtos;  next;
 
 /*$p allocate-locals */ case ALLOCLOC:
     ascr = (u_char *)rp;    /* #locals */
@@ -1083,7 +1097,7 @@ execute:
     V(XFP) = (cell)(rp+2);
     for (scr = 0; scr < tos; scr++)
         ((cell *)V(XFP))[scr] = *sp++;
-    tos = pop;
+    loadtos;
     *--rp = (xt_t)freelocbuf;  // Cast prevent "const" warning
     next;
 
@@ -1102,7 +1116,7 @@ execute:
           &locnames[V(NUMINS)].name[1],
           (unsigned cell)(locnames[V(NUMINS)].name[0]));
     ++V(NUMINS);
-    tos = pop;
+    loadtos;
     }
     next;
 
@@ -1140,6 +1154,10 @@ execute:
 
 /*$p flush-file */  case FLUSH_FILE:
     tos = pfflush(tos, up);     /* EOF on error */
+    next;
+
+/*$p file-size */  case FILE_SIZE:
+    tos = pfsize(tos, up);
     next;
 
 /*$p to-ram */  case TO_RAM:

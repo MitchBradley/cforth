@@ -4,9 +4,12 @@
 #include "fprims.h"
 #include "prims.h"	/* Needed for FPAREN_LIT */
 #include <math.h>
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <ctype.h>
 
 #ifdef NeXT
-#include <stdio.h>
 double
 strtodbl(const char *nptr, char **endptr)
 {
@@ -25,6 +28,8 @@ extern double strtodbl();
 #define strtodbl strtod
 #endif
 
+int isfloatnum(u_char *adr, u_cell len, cell *up);
+
 #define compile(token)  tokstore((token_t)token, (token_t *)V(DP)); V(DP) += sizeof(token_t)
 
 #define FSTKLEN 20
@@ -34,18 +39,15 @@ double ftos;
 double ftemp;
 union fbits {
 	double fb_float;
-	unsigned long   fb_long[2];
+	unsigned int fb_int[2];
 } fbits;
 char floatstr[50];
 extern char *tocstr();
-extern char *sprintf();
 extern void tokstore();
 extern char *altofpstr();
 
-unsigned long *p;
-
 void
-floatop(int op)
+floatop(int op, cell *up)
 {
     switch(op) {
 	/* Floating Point additions to operation dispatch switch */
@@ -124,9 +126,11 @@ floatop(int op)
 #define pop	*sp++
 
 cell *
-fintop(int op, cell *sp)
+fintop(int op, cell *sp, cell *up)
 {
-    /* Floating Point operations involving the Forth data stack */
+    unsigned int *p;
+
+   /* Floating Point operations involving the Forth data stack */
 
     switch(op) {
 	case FPZERO:		/* Top of Floating Point Stack */
@@ -141,17 +145,17 @@ fintop(int op, cell *sp)
 
 	/* Floating Point Memory Access */
 	case FSTORE:
-		p = (unsigned long *)pop;
+		p = (unsigned int *)pop;
 		fbits.fb_float = ftos;
 		ftos = *fsp++;
-		*p++ = fbits.fb_long[0];
-		*p++ = fbits.fb_long[1];
+		*p++ = fbits.fb_int[0];
+		*p++ = fbits.fb_int[1];
 		break;
 	case FFETCH:
-		p = (unsigned long *)pop;
+		p = (unsigned int *)pop;
 		*--fsp = ftos;
-		fbits.fb_long[0] = *p++;
-		fbits.fb_long[1] = *p++;
+		fbits.fb_int[0] = *p++;
+		fbits.fb_int[1] = *p++;
 		ftos = fbits.fb_float;
 		break;
 
@@ -165,19 +169,16 @@ fintop(int op, cell *sp)
 		ftos = (double)pop;
 		break;
 	case FPOP:	/* Move unconverted bits from FP stack to Int stack */
-		p = (unsigned long *)sp;
-		p -= 2;
-		sp = (cell *)p;
+		sp -= 2;
 		fbits.fb_float = ftos;
-		p[1] = fbits.fb_long[1];
-		p[0] = fbits.fb_long[0];
+		sp[1] = fbits.fb_int[1];
+		sp[0] = fbits.fb_int[0];
 		ftos = *fsp++;
 		break;
 	case FPUSH:	/* Move unconverted bits from Int stack to FP stack */
-		p = (unsigned long *)sp;
 		*--fsp = ftos;
-		fbits.fb_long[1] = p[1];
-		fbits.fb_long[0] = p[0];
+		fbits.fb_int[1] = sp[1];
+		fbits.fb_int[0] = sp[0];
 		sp = (cell *)(p+2);
 		ftos = fbits.fb_float;
 		break;
@@ -185,7 +186,7 @@ fintop(int op, cell *sp)
 	/* Floating Point Input and Output */
 	/* Implement F. as FSTRING TYPE , E. as ESTRING TYPE */
 	case FSTRING:
-		(void) sprintf(floatstr, "%.*f", (int)V(FNUMPLACES), ftos); 
+		(void) sprintf(floatstr, "%.*f", (int)V(FNUMPLACES), ftos);
 		push( (u_char *)floatstr );
 		push( strlen(floatstr) );
 		ftos = *fsp++;
@@ -225,7 +226,7 @@ fintop(int op, cell *sp)
 		break;
 	case FNUMQUES:		/* True if string is a valid floating number */
 		op = *sp++;
-		*sp = (cell)isfloatnum((u_cell)*sp, (u_cell)op);
+		*sp = (cell)isfloatnum((u_char *)*sp, (u_cell)op, up);
 		break;
 	case FNUMBER:		/* Convert string to floating point number */
 		*--fsp = ftos;
@@ -234,7 +235,7 @@ fintop(int op, cell *sp)
 		 * the omission of the { D | d | E | e } in the exponent.
 		 */
 		op = *sp++;
-		ftos = strtodbl((altofpstr((u_cell)*sp, (u_cell)op)), sp);
+		ftos = strtodbl((altofpstr((u_cell)*sp, (u_cell)op)), (char **)sp);
 		*sp = *(char *)(*sp);	/* Get terminating character */
 		break;
 
@@ -277,13 +278,13 @@ fintop(int op, cell *sp)
 
 		r2 = *fsp++;
 		r1 = *fsp++;
-		
+
 		if (ftos > 0.0)			/* Threshold match */
-			result = abs(r1-r2) < ftos;
+			result = fabs(r1-r2) < ftos;
 		else if (ftos == 0.0)		/* Exact match */
 			result = r1 == r2;
 		else				/* Relative match */
-			result = abs(r1 - r2) < (-ftos * (abs(r1) + abs(r2)));
+			result = fabs(r1 - r2) < (-ftos * (fabs(r1) + fabs(r2)));
 
 		ftos = *fsp++;
 		*--sp = result ? -1 : 0;
@@ -292,12 +293,12 @@ fintop(int op, cell *sp)
 
 	/* Single-precision Floating Point Memory Access */
 	case SFSTORE:
-		p = (unsigned long *)pop;
+		p = (unsigned int *)pop;
 		*(float *)p = (float)ftos;
 		ftos = *fsp++;
 		break;
 	case SFFETCH:
-		p = (unsigned long *)pop;
+		p = (unsigned int *)pop;
 		*--fsp = ftos;
 		ftos = (double)*(float *)p;
 		break;
@@ -308,44 +309,51 @@ fintop(int op, cell *sp)
 token_t *
 fparenlit(token_t *ip)
 {
-	p = (unsigned long *)ip;
-	fbits.fb_long[0] = *p++;
-	fbits.fb_long[1] = *p++;
+	unsigned int *p = (unsigned int *)ip;
+	fbits.fb_int[0] = *p++;
+	fbits.fb_int[1] = *p++;
 	*--fsp = ftos;
 	ftos = fbits.fb_float;
 	return ((token_t *)p);
 }
 
-isfloatnum(adr, len)
-	register u_char *adr;
-	register u_cell len;
+int isfloatnum(u_char *adr, u_cell len, cell *up)
 {
-	int efound = 0;
-	register char *str = (char *)adr;
+    int isfloat = 0;
+    register char *str = (char *)adr;
+    int base = V(BASE);
 
-	/*
-	 * Don't recognize floating point numbers unless base is decimal.
-	 * This prevents the ambiguity with "e" for exponent or "e" for
-	 * a hex digit.
-	 */
-	if (V(BASE) != 10)
-		return(0);
+    /*
+     * Don't recognize floating point numbers unless base is decimal.
+     * This prevents the ambiguity with "e" for exponent or "e" for
+     * a hex digit.
+     */
+    if (V(BASE) != 10) {
+        return(0);
+    }
 
-	for ( ; len; len--) {
-		switch (*str++) {
-		case '0':  case '1':  case '2':  case '3':  case '4':
-		case '5':  case '6':  case '7':  case '8':  case '9':
-		case '+':  case '-':  case '.':
-			break;
-		/* case 'e': */	/* ANS Forth allows only uppercase "E" */
-		case 'E':
-			efound = 1;
-			break;
-	default:
-			return(0);
-		}
-	}
-	return(efound);
+    for ( ; len; len--) {
+        switch (*str++) {
+            case '0':  case '1':  case '2':  case '3':  case '4':
+            case '5':  case '6':  case '7':  case '8':  case '9':
+            case '+':  case '-':  case '.':
+                break;
+                /* case 'e': */	/* ANS Forth allows only uppercase "E" */
+            case 'E':
+                isfloat = 1;
+                break;
+            case 'f':
+                // Trailing f means float but elsewhere it cannot be a float
+                if (len !=1 ) {
+                    return 0;
+                }
+                isfloat = 1;
+                break;
+            default:
+                return(0);
+        }
+    }
+    return(isfloat);
 }
 
 /*
@@ -366,24 +374,30 @@ altofpstr(adr,len)
 
     lastc = '\0';
     while ((len--) != 0) {
-	c = *from++;
+        c = *from++;
 
 	/* Insert an "e" before the exponent if it is missing */
         if ((c == '+'  ||  c == '-')
-	&& nonwhiteseen
-	&& (lastc != 'D' && lastc != 'E' && lastc != 'd' && lastc != 'e') )
-	    *to++ = 'e';
+            && nonwhiteseen
+            && (lastc != 'D' && lastc != 'E' && lastc != 'd' && lastc != 'e') ) {
+            *to++ = 'e';
+        }
 
-	if (isspace(c))
-	    if (nonwhiteseen)	/* Skip trailing blanks */
+	if (isspace(c)) {
+            if (nonwhiteseen) {	/* Skip trailing blanks */
 		break;
-	else 
+            }
+	} else {
 	    nonwhiteseen = 1;
+        }
 
 	if ((to - cstrbuf) >= 39)	/* Reject too-long strings */
 		return("X");
 
-	*to++ = c;
+        if (c != 'f') {
+            // Delete trailing 'f' so the C syntax 1.0f can be used
+            *to++ = c;
+        }
 
 	lastc = c;
     }

@@ -75,6 +75,7 @@ cell pfopen(char *name, int len, int mode, cell *up);
 cell pfcreate(char *name, int len, int mode, cell *up);
 cell pfclose(cell f, cell *up);
 cell pfflush(cell f, cell *up);
+cell pfsize(cell f, cell *up);
 void write_dictionary(char *name, int len, char *dict, int dictsize, cell *up, int usersize);
 void pfmarkinput(void *fid, cell *up);
 void pfprint_input_stack();
@@ -90,3 +91,4 @@ void stop_logging(cell *up);
 cell log_extent(cell *log_base, cell *up);
 
 #define C(cname)  (cell (*)())cname,
+#define V(index)       (up[index])

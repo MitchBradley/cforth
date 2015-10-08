@@ -484,6 +484,18 @@ pfflush(cell f, cell *up)
     return( (cell)fflush((FILE *)f) );
 }
 
+cell
+pfsize(cell f, cell *up)
+{
+    FILE *fd = (FILE *)f;
+    long old, end;
+    old = ftell(fd);
+    fseek(fd, 0L, SEEK_END);
+    end = ftell(fd);
+    fseek(fd, old, SEEK_SET);
+    return((cell)end);
+}
+
 #define MAXPATHLEN 2048
 char *
 expand_name(char *name)

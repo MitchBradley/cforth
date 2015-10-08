@@ -36,7 +36,6 @@ extern int execute_xt(xt_t xt, cell *up);
 extern int execute_word(char *s, cell *up);
 
 
-#define V(index)       (up[index])
 #define T(index)       ((token_t)up[index])
 
 #define hash(voc,adr,len) (token_t *)( (char *)up + (voc)->voc_unum )

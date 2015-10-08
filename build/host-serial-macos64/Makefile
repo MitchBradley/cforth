@@ -3,6 +3,7 @@
 TOPDIR=../..
 
 CONFIG += -DBITS64
+CONFIG += -DFLOATING -DMOREFP
 
 # To get libusb-1.0 on MacOS, download and upack a source tarball from
 # www.libusb.org, then  ./configure && make && sudo make install
