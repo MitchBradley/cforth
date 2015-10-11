@@ -2,21 +2,18 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <poll.h>
 #include <fcntl.h>
 #include <string.h>
-#include <termios.h>
-#include <sys/ioctl.h>
+#include <unistd.h>
 #ifdef __APPLE__
 #include <stdlib.h>
 #endif
-#include <glob.h>
-#include <unistd.h>
 #include "forth.h"
 #include "sha256.h"
 #include <sys/types.h>
 #include <sys/stat.h>
 
+#include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
 void ms(cell nms)
@@ -90,6 +87,8 @@ cell ((* const ccalls[])()) = {
   C(glfwSwapInterval)       //c glfw-swap-interval         { i.interval -- }
   C(glfwPollEvents)         //c glfw-poll-events           { -- }
   C(glfwWindowHint)         //c glfw-window-hint           { i.value i.hint# -- }
+
+  C(glewInit)               //c glew-init
 
 #if 0
   C(glViewport)             //x gl-viewport      { i.height i.width i.y i.x -- }

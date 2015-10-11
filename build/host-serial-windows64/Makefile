@@ -14,7 +14,6 @@ CC = gcc
 #   MinGW64/static/libusb-1.0.a
 
 FTDI = y
-FTDI = n
 INCS += -I.
 LIBS += -L.
 LIBS += -lusb-1.0
