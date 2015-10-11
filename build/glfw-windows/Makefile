@@ -2,7 +2,7 @@
 
 # Compile with mingw-w64 using the x86_64 (64-bit) toolchain
 
-all: forth
+all: default
 
 TOPDIR=../..
 CC = gcc
@@ -46,10 +46,9 @@ LIBS += -lglu32
 LIBS += -lgdi32
 
 CONFIG += -DBITS64 -m64
-# CONFIG += -DBITS32 -DT16 -m32
 CONFIG += -DFLOATING -DMOREFP
 CONFIG += -DOPENGL
-CONFIG += -DGLEW_STATIC
+CONFIG += -DUSE_GLEW -DGLEW_STATIC
 
 MYOBJS += glops.o
 

@@ -13,7 +13,12 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
+#ifdef USE_GLEW
 #include <GL/glew.h>
+#else
+void initGlew(void) { }
+#endif
+
 #include <GLFW/glfw3.h>
 
 void ms(cell nms)

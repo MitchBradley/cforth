@@ -1,15 +1,14 @@
 // OpenGL2 interface
 
 #include "forth.h"
+
+#ifdef USE_GLEW
 #include <GL/glew.h>
-#include <GLFW/glfw3.h>
-#ifdef __APPLE__
-#include <OpenGL/glext.h>
-#include <OpenGL/glu.h>
-#else
-#include <GL/glext.h>
-#include <GL/glu.h>
 #endif
+
+#define GLFW_INCLUDE_GLEXT
+#define GLFW_INCLUDE_GLU
+#include <GLFW/glfw3.h>
 
 #include "glops.h"
 #include <math.h>
