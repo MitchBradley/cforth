@@ -16,7 +16,7 @@
 #ifdef USE_GLEW
 #include <GL/glew.h>
 #else
-void initGlew(void) { }
+void glewInit(void) { }
 #endif
 
 #include <GLFW/glfw3.h>
