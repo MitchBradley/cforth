@@ -44,12 +44,12 @@ extern int execute_word(char *s, cell *up);
 #ifdef T16
 static inline cell nfetch(cell *ptr)
 {
-    return (cell)(((u_cell)((u_short *)ptr)[1] << 16) | ((u_short *)ptr)[0]);
+    return (cell)(((u_cell)((uint16_t *)ptr)[1] << 16) | ((uint16_t *)ptr)[0]);
 }
 static inline void nstore(cell *ptr, cell value)
 {
-    ((u_short *)ptr)[0] = (u_short)value;
-    ((u_short *)ptr)[1] = (u_short)(value >> 16);
+    ((uint16_t *)ptr)[0] = (uint16_t)value;
+    ((uint16_t *)ptr)[1] = (uint16_t)(value >> 16);
 }
 #else
 #define nfetch(ptr) *(ptr)

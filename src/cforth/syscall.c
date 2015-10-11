@@ -6,21 +6,23 @@
 #include "forth.h"
 #include "compiler.h"
 
-int errno = 0;
+int unimp = 0;
 
 int unimplemented()
 {
-    errno = -1;
+    unimp = 1;
     return(-1);
 }
 
 void prerror(const char *s, cell *up)
 {
     cprint(s, up);
-    if (errno == -1)
-        cprint("Unimplemented system call\n", up);
-    else
+    if (unimp) {
+        cprint("Unimplemented syscall\n", up);
+        unimp = 0;
+    } else {
         cprint("I don't know.\n", up);
+    }
 }
 
 cell dosyscall()  { return(unimplemented()); }

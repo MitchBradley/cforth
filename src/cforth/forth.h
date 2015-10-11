@@ -6,11 +6,6 @@
 #include "prims.h"
 #endif
 
-typedef unsigned char  u_char;
-typedef unsigned short u_short;
-
-#define u_cell unsigned cell
-
 #define INTERPRETING (cell)0
 #define COMPILING (cell)1
 

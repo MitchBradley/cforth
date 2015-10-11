@@ -32,12 +32,13 @@ int keyboard_raw() {
 }
 
 #if 1
+int kbhit(void);
 int key_avail(void)
 {
     return kbhit();
 }
 #else
-    
+
 int key_avail(void)
 {
     INPUT_RECORD buf;

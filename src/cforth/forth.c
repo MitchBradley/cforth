@@ -65,7 +65,7 @@ const u_char nullrelmap[1] = { 0 };
 #endif
 
 /* System call error reporting */
-extern int errno;
+// extern int errno;
 
 // int printing = 0;
 // Execute an array of Forth execution tokens.
@@ -122,7 +122,7 @@ doprim:
 /*$p shift */   case SHIFT:
     if ( tos < 0 ) {
         tos = -tos;
-        tos = (unsigned cell) *sp++ >> (unsigned cell)tos;
+        tos = (u_cell) *sp++ >> (u_cell)tos;
     }
     else
         binop(<<);
@@ -275,7 +275,7 @@ token_fetch:
     next;
 
 /*$p w! */      case W_STORE:
-    *(u_short *)tos = (u_short)*sp++;
+    *(uint16_t *)tos = (uint16_t)*sp++;
     loadtos;
     next;
 
@@ -1114,7 +1114,7 @@ execute:
     locnames[V(NUMINS)].name[0] = (u_char)*sp++;
     cmove((u_char *)(*sp++),
           &locnames[V(NUMINS)].name[1],
-          (unsigned cell)(locnames[V(NUMINS)].name[0]));
+          (u_cell)(locnames[V(NUMINS)].name[0]));
     ++V(NUMINS);
     loadtos;
     }

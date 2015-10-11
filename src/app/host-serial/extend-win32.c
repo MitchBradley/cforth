@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <windows.h>
+#ifndef _WIN32_IE
 #define _WIN32_IE	0x0400
+#endif
 #include <commctrl.h>
 #include "forth.h"
 #include "sha256.h"
@@ -161,7 +163,10 @@ cell win32_open_com(cell portnum)          // Open COM port
     HANDLE hComm;
     COMMTIMEOUTS timeouts;
 
-    swprintf(wcomname, L"\\\\.\\COM%d", portnum);
+    // swprintf() is a pain because it comes in two versions,
+    // with and without the length parameter.  snwprintf() works
+    // in all environments and is safer anyway.
+    snwprintf(wcomname, 10, L"\\\\.\\COM%d", portnum);
     wprintf(L"%ws\n",wcomname);
     hComm = CreateFileW(wcomname,
                     GENERIC_READ | GENERIC_WRITE, 0, 0,

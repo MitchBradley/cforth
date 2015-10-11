@@ -145,7 +145,7 @@ extend.o: $(EXTENDSRC) $(FINC) makeccalls
 # are used in the compilation of other object modules.
 
 init.x prims.h vars.h: forth.c
-	make makename
+	$(MAKE) makename
 	rm -f init.x prims.h vars.h
 	@echo CPP $<
 	@$(CPP) -C -DMAKEPRIMS $(CONFIG) $< >forth.ip

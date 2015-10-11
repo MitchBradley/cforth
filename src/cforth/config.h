@@ -12,12 +12,7 @@
  * file to enable the appropriate #defines.
  */
 
-/*
- * Select the operating system.  Usually, this is set by the Makefile.
- */
-/* #define UNIX */
-/* #define DOS */
-/* #define VMS */
+#include <stdint.h>
 
 #ifdef WIN32
 #define inline __inline
@@ -33,8 +28,6 @@
  * often better to define ALLOCDICT.
  */
 /* #define ALLOCDICT */
-
-/* #define void int */	/* Define this for compilers without "void" */
 
 #ifdef UNIX
 
@@ -78,26 +71,29 @@
 
 #define	DEFAULT_EXE "forth.dic"
 
+typedef uint8_t u_char;
+
 /*
  * Both token_t and cell should be big enough to hold an absolute
  * address on your machine.  You will probably not need to change this,
  * assuming that you have set BITS32 appropriately.
  */
 #if defined(BITS64) || defined(BITS32)
- #define cell long
+ typedef intptr_t cell;
+ typedef uintptr_t u_cell;
  #ifdef T16
-  #define token_t unsigned short
-  #define branch_t short
-  #define unum_t unsigned short
+  typedef uint16_t token_t;
+  typedef int16_t branch_t;
+typedef uint16_t unum_t;
  #else
-  #define token_t unsigned long
-  #define branch_t long
-  #define unum_t unsigned long
+  typedef uintptr_t token_t;
+  typedef intptr_t branch_t;
+  typedef uintptr_t unum_t;
  #endif
 #else
+ // 16-bit case, now largely uninteresting
  #define token_t unsigned int
  #define cell int
-// #define adr_t unsigned int
  #define unum_t unsigned int
  #define branch_t int
 #endif
