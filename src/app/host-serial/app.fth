@@ -6,4 +6,6 @@ fl ../../cforth/printf.fth
    r> sha256-close          ( )
 ;
 
+fl usbtools.fth
+
 " app.dic" save

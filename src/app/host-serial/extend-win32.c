@@ -232,6 +232,7 @@ cell win32_open_com(cell portnum)          // Open COM port
 }
 
 #ifdef USE_FTDI
+#include <libusb.h>
 #include "extend-libftdi.c"
 #else
 cell ft_open_serial(cell portnum, cell pid) { return 0; }
@@ -480,6 +481,46 @@ cell ((* const ccalls[])()) = {
   C(ft_get_errno)      //c ft-errno       { -- i.err }
   C(ft_setbits)        //c ft-setbits     { i.mask i.handle -- i.status }
   C(ft_getbits)        //c ft-getbits     { i.handle -- i.bits }
+
+  C(libusb_init)                //c libusb_init  { a.'ctx -- i.err }
+  C(libusb_exit)                //c libusb_exit  { a.ctx -- }
+  C(libusb_set_debug)           //c libusb_set_debug  { i.level a.ctx -- }
+
+  C(libusb_get_device_list)     //c libusb_get_device_list    { a.''list a.ctx -- i.len }
+  C(libusb_free_device_list)    //c libusb_free_device_list   { i.unref a.'list -- }
+  C(libusb_get_bus_number)      //c libusb_get_bus_number     { a.dev -- i.bus# }
+  C(libusb_get_port_number)     //c libusb_get_port_number    { a.dev -- i.port# }
+  C(libusb_get_port_numbers)    //c libusb_get_port_numbers   { i.nport a.port#s a.dev -- i.n }
+  C(libusb_get_parent)          //c libusb_get_parent         { a.dev -- a.parent }
+  C(libusb_get_device_address)  //c libusb_get_device_address { a.dev -- i.adr }
+  C(libusb_get_device_speed)    //c libusb_get_device_speed    { a.dev -- i.speed }
+  C(libusb_get_max_packet_size) //c libusb_get_max_packet_size { i.ep a.dev -- i.size }
+  C(libusb_get_max_iso_packet_size) //c libusb_get_max_iso_packet_size { i.ep a.dev -- i.size }
+  C(libusb_ref_device)          //c libusb_ref_device          { a.dev -- a.dev }
+  C(libusb_unref_device)        //c libusb_unref_device        { a.dev -- }
+  C(libusb_open)                //c libusb_open                { a.handle a.dev -- i.err }
+  C(libusb_open_device_with_vid_pid) //c libusb_open_device_with_vid_pid  { i.pid i.vid a.ctx -- a.handle }
+  C(libusb_close)               //c libusb_close               { a.dev -- }
+  C(libusb_get_device)          //c libusb_get_device          { a.handle -- a.dev }
+  C(libusb_get_configuration)   //c libusb_get_configuration   { a.config a.handle -- i.err }
+  C(libusb_set_configuration)   //c libusb_set_configuration   { i.config a.handle -- i.err }
+  C(libusb_claim_interface)     //c libusb_claim_interface     { i.ifce a.handle -- i.err }
+  C(libusb_release_interface)   //c libusb_release_interface     { i.ifce a.handle -- i.err }
+  C(libusb_set_interface_alt_setting)  //c libusb_set_interface_alt  { i.alt i.ifce a.handle -- i.err }
+  C(libusb_clear_halt)          //c libusb_clear_halt          { i.ep a.handle -- i.err }
+  C(libusb_reset_device)        //c libusb_reset_device        { a.handle -- i.err }
+  C(libusb_kernel_driver_active)  //c libusb_kernel_driver_active  { i.ifce a.handle -- i.stat }
+  C(libusb_detach_kernel_driver)  //c libusb_detach_kernel_driver  { i.ifce a.handle -- i.err }
+  C(libusb_attach_kernel_driver)  //c libusb_attach_kernel_driver  { i.ifce a.handle -- i.err }
+  C(libusb_set_auto_detach_kernel_driver)  //c libusb_set_auto_detach { i.enable a.handle -- i.err }
+  C(libusb_get_device_descriptor) //c libusb_get_device_descriptor { a.desc a.dev -- i.err }
+  C(libusb_get_config_descriptor) //c libusb_get_config_descriptor { a.'desc i.index a.dev -- i.err }
+  C(libusb_get_string_descriptor_ascii) //c libusb_get_string_descr_ascii { i.len a.string i.index a.dev -- i.err }
+  C(libusb_get_descriptor) //c libusb_get_descriptor { i.len a.desc i.index i.type a.handle -- i.err }
+  C(libusb_free_config_descriptor) //c libusb_free_config_descriptor { a.desc -- }
+  C(libusb_control_transfer) //c libusb_control_transfer { i.timeout i.len a.data i.windex i.wvalue i.request i.reqtype a.handle -- i.nbytes }
+  C(libusb_bulk_transfer) //c libusb_bulk_transfer { i.timeout a.actual i.len a.data i.ep a.handle -- i.err }
+  C(libusb_interrupt_transfer) //c libusb_interrupt_transfer { i.timeout a.actual i.len a.data i.ep a.handle -- i.err }
 
   // SHA routines; pure code, no I/O
   C(open_sha256)       //c sha256-open    { -- a.context }
