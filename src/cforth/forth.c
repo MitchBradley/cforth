@@ -64,9 +64,6 @@ const u_char nullrelmap[1] = { 0 };
   #define HIGH(a)((a) >> 16)
 #endif
 
-/* System call error reporting */
-// extern int errno;
-
 // int printing = 0;
 // Execute an array of Forth execution tokens.
 int

@@ -6,6 +6,6 @@ fl ../../cforth/printf.fth
    r> sha256-close          ( )
 ;
 
-fl usbtools.fth
+[ifdef] libusb_init  fl usbtools.fth  [then]
 
 " app.dic" save
