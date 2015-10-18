@@ -277,7 +277,7 @@ false value verbose-scan?
 
    cfg-desc >'interfaces @              ( adr )
    dup >'alt-interfaces @ to alt-array  ( adr )
-   >#alt-interfaces @ to #alts          ( )
+   >#alt-interfaces int@ to #alts       ( )
    
    scan-interfaces
 
