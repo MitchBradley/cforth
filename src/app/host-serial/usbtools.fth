@@ -51,7 +51,7 @@ constant /config-descriptor
 
 struct
    /n field >'alt-interfaces
-   /n field >#alt-interfaces
+ /int field >#alt-interfaces
 constant /interface-array
 
 struct
@@ -68,7 +68,7 @@ struct
   /n round-up
   /n field >'endpoints
   /n field >interface-'extra
-  /l field >interface-#extra
+/int field >interface-#extra
   /n round-up
 constant /interface-descriptor
 
@@ -84,7 +84,7 @@ struct
    1 field >synch-address
   /n round-up
   /n field >ep-'extra
-  /l field >ep-#extra
+/int field >ep-#extra
   /n round-up
 constant /ep-descriptor
 

@@ -248,9 +248,14 @@ doprim:
 /*$p @ */       case FETCH:
     tos = nfetch((cell *)tos);
     next;
-/*$p c@ */      case C_FETCH:   tos = *(u_char *)tos;    next;
-/*$p w@ */      case W_FETCH:   tos = *(unsigned short *)tos; next;
+/*$p c@ */      case C_FETCH:   tos = *(u_char *)tos;   next;
+/*$p w@ */      case W_FETCH:   tos = *(uint16_t *)tos; next;
 /*$p l@ */      case L_FETCH:   tos = *(uint32_t *)tos; next;
+
+/*$p /int */    case SLASH_INT:  push(sizeof(int));          next;
+/*$p uint@ */   case UINT_FETCH: tos = *(unsigned int *)tos; next;
+/*$p int@ */    case INT_FETCH:  tos = *(int *)tos;          next;
+/*$p int! */    case INT_STORE:  *(int *)tos = *sp++;  loadtos;  next;
 
 /*$p token@ */  case TOK_FETCH:
 token_fetch:
@@ -939,7 +944,7 @@ execute:
 
 /*$p interactive? */    case INTERACTIVEQ: push(isinteractive());  next;
 /*$p more-input? */     case MOREINPUT:    push(moreinput());      next;
-/*$p origin */          case ORIGIN:       push(V(TORIGIN));        next;
+/*$p origin */          case ORIGIN:       push(V(TORIGIN));       next;
 /*$p unused */          case UNUSED:       push(V(LIMIT)-V(DP));   next;
 /*$p /token */          case SLASH_TOKEN:  push(sizeof(token_t));  next;
 /*$p /branch */         case SLASH_BRANCH: push(sizeof(branch_t)); next;

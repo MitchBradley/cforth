@@ -194,8 +194,7 @@ $21 constant DT_DFU
 ;
 : check-dfu-in-cfg  ( -- )
    cfg-desc >config-'extra @  ?dup  if
-      \ should be @ but libusb is buggy on 64-bits
-      cfg-desc >config-#extra l@  search-dfu-descriptor
+      cfg-desc >config-#extra int@  search-dfu-descriptor
    then
 ;
 : check-dfu-in-alt  ( -- )
@@ -203,8 +202,7 @@ $21 constant DT_DFU
 
    ifce-desc >class c@ $fe =  ifce-desc >subclass c@ $01 =  and  if
       ifce-desc >interface-'extra @  ?dup  if
-         \ should be @ but libusb is buggy on 64-bits
-         ifce-desc >interface-#extra l@  search-dfu-descriptor
+         ifce-desc >interface-#extra int@  search-dfu-descriptor
       then
    then
 ;
