@@ -1,6 +1,24 @@
-# For building a host Forth application with serial port tools
+# For building a host Forth application with serial port and OpenGL tools
 
 default: app.dic
+
+CONFIG += -DFLOATING -DMOREFP
+CONFIG += -DOPENGL
+GCALLS += gcalls.fth
+MYOBJS += glops.o
+
+forth.o: glops.h
+
+glops.h: makegcalls
+
+glops.h: $(TOPDIR)/src/cforth/glops.c
+	./makegcalls <$<
+
+makegcalls: makegcalls.c
+	cc -o $@ $<
+
+EXTRA_CLEAN += makegcalls glops.h gcalls.fth
+
 
 # Application code directory - i.e. this directory
 APPPATH=$(TOPDIR)/src/app/glfw
@@ -30,4 +48,4 @@ forth: $(MYOBJS)
 extend.o: $(EXTENDSRC)
 
 app.dic:  forth forth.dic $(APPSRCS)
-	./forth forth.dic ccalls.fth $(APPPATH)/$(APPLOADFILE)
+	./forth forth.dic ccalls.fth $(GCALLS) $(APPPATH)/$(APPLOADFILE)

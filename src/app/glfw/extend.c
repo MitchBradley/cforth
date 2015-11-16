@@ -9,7 +9,6 @@
 #include <stdlib.h>
 #endif
 #include "forth.h"
-#include "sha256.h"
 #include <sys/types.h>
 #include <sys/stat.h>
 
@@ -51,30 +50,6 @@ void set_error_callback(void)
     glfwSetErrorCallback(error_callback);
 }
 
-void gl_triangle(int width, int height)
-{
-    float ratio;
-
-    ratio = width / (float) height;
-    glViewport(0, 0, width, height);
-
-    glClear(GL_COLOR_BUFFER_BIT);
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-    glOrtho(-ratio, ratio, -1.f, 1.f, 1.f, -1.f);
-    glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity();
-    glRotatef((float) glfwGetTime() * 50.f, 0.f, 0.f, 1.f);
-    glBegin(GL_TRIANGLES);
-    glColor3f(1.f, 0.f, 0.f);
-    glVertex3f(-0.6f, -0.4f, 0.f);
-    glColor3f(0.f, 1.f, 0.f);
-    glVertex3f(0.6f, -0.4f, 0.f);
-    glColor3f(0.f, 0.f, 1.f);
-    glVertex3f(0.f, 0.6f, 0.f);
-    glEnd();
-}
-
 cell ((* const ccalls[])()) = {
   // OS-independent functions
   C(ms)                //c ms             { i.ms -- }
@@ -101,5 +76,4 @@ cell ((* const ccalls[])()) = {
   C(glMatrixMode)           //x gl-matrix-mode   { i.mode -- }
   C(glLoadIdentity)         //x gl-load-identity { -- }
 #endif
-  C(gl_triangle)            //c gl-triangle      { i.height i.width -- }
 };

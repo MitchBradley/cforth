@@ -367,7 +367,7 @@ void file_error(char *str, char *filename, cell *up)
     extern size_t strlen(const char *);
 
     alerror(str, strlen(str), up);
-    alerror(filename, strlen(str), up);
+    alerror(filename, strlen(filename), up);
     FTHERROR("\n");
 }
 

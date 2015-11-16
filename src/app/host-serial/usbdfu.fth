@@ -211,6 +211,10 @@ $40 buffer: desc-str-buf
 : get-string  ( index -- $ )
    ?dup  if
       $40 desc-str-buf  rot  dfu-handle  libusb_get_string_descr_ascii  ( len )
+      dup 0<  if
+         ." get-string failed" cr
+         drop 0
+      then
       desc-str-buf swap
    else
       " "
@@ -221,13 +225,13 @@ false value verbose-scan?
 : scan-interfaces  ( -- )
    \ Loop over interfaces
    cfg-desc >#interfaces c@  0  ?do
-      i set-alts      
+      i set-alts
       verbose-scan?  if  ." Interface " i .  cr  then
 
       \ Loop over alternate settings
       #alts 0  ?do
          i set-ifce
-            
+
          \ Get the string for this alternate setting
          ifce-desc >interface-sindex c@  dup  if  ( sindex )
             $40 ifce-string  rot  dfu-handle      ( len adr sindex handle )
@@ -254,15 +258,16 @@ false value verbose-scan?
    loop
 ;
 
-: dfu-setup  ( -- )
+: dfu-setup  ( vid pid -- )
+   init-libusb
    \ Open the device (currently hardwired to the STM DFU ID)
-   $df11 $483 0 libusb_open_device_with_vid_pid to dfu-handle
+   swap 0 libusb_open_device_with_vid_pid to dfu-handle
    dfu-handle 0= abort" Cannot open device in DFU mode.  Hold the Y key while plugging it in."
 
    \ Get the device descriptor
    dfu-handle libusb_get_device to dfu-dev
    dev-desc  dfu-dev libusb_get_device_descriptor  abort" Can't get dev descriptor"
-   
+
    \ Display the device name and serial number
    dev-desc >manufacturer-sindex c@ get-string type  ."  "
    dev-desc >product-sindex      c@ get-string type  ."  "
@@ -278,7 +283,7 @@ false value verbose-scan?
    cfg-desc >'interfaces @              ( adr )
    dup >'alt-interfaces @ to alt-array  ( adr )
    >#alt-interfaces int@ to #alts       ( )
-   
+
    scan-interfaces
 
    transfer-size 0= abort" Did not find transfer size"
@@ -352,7 +357,9 @@ false value verbose-scan?
    until                              ( #bytes state )
 
    DFU_MANIFEST_STATE =  if                   ( #bytes )
-      ." Transition to manifest state" cr     ( #bytes )
+      ." Running new code" cr                 ( #bytes )
+\ The "manifest state" comment is more accurate, but not user-friendly
+\     ." Transition to manifest state" cr     ( #bytes )
    then                                       ( #bytes )
 
    dfu-status c@  ?dup  if                    ( #bytes )
@@ -431,11 +438,6 @@ false value verbose-scan?
    dfu-abort-to-idle         ( )
 ;
 
-\needs show-phase          : show-phase  ( adr len -- )  type cr  ;
-\needs set-progress-range  : set-progress-range  ( end start -- )  2drop  ;
-\needs show-progress       : show-progress  ( n -- )  (cr .x  ;
-\needs progress-done       : progress-done  ( -- )  cr  ;
-
 \ Write len bytes from memory at adr to device address offset
 \ The device area must have already been erased.
 : dfu-write   ( adr len offset -- )
@@ -484,5 +486,5 @@ false value verbose-scan?
 
 : dfu-leave  ( -- )
    dfu-flash-base dfu-set-address
-   0 0 2  dfu-chunk   
+   0 0 2  dfu-chunk
 ;

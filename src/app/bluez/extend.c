@@ -268,7 +268,7 @@ cell open_posix_com(char *comname)
 #ifdef USE_FTDI
 #include "extend-libftdi.c"
 #else
-cell ft_open_serial(cell portnum) { return 0; }
+cell ft_open_serial(cell portnum, cell pid) { return 0; }
 cell ft_get_errno() { return -9999; }
 cell ft_setbits(cell ops, unsigned char bits) { return -1; }
 cell ft_getbits(cell ops) { return -1; }
@@ -276,7 +276,11 @@ cell ft_getbits(cell ops) { return -1; }
 
 cell open_com(cell portnum)		// Open COM port
 {
-	cell res = ft_open_serial(portnum);
+	res = ft_open_serial(portnum, 0x4e4c);	// Nod Ring
+	if (res)
+		return res;
+
+	res = ft_open_serial(portnum, 0x4e4d);	// Nod Backspin
 	if (res)
 		return res;
 

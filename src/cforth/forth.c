@@ -1531,6 +1531,12 @@ doccall:
     case '\0': ret = *sp++; break;
     case 's': *--sp = ret;
               ret = (cell)strlen((char *)ret); break;
+    case 'h':
+      {
+        int iret = ret;
+        ret = (cell)iret;
+        break;
+      }
     case 'a': break;
         /* Default: ret is correct already */
     }

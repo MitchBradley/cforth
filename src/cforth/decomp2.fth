@@ -323,7 +323,12 @@ variable extent  extent off
       d#  8 of  ." o# "  endof
       d#  2 of  ." %"  endof
    endcase
-   type cancel  space
+   type space cancel
+;
+: pretty-f.  ( f -- )
+   fstring   ( adr len )
+   dup 3 + ?line  indent  add-position
+   green-letters  type  ." f "  cancel
 ;
 
 : .compiled  ( ip -- ip' )
@@ -347,9 +352,10 @@ variable extent  extent off
 : skip-wlit     ( ip -- ip' )  ta1+ wa1+  ;
 : .flit         (s ip -- ip' )
    ta1+ >r
-float?  ?\  r@ la1+ l@   r@ l@   fpush e.
+float?  ?\  r@ la1+ l@   r@ l@   fpush pretty-f.
    r> la1+ la1+
 ;
+: skip-flit     ( ip -- ip' )  ta1+ la1+ la1+  ;
 : .llit         ( ip -- ip' )  ta1+ dup unaligned-l@ pretty-. la1+  ;
 : skip-llit     ( ip -- ip' )  ta1+ la1+  ;
 [ifdef] notdef
@@ -433,7 +439,7 @@ d# 23 constant #decomp-classes
    (  8 )     skip-string            (  9 )     dummy
    ( 10 )     scan-unnest            ( 11 )     skip-string
    ( 12 )     skip-branch            ( 13 )     scan-does>
-   ( 14 )     skip-char              ( 15 )     skip-llit
+   ( 14 )     skip-char              ( 15 )     skip-flit
    ( 16 )     skip-[']               ( 17 )     scan-of
    ( 18 )     skip-branch            ( 19 )     skip-word
    ( 20 )     skip-string            ( 21 )     skip-branch

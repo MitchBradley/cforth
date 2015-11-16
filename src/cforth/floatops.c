@@ -179,7 +179,7 @@ fintop(int op, cell *sp, cell *up)
 		*--fsp = ftos;
 		fbits.fb_int[1] = sp[1];
 		fbits.fb_int[0] = sp[0];
-		sp = (cell *)(p+2);
+		sp += 2;
 		ftos = fbits.fb_float;
 		break;
 

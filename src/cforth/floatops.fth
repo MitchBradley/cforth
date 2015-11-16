@@ -156,6 +156,27 @@ patch $fnumber? $number? compile-word
    create  f,  does> f@
 ;
 
+: fvalue  \ name  ( real -- )
+   create              ( real )
+   #user @ /f ,unum    ( real user# )
+   up@ + f!            ( )
+   does> >user f@
+;
+0f fvalue isfvalue
+
+warning @ warning off
+: (to)  ( n xt -- data-adr )
+   dup cf@  ['] isfvalue cf@ =  if  ( real xt )
+      >body >user f!
+      exit
+   then
+   (to)
+;
+: to  ( "name" [ val ] -- )	\ val is present only in interpret state
+   state @  if   postpone ['] postpone (to)  else  ' (to)  then
+; immediate
+warning !
+
 : falog  ( real1 -- real2 )  1E1 fswap f**  ;
 
 : fmax  ( real1 real2 -- real3 )  fover fover  f<  if  fswap  then  fdrop  ;
@@ -199,3 +220,7 @@ alias dfloats    floats
    then
    r> base !
 ;
+
+: f>r  ( f: real -- r: real )  r>  fpop 2>r  >r  ;
+: fr>  ( r: real -- f: real )  r> 2r> fpush  >r  ;
+: fr@  ( r: real -- f: real r: real )  r>  2r@ fpush  >r  ;

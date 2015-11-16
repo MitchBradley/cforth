@@ -31,7 +31,9 @@ extern void exit(int);
 
 extern cell *prepare_dictionary(int *argcp, char *(*argvp[]));
 
+#ifndef _POSIX_C_SOURCE
 #define _POSIX_C_SOURCE 1
+#endif
 
 #include <setjmp.h>
 #include <signal.h>

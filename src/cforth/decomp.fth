@@ -231,6 +231,7 @@ float?  ?\  r@ la1+ l@   r@ l@   fpush e.
    r> la1+ la1+
 ;
 : skip-llit     (s ip -- ip' )  ta1+ la1+ ;
+: skip-flit     (s ip -- ip' )  ta1+ la1+ la1+ ;
 : skip-branch   (s ip -- ip' )  +branch ;
 : .quote        (s ip -- ip' )  .word   .word   ;
 : skip-quote    (s ip -- ip' )  ta1+ ta1+ ;
@@ -307,7 +308,7 @@ float?  ?\  r@ la1+ l@   r@ l@   fpush e.
    (  8 )     skip-string            (  9 )     dummy
    ( 10 )     scan-unnest            ( 11 )     skip-string
    ( 12 )     skip-branch            ( 13 )     scan-does>
-   ( 14 )     skip-char              ( 15 )     skip-llit
+   ( 14 )     skip-char              ( 15 )     skip-flit
    ( 16 )     skip-[']               ( 17 )     scan-of
    ( 18 )     skip-branch            ( 19 )     skip-word
    ( 20 )     skip-string            ( 21 )     skip-branch

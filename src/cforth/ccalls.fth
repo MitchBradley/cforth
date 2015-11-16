@@ -13,12 +13,13 @@ decimal
 only forth also definitions
 
 vocabulary ccalls
-ccalls also definitions
+also ccalls definitions
 
 \ Scan the argument specification list.  For each argument, add a character
 \ to the argument specifier string.
 
 \ Valid argument specifier characters are:
+\ h	- host
 \ i	- int
 \ l	- long
 \ a	- address
@@ -46,4 +47,8 @@ forth definitions
    does>  dup na1+ swap @ ccall
 ;
 
-only forth also definitions
+previous definitions
+
+[ifdef] glop
+: gcall:  ( n "name" -- )  create ,  does> @ glop   ;
+[then]

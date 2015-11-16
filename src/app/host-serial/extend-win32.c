@@ -7,6 +7,16 @@
 #include "forth.h"
 #include "sha256.h"
 
+#ifdef OPENGL
+#ifdef USE_GLEW
+#include <GL/glew.h>
+#else
+void glewInit(void) { }
+#endif
+
+#include <GLFW/glfw3.h>
+#endif
+
 #define TIOCM_LE	0x001
 #define TIOCM_DTR	0x002
 #define TIOCM_RTS	0x004
@@ -374,6 +384,18 @@ void close_sha256(SHA256Context *sc, uint8_t *hash)
   free(sc);
 }
 
+#ifdef OPENGL
+void error_callback(int error, const char* description)
+{
+    fputs(description, stderr);
+}
+
+void set_error_callback(void)
+{
+    glfwSetErrorCallback(error_callback);
+}
+#endif
+
 cell message_box(cell type, cell message, cell caption)
 {
     return MessageBox(NULL, (LPCSTR)message, (LPCSTR)caption, type);
@@ -476,56 +498,16 @@ cell ((* const ccalls[])()) = {
   C(set_com_parity)    //c set-parity     { i.parity i.handle -- }
   C(set_baud)          //c baud           { i.baudrate i.fd -- }
 
+  // SHA routines; pure code, no I/O
+  C(open_sha256)       //c sha256-open    { -- a.context }
+  C(SHA256Update)      //c sha256-update  { i.len a.data a.context -- }
+  C(close_sha256)      //c sha256-close   { a.hash a.context -- }
+
   // FTDI bit-banging
   C(ft_open_serial)    //c ft-open-com    { i.pid i.index -- i.handle }
   C(ft_get_errno)      //c ft-errno       { -- i.err }
   C(ft_setbits)        //c ft-setbits     { i.mask i.handle -- i.status }
   C(ft_getbits)        //c ft-getbits     { i.handle -- i.bits }
-
-  C(libusb_init)                //c libusb_init  { a.'ctx -- i.err }
-  C(libusb_exit)                //c libusb_exit  { a.ctx -- }
-  C(libusb_set_debug)           //c libusb_set_debug  { i.level a.ctx -- }
-
-  C(libusb_get_device_list)     //c libusb_get_device_list    { a.''list a.ctx -- i.len }
-  C(libusb_free_device_list)    //c libusb_free_device_list   { i.unref a.'list -- }
-  C(libusb_get_bus_number)      //c libusb_get_bus_number     { a.dev -- i.bus# }
-  C(libusb_get_port_number)     //c libusb_get_port_number    { a.dev -- i.port# }
-  C(libusb_get_port_numbers)    //c libusb_get_port_numbers   { i.nport a.port#s a.dev -- i.n }
-  C(libusb_get_parent)          //c libusb_get_parent         { a.dev -- a.parent }
-  C(libusb_get_device_address)  //c libusb_get_device_address { a.dev -- i.adr }
-  C(libusb_get_device_speed)    //c libusb_get_device_speed    { a.dev -- i.speed }
-  C(libusb_get_max_packet_size) //c libusb_get_max_packet_size { i.ep a.dev -- i.size }
-  C(libusb_get_max_iso_packet_size) //c libusb_get_max_iso_packet_size { i.ep a.dev -- i.size }
-  C(libusb_ref_device)          //c libusb_ref_device          { a.dev -- a.dev }
-  C(libusb_unref_device)        //c libusb_unref_device        { a.dev -- }
-  C(libusb_open)                //c libusb_open                { a.handle a.dev -- i.err }
-  C(libusb_open_device_with_vid_pid) //c libusb_open_device_with_vid_pid  { i.pid i.vid a.ctx -- a.handle }
-  C(libusb_close)               //c libusb_close               { a.dev -- }
-  C(libusb_get_device)          //c libusb_get_device          { a.handle -- a.dev }
-  C(libusb_get_configuration)   //c libusb_get_configuration   { a.config a.handle -- i.err }
-  C(libusb_set_configuration)   //c libusb_set_configuration   { i.config a.handle -- i.err }
-  C(libusb_claim_interface)     //c libusb_claim_interface     { i.ifce a.handle -- i.err }
-  C(libusb_release_interface)   //c libusb_release_interface     { i.ifce a.handle -- i.err }
-  C(libusb_set_interface_alt_setting)  //c libusb_set_interface_alt  { i.alt i.ifce a.handle -- i.err }
-  C(libusb_clear_halt)          //c libusb_clear_halt          { i.ep a.handle -- i.err }
-  C(libusb_reset_device)        //c libusb_reset_device        { a.handle -- i.err }
-  C(libusb_kernel_driver_active)  //c libusb_kernel_driver_active  { i.ifce a.handle -- i.stat }
-  C(libusb_detach_kernel_driver)  //c libusb_detach_kernel_driver  { i.ifce a.handle -- i.err }
-  C(libusb_attach_kernel_driver)  //c libusb_attach_kernel_driver  { i.ifce a.handle -- i.err }
-  C(libusb_set_auto_detach_kernel_driver)  //c libusb_set_auto_detach { i.enable a.handle -- i.err }
-  C(libusb_get_device_descriptor) //c libusb_get_device_descriptor { a.desc a.dev -- i.err }
-  C(libusb_get_config_descriptor) //c libusb_get_config_descriptor { a.'desc i.index a.dev -- i.err }
-  C(libusb_get_string_descriptor_ascii) //c libusb_get_string_descr_ascii { i.len a.string i.index a.dev -- i.err }
-  C(libusb_get_descriptor) //c libusb_get_descriptor { i.len a.desc i.index i.type a.handle -- i.err }
-  C(libusb_free_config_descriptor) //c libusb_free_config_descriptor { a.desc -- }
-  C(libusb_control_transfer) //c libusb_control_transfer { i.timeout i.len a.data i.windex i.wvalue i.request i.reqtype a.handle -- i.nbytes }
-  C(libusb_bulk_transfer) //c libusb_bulk_transfer { i.timeout a.actual i.len a.data i.ep a.handle -- i.err }
-  C(libusb_interrupt_transfer) //c libusb_interrupt_transfer { i.timeout a.actual i.len a.data i.ep a.handle -- i.err }
-
-  // SHA routines; pure code, no I/O
-  C(open_sha256)       //c sha256-open    { -- a.context }
-  C(SHA256Update)      //c sha256-update  { i.len a.data a.context -- }
-  C(close_sha256)      //c sha256-close   { a.hash a.context -- }
 
   C(message_box)       //c message-box    { $.caption $.msg i.type -- i.yesno }
   C(choose_file)       //c choose-file    { a.filter -- a.filename }
@@ -534,4 +516,62 @@ cell ((* const ccalls[])()) = {
   C(end_progress)      //c pb-end   { -- }
   C(set_progress_title) //c pb-set-title  { $.msg -- }
   C(set_progress_range) //c pb-set-range  { i.high i.low -- }
+
+  C(libusb_init)                //c libusb_init  { a.'ctx -- i.err }
+  C(libusb_exit)                //c libusb_exit  { a.ctx -- }
+  C(libusb_set_debug)           //c libusb_set_debug  { i.level a.ctx -- }
+
+  C(libusb_get_device_list)     //c libusb_get_device_list    { a.''list a.ctx -- h.len }
+  C(libusb_free_device_list)    //c libusb_free_device_list   { i.unref a.'list -- }
+  C(libusb_get_bus_number)      //c libusb_get_bus_number     { a.dev -- h.bus# }
+  C(libusb_get_port_number)     //c libusb_get_port_number    { a.dev -- h.port# }
+  C(libusb_get_port_numbers)    //c libusb_get_port_numbers   { i.nport a.port#s a.dev -- h.n }
+  C(libusb_get_parent)          //c libusb_get_parent         { a.dev -- a.parent }
+  C(libusb_get_device_address)  //c libusb_get_device_address { a.dev -- h.adr }
+  C(libusb_get_device_speed)    //c libusb_get_device_speed    { a.dev -- h.speed }
+  C(libusb_get_max_packet_size) //c libusb_get_max_packet_size { i.ep a.dev -- h.size }
+  C(libusb_get_max_iso_packet_size) //c libusb_get_max_iso_packet_size { i.ep a.dev -- h.size }
+  C(libusb_ref_device)          //c libusb_ref_device          { a.dev -- a.dev }
+  C(libusb_unref_device)        //c libusb_unref_device        { a.dev -- }
+  C(libusb_open)                //c libusb_open                { a.handle a.dev -- h.err }
+  C(libusb_open_device_with_vid_pid) //c libusb_open_device_with_vid_pid  { i.pid i.vid a.ctx -- a.handle }
+  C(libusb_close)               //c libusb_close               { a.dev -- }
+  C(libusb_get_device)          //c libusb_get_device          { a.handle -- a.dev }
+  C(libusb_get_configuration)   //c libusb_get_configuration   { a.config a.handle -- h.err }
+  C(libusb_set_configuration)   //c libusb_set_configuration   { i.config a.handle -- h.err }
+  C(libusb_claim_interface)     //c libusb_claim_interface     { i.ifce a.handle -- h.err }
+  C(libusb_release_interface)   //c libusb_release_interface     { i.ifce a.handle -- h.err }
+  C(libusb_set_interface_alt_setting)  //c libusb_set_interface_alt  { i.alt i.ifce a.handle -- h.err }
+  C(libusb_clear_halt)          //c libusb_clear_halt          { i.ep a.handle -- h.err }
+  C(libusb_reset_device)        //c libusb_reset_device        { a.handle -- h.err }
+  C(libusb_kernel_driver_active)  //c libusb_kernel_driver_active  { i.ifce a.handle -- h.stat }
+  C(libusb_detach_kernel_driver)  //c libusb_detach_kernel_driver  { i.ifce a.handle -- h.err }
+  C(libusb_attach_kernel_driver)  //c libusb_attach_kernel_driver  { i.ifce a.handle -- h.err }
+  C(libusb_set_auto_detach_kernel_driver)  //c libusb_set_auto_detach { i.enable a.handle -- h.err }
+  C(libusb_get_device_descriptor) //c libusb_get_device_descriptor { a.desc a.dev -- h.err }
+  C(libusb_get_config_descriptor) //c libusb_get_config_descriptor { a.'desc i.index a.dev -- h.err }
+  C(libusb_get_string_descriptor_ascii) //c libusb_get_string_descr_ascii { i.len a.string i.index a.dev -- h.err }
+  C(libusb_get_descriptor) //c libusb_get_descriptor { i.len a.desc i.index i.type a.handle -- h.err }
+  C(libusb_free_config_descriptor) //c libusb_free_config_descriptor { a.desc -- }
+  C(libusb_control_transfer) //c libusb_control_transfer { i.timeout i.len a.data i.windex i.wvalue i.request i.reqtype a.handle -- h.nbytes }
+  C(libusb_bulk_transfer) //c libusb_bulk_transfer { i.timeout a.actual i.len a.data i.ep a.handle -- h.err }
+  C(libusb_interrupt_transfer) //c libusb_interrupt_transfer { i.timeout a.actual i.len a.data i.ep a.handle -- h.err }
+
+#ifdef OPENGL
+  C(glfwInit)          //c glfwInit           { -- h.okay }
+  C(glfwTerminate)     //c glfwTerminate      { -- }
+  C(set_error_callback)//c set-error-callback  { -- }
+  C(glfwCreateWindow)  //c glfwCreateWindow  { a.share a.monitor $name i.h i.w -- a.window }
+  C(glfwMakeContextCurrent) //c glfwMakeContextCurrent  { a.window -- }
+  C(glfwWindowShouldClose)  //c glfwWindowShouldClose   { a.window -- h.close? }
+  C(glfwGetFramebufferSize) //c glfwGetFramebufferSize  { a.height a.width a.window -- }
+  C(glfwSwapBuffers)        //c glfwSwapBuffers         { a.window -- }
+  C(glfwSwapInterval)       //c glfwSwapInterval        { i.interval -- }
+  C(glfwPollEvents)         //c glfwPollEvents          { -- }
+  C(glfwWindowHint)         //c glfwWindowHint          { i.value i.hint# -- }
+  C(glfwSetInputMode)       //c glfwSetInputMode        { i.value i.param# a.window -- }
+  C(glfwGetKey)             //c glfwGetKey              { i.key a.window -- h.state }
+
+  C(glewInit)               //c glewInit                { -- }
+#endif
 };

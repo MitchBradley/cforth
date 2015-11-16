@@ -271,6 +271,39 @@ void glop(int op, cell **i, double **f, cell *up)
       glGenBuffers((*i)[0], (GLuint *)(*i)[1]);
       *i += 2;
       return;
+    case GLGENTEXTURES: //g glGenTextures ( a.vbuf i.n -- )
+      glGenTextures((*i)[0], (GLuint *)(*i)[1]);
+      *i += 2;
+      return;
+    case GLBINDTEXTURE: //g glBindTexture ( i.texture i.type -- )
+      glBindTexture((*i)[0], (*i)[1]);
+      *i += 2;
+      return;
+    case GLTEXPARAMETERI: //g glTexParameteri ( i.param i.name i.target -- )
+      glTexParameteri((*i)[0], (*i)[1], (*i)[2]);
+      *i += 3;
+      return;
+    case GLGETTEXPARAMETERIV: //g glGetTexParameteriv ( a.param i.name i.target -- )
+      glTexParameteriv((*i)[0], (*i)[1], (GLvoid *)(*i)[2]);
+      *i += 3;
+      return;
+    case GLTEXPARAMETERF: //g glTexParameterf ( f.param i.name i.target -- )
+      glTexParameteri((*i)[0], (*i)[1], (*f)[0]);
+      *i += 2;
+      *f += 1;
+      return;
+    case GLTEXIMAGE2D: //g glTexImage2D ( a.data i.type i.format i.border i.height i.width i.intformat i.level i.target )
+      glTexImage2D((*i)[0], (*i)[1], (*i)[2], (*i)[3], (*i)[4], (*i)[5], (*i)[6], (*i)[7], (const GLvoid *)(*i)[8]);
+      *i += 9;
+      return;
+    case GLTEXCOORD2F: //g glTexCoord2F ( f.v f.u -- )
+      glTexCoord2f((*f)[0], (*f)[1]);
+      *f += 2;
+      return;
+    case GLPIXELSTOREI: //g glPixelStorei ( i.value i.name -- )
+      glPixelStorei((*i)[0], (*i)[1]);
+      *i += 2;
+      return;
     case GLULOOKAT: //g gluLookAt ( d.upz d.upy d.upx d.centerz d.centery d.centerx d.eyez d.eyey d.eyex -- )
       gluLookAt((*f)[0], (*f)[1], (*f)[2], (*f)[3], (*f)[4], (*f)[5], (*f)[6], (*f)[7], (*f)[8]);
       *f += 9;
