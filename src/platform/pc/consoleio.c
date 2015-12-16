@@ -25,7 +25,7 @@ int kbhit() {
 int getkey()
 {
     // return the next character from the console input device
-    while (!kbhit)
+    while (!kbhit())
         ;
     return inb(0x3f8);
 }
