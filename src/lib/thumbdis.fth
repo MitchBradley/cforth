@@ -1,7 +1,9 @@
+[ifndef] left-parse-string
 : left-parse-string  ( adr len delim -- tail$ head$ )
    split-string  dup if  1 /string  then  2swap
 ;
-: 2nip  ( n1 n2 n3 n4 -- n3 n4 )  2swap 2drop  ;
+[then]
+\needs 2nip : 2nip  ( n1 n2 n3 n4 -- n3 n4 )  2swap 2drop  ;
 
 0 value op             \ Current thumb instruction
 0 value op2            \ Second half of current thumb instruction
@@ -227,12 +229,12 @@ defer thumb-op@        \ How to access the instruction stream
    " STMIA LDMIA" bit11 .op
    8 .r# ." !," .{rlist .}
 ;
-: .bop  ( bit# -- )
+: bop  ( bit# -- adr len index )
    " BEQ BNE BCS BCC BMI BPL BVS BVC BHI BLS BGE BLT BGT BLE"
-   rot 4 op-bits .op
+   rot 4 op-bits
 ;
 : fmt16  \ e.g. BEQ #1234
-   8 .bop
+   8 bop .op
    8 .taddr
 ;
 : fmt17  \ e.g. SWI #24
@@ -421,6 +423,7 @@ defer thumb-op@        \ How to access the instruction stream
    #10 op-bit              dup  #31 lshift      ( s 1hibits )
    over  #13 op2-bit xor 1 xor  #30 lshift or   ( s 2hibits )
    swap  #11 op2-bit xor 1 xor  #29 lshift or   (   3hibits )
+   l->n                                         (   3hibits )
 
    0 #11 op2-bits 2*                            ( 3hibits imm12 )
 ;
@@ -473,7 +476,7 @@ defer thumb-op@        \ How to access the instruction stream
    then
 ;   
 : .xcondbranch
-   6 .bop   
+   6 bop .opx
    si1i2imm12                    ( 3hibits imm12 )
    0 6 op-bits #12 lshift or     ( 3hibits imm18 )
    swap #11 >>a  or              ( simm )
