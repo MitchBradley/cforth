@@ -23,6 +23,11 @@
 #define pop              tos; loadtos
 #define comma            ncomma(tos);   loadtos
 
+// When not inside inner_interpreter(), ip is on the return stack,
+// tos is on the data stack, and sp and rp are in the user area
+#define SAVE_STATE  *--sp = tos; V(XSP) = (cell)sp;  *--rp = ip;  V(XRP) = (cell)rp;
+#define RESTORE_STATE  rp = (token_t **)V(XRP);  ip = *rp++;  sp = (cell *)V(XSP);  tos = *sp++;
+
 extern void floatop(int op, cell *up);
 extern cell *fintop(int op, cell *sp, cell *up);
 extern token_t *fparenlit(token_t *ip);
@@ -32,6 +37,7 @@ extern cell doccall(cell (*function_adr)(), u_char *format, cell *up);
 
 extern cell freadline(cell f, cell *sp, cell *up);
 
+static size_t my_strlen(const char *s);
 static cell strindex(u_char *adr1, cell len1, u_char *adr2, cell len2);
 static void fill_bytes(u_char *to, u_cell length, u_char with);
 static cell digit(cell base, u_char c);
@@ -70,10 +76,11 @@ int
 inner_interpreter(up)
     cell *up;
 {
-    cell *sp = (cell *)V(XSP);
-    token_t **rp = (token_t **)V(XRP);
-    cell tos = *sp++;
-    token_t *ip = *rp++;
+    cell *sp;
+    token_t **rp;
+    cell tos;
+    token_t *ip;
+    RESTORE_STATE
 
     token_t token;
     cell scr;
@@ -390,8 +397,28 @@ execute:
     tos = (cell) ((u_char *)up + *(unum_t *)ascr);
     goto token_fetch;
 
-/*$p key */     case KEY:        push(key()); next;
-/*$p key? */    case KEY_QUESTION:    push(key_avail()); next;
+/*$p key */     case KEY:
+    scr = key(up);
+    if (scr == -2) {
+        // Save interpreter state, return, and expect reentry
+        // to inner_interpreter() upon a later callback
+        SAVE_STATE
+        return 2;
+    }
+    push(scr);
+    next;
+
+/*$p key? */    case KEY_QUESTION:
+    scr = key_avail(up);
+    if (scr == -2) {
+        // Save interpreter state, return, and expect reentry
+        // to inner_interpreter() upon a later callback
+        SAVE_STATE
+        return 2;
+    }
+    push(scr);
+    next;
+
 /*$p emit */    case EMIT:    emit ((u_char)tos, up);    loadtos;    next;
 /*$p cr */      case CR:    emit ('\n', up);    next;
 
@@ -439,19 +466,16 @@ execute:
     next;
 
 /*$p sys-accept */ case SYS_ACCEPT:
-    *--rp = ip;          // Save all the interpreter state in the user area
-    V(XSP) = (cell)(sp+1);     /* Account for *sp++ below */
-    V(XRP) = (cell)rp;
-    // Since the state is in the user area, caccept doesn't have to
-    // return cleanly; it can suspend the task and register a callback
-    // that will re-execute inner_interpreter.
-    tos = caccept ((char *)(*sp++), tos, up);
-    if (tos == -1)
+    scr = pop;
+    ascr = (u_char *)pop;
+    scr = caccept((char *)ascr, scr, up);
+    if (scr == -2) {
+        // Save interpreter state, return, and expect reentry
+        // to inner_interpreter() upon a later callback
+        SAVE_STATE
         return 2;
-    // Restore the interpreter state
-    sp = (cell *)V(XSP);
-    rp = (token_t **)V(XRP);
-    ip = *rp++;
+    }
+    push(scr);
     next;
 
 /*$p accept */      case ACCEPT:    token = T(TICK_ACCEPT);    goto execute;
@@ -508,6 +532,21 @@ execute:
      */
      *--sp = tos;    V(XSP) = (cell)sp;    V(XRP) = (cell)rp;
      return(0);
+
+/*$p rest */ case REST:
+     // rest is for returning to the enclosing system, so
+     // Forth execution can be resumed where it left off
+     // by calling inner_interpreter() without changing
+     // the stacks.  The call to inner_interpreter() can
+     // be scheduled on a timer or an event callback.
+#ifdef FLOATING
+    {
+    extern double *fsp, ftos;
+    *--fsp = ftos;  V(XFP) = (cell)fsp;
+    }
+#endif
+    *--sp = tos;    V(XSP) = (cell)sp;    *--rp = ip;  V(XRP) = (cell)rp;
+    return(3);
 
 /*$p 0 */       case ZERO:      push(0);                 next;
 /*$p here */    case HERE:      push(V(DP));             next;
@@ -1272,6 +1311,7 @@ void spush(cell n, cell *up)
     *(cell *)V(XSP) = n;
 }
 
+void udot(unsigned int u, cell *up);
 int execute_xt(xt_t xt, cell *up)
 {
     token_t ctbuf[2];
@@ -1290,9 +1330,9 @@ execute_word(char *s, cell *up)
 {
     xt_t xt;
 
-    if (alfind(s, strlen(s), (xt_t *)&xt, up) == 0) {
+    if (alfind(s, my_strlen(s), (xt_t *)&xt, up) == 0) {
         FTHERROR("Can't find '");
-        alerror(s, strlen(s), up);
+        alerror(s, my_strlen(s), up);
         FTHERROR("'\n");
         return(-2);
     }
@@ -1478,8 +1518,8 @@ tryagain: ;
     return(-1);
 }
 
-size_t
-strlen(const char *s)
+static size_t
+my_strlen(const char *s)
 {
     const char *p = s;
     while (*p) { p++; }
@@ -1530,7 +1570,7 @@ doccall:
     switch(*format) {
     case '\0': ret = *sp++; break;
     case 's': *--sp = ret;
-              ret = (cell)strlen((char *)ret); break;
+              ret = (cell)my_strlen((char *)ret); break;
     case 'h':
       {
         int iret = ret;
@@ -1615,6 +1655,12 @@ alnumber(char *adr, cell len, cell *nhigh, cell *nlow, cell *up)
   #endif
 #endif
     return( len ? 0 : -1 );
+}
+
+void udot(unsigned int u, cell *up) {
+    if (u>10)
+        udot(u/10, up);
+    emit('0'+u%10, up);
 }
 
 /* Carry calculation assumes 2's complement arithmetic. */

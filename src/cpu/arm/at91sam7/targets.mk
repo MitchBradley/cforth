@@ -38,8 +38,6 @@ FORTH_OBJS = ../tester/c/forth/embed.o textend.o
 # FORTH_OBJS += fft.o
 
 RAMBASE = 0x200000
-# TEXTBASE = $(RAMBASE)
-TEXTBASE = 0x0
 SERIAL_LOADER_OFFSET = 0x1000
 
 atmelio.o: config.h

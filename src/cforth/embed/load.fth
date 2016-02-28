@@ -25,7 +25,7 @@ fload ../brackif.fth
 
 patch where xwhere postpone
 
-: fpush ; : e. ; : (fliteral) ;
+float? 0= ?\ : fpush ; : e. ; : (fliteral) ;
 fload ../decompm.fth
 fload ../decomp.fth
 fload ../callfind.fth

@@ -56,7 +56,6 @@ ARTIFACTS = $(BASEOBJS) $(TBASEOBJS) $(METAOBJS) $(EMBEDOBJS) $(HOSTOBJS) \
 all: forth.dic cidpforth.java forth.java
 
 RAMBASE = 0x200000
-TEXTBASE = $(RAMBASE)
 TLFLAGS = -static
 LIBDIRS=-L$(ARCH)/lib/gcc-lib/arm-linux/3.2/
 

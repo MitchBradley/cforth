@@ -100,18 +100,16 @@ variable got-sector#
    ( retry return: throws -1 )
    ( done  return: throws 1 )
    ( abort return: throws 2 )
-   begin
-      timed-in  throw
-      case
-         soh of  false to big?     r0-msg       endof  \ expected...
-         stx of  true to big?      r1-msg       endof  \ expected...
-         -1  of  timeout-msg -1 throw           endof
-         nul of  1 throw                        endof  \ XXX check this
-         can of  can-msg 2 throw                endof
-         eot of  done-msg ack m-emit  1 throw   endof
-        ( default) bogus-char -1 throw
-      endcase                        ( adr maxlen )
-   again
+   timed-in  throw
+   case
+      soh of  false to big?     r0-msg       endof  \ expected...
+      stx of  true to big?      r1-msg       endof  \ expected...
+      -1  of  timeout-msg -1 throw           endof
+      nul of  1 throw                        endof  \ XXX check this
+      can of  can-msg 2 throw                endof
+      eot of  done-msg ack m-emit  1 throw   endof
+      ( default) bogus-char -1 throw
+   endcase                        ( adr maxlen )
 
    /sector <  if  2 throw  then      ( adr )
    timed-in                throw     ( adr sec# )
@@ -218,7 +216,7 @@ modem definitions
    gobble long-timeout
 ;
 
-: pad  ( -- b )  control Z  sector# @  0<>  and  ;
+: padch  ( -- b )  control Z  sector# @  0<>  and  ;
 \ Send without confirmation
 : send-packet  ( adr len big? -- )
    if  1k  stx  else  128by soh  then  ( adr len /sec start ) 
@@ -230,12 +228,12 @@ modem definitions
    over - 0  2swap                              ( #pad 0 adr len )
    crc?  if                                     ( #pad 0 adr len )
       crc-send                                  ( #pad crc )
-      swap 0  ?do  pad updcrc m-emit  loop      ( crc' )
+      swap 0  ?do  padch updcrc m-emit  loop    ( crc' )
       0 updcrc updcrc drop                      ( crc' )
       wbsplit m-emit m-emit                     ( )
    else                                         ( #pad 0 adr len )
       checksum-send                             ( #pad sum )
-      swap 0  ?do  pad  dup m-emit  +  loop     ( sum' )
+      swap 0  ?do  padch  dup m-emit  +  loop   ( sum' )
       m-emit                                    ( )
    then                                         ( )
 ; 

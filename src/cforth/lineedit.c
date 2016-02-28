@@ -58,8 +58,8 @@ void erase_line(void *up) {
 }
 
 #define MAXHISTORY 400
-static int saved_length = 31;
-static char lastline[MAXHISTORY] = "self-test\0test-gpios\0reset-all\0";
+static int saved_length;
+static char lastline[MAXHISTORY];
 
 void validate_history()
 {
@@ -126,7 +126,7 @@ int already_in_history(char *adr, int len)
     return 0;
 }
 
-void add_to_history(char *adr, int len)
+void add_to_history(char *adr, int len, void *up)
 {
     int i;
     int new_length;
@@ -202,29 +202,37 @@ void forward_char(void *up)
     }
 }
 
-// Line editor with history and intra-line editing
-int lineedit(char *addr, int count, void *up)
-{
-    int c;
-    int escaping;
-    int length;
-    int history_num = -1;
+static int escaping;
+static int history_num = -1;
 
+void lineedit_start(char *addr, int count, cell *up)
+{
     startaddr = endaddr = thisaddr = addr;
     escaping = 0;
     maxaddr = addr + count;
+    history_num = -1;
+}
 
+int lineedit_finish(cell *up)
+{
+    int length = (int)(endaddr - startaddr);
+    add_to_history(startaddr, length, up);
+
+    return (length);
+}
+
+// Returns true when the line is complete
+int lineedit_step(int c, cell *up)
+{
     // If we are running on Windows, key() returns the SPECIAL_* values
     // for non-ASCII movement keys.  Under a terminal emulator, such keys
     // generate escape sequences that we parse herein and convert to
     // those SPECIAL_* values.
-    while (1) {
-        c = key();
 
 	// Expecting [ as second character of escape sequence
 	if (escaping == 1) {
             escaping = (c == '[') ? 2 : 0;
-	    continue;
+	    return 0;
 	}
 
 	// Expecting third character of escape sequence
@@ -233,9 +241,9 @@ int lineedit(char *addr, int count, void *up)
             switch (c)
             {
             // In these 3 cases we have to get one more byte, typically ~
-            case '2': escaping = SPECIAL_HOME;   continue; // esc[2~ HOME
-            case '5': escaping = SPECIAL_END;    continue; // esc[5~ END
-            case '3': escaping = SPECIAL_DELETE; continue; // esc[3~ DELETE
+            case '2': escaping = SPECIAL_HOME;   return 0; // esc[2~ HOME
+            case '5': escaping = SPECIAL_END;    return 0; // esc[5~ END
+            case '3': escaping = SPECIAL_DELETE; return 0; // esc[3~ DELETE
 
             // In these cases we are done so translate to the special code
             case 'H': c = SPECIAL_HOME;  break;  // esc[H Home key
@@ -245,7 +253,7 @@ int lineedit(char *addr, int count, void *up)
             case 'C': c = SPECIAL_RIGHT; break;  // esc[C Right arrow
             case 'D': c = SPECIAL_LEFT;  break;  // esc[D Left arrow
             }
-	    // Fall through
+	    // Fall through to the switch below (escaping is now 0)
 	}
 
 	// This handles the ESC[n~ case - escaping is one of SPECIAL_{HOME,END,DELETE}
@@ -255,7 +263,7 @@ int lineedit(char *addr, int count, void *up)
 		escaping = 0;
 	    } else {
 		escaping = 0;
-		continue;
+		return 0;
 	    }
 	}
 
@@ -267,9 +275,9 @@ int lineedit(char *addr, int count, void *up)
 	case '\n':
 	case '\r':
 	    emit('\n', up);
-	    goto done;
+	    return 1;
 	case -1:
-	    goto done;
+	    return 1;
 	case DEL:
 	case BS:
 	    if (thisaddr > startaddr)
@@ -320,20 +328,24 @@ int lineedit(char *addr, int count, void *up)
 		--history_num;
 	    break;
 	case CTRL('w'):
-	    while (thisaddr > addr && thisaddr[-1] == ' ')
+	    while (thisaddr > startaddr && thisaddr[-1] == ' ')
 		erase_char(up);
-	    while (thisaddr > addr && thisaddr[-1] != ' ')
+	    while (thisaddr > startaddr && thisaddr[-1] != ' ')
 		erase_char(up);
 	    break;
-                
+
 	default:
 	    if (c >= ' ')
 		addchar(c, up);
 	}
-    }
-  done:
-    length = (int)(endaddr - startaddr);
-    add_to_history(addr, length);
+        return 0;
+}
 
-    return (length);
+// Line editor with history and intra-line editing
+int lineedit(char *addr, int count, void *up)
+{
+    lineedit_start(addr, count, up);
+    while (lineedit_step(key(), up) == 0) {
+    }
+    return lineedit_finish(up);
 }

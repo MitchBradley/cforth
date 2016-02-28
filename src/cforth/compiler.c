@@ -33,7 +33,6 @@ init_compiler(const u_char *origin, u_char *ramorigin, token_t topct, u_char *he
 {
     V(UPZERO) = (cell)up;
 
-    *(token_t *)origin = 0;
     V(TORIGIN) = (cell)origin;
     V(DP) = (cell)here;
 

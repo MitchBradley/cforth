@@ -325,6 +325,7 @@ variable extent  extent off
    endcase
    type space cancel
 ;
+[ifndef] fstring : fstring " " ; [then]
 : pretty-f.  ( f -- )
    fstring   ( adr len )
    dup 3 + ?line  indent  add-position
