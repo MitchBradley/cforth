@@ -39,8 +39,6 @@ forthbi: main.o embed.o mallocl.o
 	@echo CC $<
 	@$(CC) $(CFLAGS) -o $@ main.o embed.o mallocl.o
 
-RAMBASE = 0x200000
-TEXTBASE = $(RAMBASE)
 TLFLAGS = -static
 
 # tembed.o is an object file that can be linked into an application

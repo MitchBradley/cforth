@@ -91,7 +91,7 @@ caccept(int addr, int len, int up)
     System.out.flush();
     accept_adr = addr;
     accept_len = len;
-    return -1;
+    return -2;
 }
 
 SCOPE1 int

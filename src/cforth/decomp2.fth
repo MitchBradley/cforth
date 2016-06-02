@@ -325,7 +325,13 @@ variable extent  extent off
    endcase
    type space cancel
 ;
+<<<<<<< HEAD
 : pretty-f.  ( adr len -- )
+=======
+[ifndef] fstring : fstring " " ; [then]
+: pretty-f.  ( f -- )
+   fstring   ( adr len )
+>>>>>>> 657b46a17efc1c991abb885d3b503f07e0fd7a3f
    dup 3 + ?line  indent  add-position
    green-letters  type  ." f "  cancel
 ;

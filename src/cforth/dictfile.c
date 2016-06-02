@@ -147,6 +147,7 @@ prepare_dictionary(int *argcp, char *(*argvp[]))
     dict_size = read_dictionary(dictionary_file, origin, variables);
     here = &origin[dict_size];
 
+    *(token_t *)origin = 0;
     init_compiler(origin, xlimit, 0xfffe, here, xlimit, variables);
     return variables;
 }
