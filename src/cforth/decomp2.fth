@@ -325,8 +325,7 @@ variable extent  extent off
    endcase
    type space cancel
 ;
-: pretty-f.  ( f -- )
-   fstring   ( adr len )
+: pretty-f.  ( adr len -- )
    dup 3 + ?line  indent  add-position
    green-letters  type  ." f "  cancel
 ;
@@ -352,7 +351,7 @@ variable extent  extent off
 : skip-wlit     ( ip -- ip' )  ta1+ wa1+  ;
 : .flit         (s ip -- ip' )
    ta1+ >r
-float?  ?\  r@ la1+ l@   r@ l@   fpush pretty-f.
+float?  ?\  r@ la1+ l@   r@ l@   fpush fstring pretty-f.
    r> la1+ la1+
 ;
 : skip-flit     ( ip -- ip' )  ta1+ la1+ la1+  ;

@@ -4,8 +4,6 @@
 // Add entries to the ccalls table, and create Forth entry points
 // for them with ccall.
 
-unsigned long strlen(const char *);
-
 cell
 example1(cell a, cell b)		// Returns sum of a and b
 {
@@ -15,11 +13,12 @@ example1(cell a, cell b)		// Returns sum of a and b
 char *
 example2(char *s) // Returns last 9 characters of string s in reverse order
 {
-    register char *p;
+    char *p;
     int i;
     static char result[10];
 
-    p = &s[strlen(s)];
+    for(p=s; *p; p++)
+	;
     for(i = 0; i < 9  &&  p > s; i++)
         result[i] = *--p;
 

@@ -17,7 +17,7 @@ const u_char romdict[] = {
 #include "dict.h"
 };
 
-u_char ramdict[MAXDICT];
+u_char ramdict[MAXDICT] __attribute__ ((aligned));
 
 // dictmax is ignored because the dictionary is defined statically
 cell *

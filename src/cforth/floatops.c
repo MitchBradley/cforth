@@ -41,7 +41,8 @@ union fbits {
 	double fb_float;
 	unsigned int fb_int[2];
 } fbits;
-char floatstr[50];
+#define FLOATSTRLEN 50
+char floatstr[FLOATSTRLEN];
 extern char *tocstr();
 extern void tokstore();
 extern char *altofpstr();
@@ -186,15 +187,72 @@ fintop(int op, cell *sp, cell *up)
 	/* Floating Point Input and Output */
 	/* Implement F. as FSTRING TYPE , E. as ESTRING TYPE */
 	case FSTRING:
-		(void) sprintf(floatstr, "%.*f", (int)V(FNUMPLACES), ftos);
+#ifdef USE_SPRINTF
+		(void) snprintf(floatstr, FLOATSTRLEN, "%.*f", (int)V(FNUMPLACES), ftos);
+#else
+		if (isnan(ftos)) {
+			strcpy(floatstr, "NaN");
+		} else {
+			int decpt, sign;
+			int places = (int)V(FNUMPLACES);
+			char *digits = fcvt(ftos, places, &decpt, &sign);
+			char *s = floatstr;
+			if (sign)
+				*s++ = '-';
+			if (decpt < 0) {
+				*s++ = '0';
+				*s++ = '.';
+				while(decpt++)
+					*s++ = '0';
+			} else {
+				while(decpt--)
+					*s++ = *digits++;
+				*s++ = '.';
+			}
+			while(places-- > 0)
+				*s++ = *digits++;
+			*s = '\0';
+		}
+#endif
 		push( (u_char *)floatstr );
 		push( strlen(floatstr) );
+
 		ftos = *fsp++;
 		break;
 	case ESTRING:
-		(void) sprintf(floatstr, "%.*e", (int)V(FNUMPLACES), ftos);
+#ifdef USE_SPRINTF
+		(void) snprintf(floatstr, FLOATSTRLEN, "%.*e", (int)V(FNUMPLACES), ftos);
+#else
+		if (isnan(ftos)) {
+			strcpy(floatstr, "NaN");
+		} else {
+			int decpt, sign;
+			int places = (int)V(FNUMPLACES);
+			char *digits = ecvt(ftos, places+1, &decpt, &sign);
+			char *s = floatstr;
+			if (sign)
+				*s++ = '-';
+			*s++ = *digits++;				
+			*s++ = '.';
+			while(--places > 0)
+				*s++ = *digits++;
+			*s++ = 'E';
+			--decpt;
+			*s++ = decpt < 0 ? '-' : '+';
+			if (decpt < 0)
+				decpt = -decpt;
+			if (decpt > 99) {
+				*s++ = (decpt / 100) + '0';
+				decpt %= 100;
+			}
+			*s++ = (decpt / 10) + '0';
+			*s++ = (decpt % 10) + '0';
+			*s++ = '\0';
+		}
+#endif
 		push( (u_char *)floatstr );
 		push( strlen(floatstr) );
+
 		ftos = *fsp++;
 		break;
 
