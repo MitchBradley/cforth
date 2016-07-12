@@ -20,7 +20,7 @@ default: app.o
 SRC=$(TOPDIR)/src
 
 # Target compiler definitions
-CROSS:=/c/Arduino/hardware/tools/arm/bin/arm-none-eabi-
+CROSS?=/c/Arduino/hardware/tools/arm/bin/arm-none-eabi-
 CPU_VARIANT=-mthumb -mcpu=cortex-m4
 include $(SRC)/cpu/arm/compiler.mk
 

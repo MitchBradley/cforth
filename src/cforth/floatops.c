@@ -11,6 +11,9 @@
 #include <stdlib.h>
 #include <ctype.h>
 
+char *ecvt(double n, int ndigits, int *decpt, int *sign);
+char *fcvt(double n, int ndigits, int *decpt, int *sign);
+
 #ifdef NeXT
 double
 strtodbl(const char *nptr, char **endptr)
@@ -309,7 +312,6 @@ fintop(int op, cell *sp, cell *up)
 		    char *adr = (char *)(*sp++);
 		    char *radr;
 		    int decpt, sign;
-		    extern char *ecvt();
 
 		    radr = ecvt(ftos, len, &decpt, &sign);
 		    ftos = *fsp++;
