@@ -1,0 +1,4 @@
+#define ONEWIRE_SEARCH 1
+#define ONEWIRE_CRC 1
+#define ONEWIRE_CRC8_TABLE 1
+#define ONEWIRE_CRC16 1

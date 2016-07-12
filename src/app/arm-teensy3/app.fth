@@ -6,64 +6,19 @@ fl ../../lib/random.fth
 fl ../../lib/ilog2.fth
 fl ../../lib/tek.fth
 
-\ Replace 'quit' to make CForth auto-run some application code
-\ instead of just going interactive.
-: app  ." CForth" cr decimal quit  ;
+1 [if]
+fl gpio.fth
+fl adcpins.fth
 
-create gpio-bits
-  #16 c,  #17 c,  #00 c,  #12 c,  #13 c,  #07 c,  #04 c,  #02 c,
-  #03 c,  #03 c,  #04 c,  #06 c,  #07 c,  #05 c,  #01 c,  #00 c,
-  #00 c,  #01 c,  #03 c,  #02 c,  #05 c,  #06 c,  #01 c,  #02 c,
-  #05 c,  #19 c,  #01 c,  #09 c,  #08 c,  #10 c,  #11 c,  #00 c,
-  #18 c,  #04 c,
+2 constant valve-gpio
+3 constant spritz-gpio
+4 constant recirc-gpio
+5 constant nutrient-gpio
+6 constant pH-up-gpio
+7 constant pH-down-gpio
+6 constant #gpios
 
-: gpio-ports  " BBDAADDDDCCCCCDCBBBBDDCCABECCCCEBA"  ;
-
-: >port  ( pin# -- adr )
-   gpio-ports drop + c@ 'A' - #6 lshift $400ff000 +
-;
-: >mask&port  ( pin# -- mask port )  1 over gpio-bits + c@ lshift  swap >port  ;
-
-: gpio-pin!  ( value pin# -- )
-   >mask&port  rot  if  4  else  8  then  +  l!
-;
-: gpio-pin@  ( value pin# -- )  >mask&port $10 +  l@ and 0<>  ;
-: gpio-toggle  ( pin# -- )  >mask&port $0c +  l!  ;
-
-create adc-pins  
-  #14 c,  #15 c,  #16 c,  #17 c,  #18 c,  #19 c,  #20 c,  #21 c,
-  #22 c,  #23 c,  #34 c,  #35 c,  #36 c,  #37 c,
-
-: gpio-is-output  ( pin# -- )  1 swap gpio-mode  ;
-: gpio-is-input  ( pin# -- )  0 swap gpio-mode  ;
-: gpio-is-input-pullup  ( pin# -- )  2 swap gpio-mode  ;
-: gpio-is-input-pulldown  ( pin# -- )  3 swap gpio-mode  ;
-: gpio-is-output-open-drain ( pin# -- )  4 swap gpio-mode  ;
-
-\ " ../objs/tester" $chdir drop
-
-#14 constant pinA0
-#15 constant pinA1
-#16 constant pinA2
-#17 constant pinA3
-#18 constant pinA4
-#19 constant pinA5
-#20 constant pinA6
-#21 constant pinA7
-#22 constant pinA8
-#23 constant pinA9
-#34 constant pinA10
-#35 constant pinA11
-#36 constant pinA12
-#37 constant pinA13
-#40 constant pinA14
-#26 constant pinA15
-#27 constant pinA16
-#28 constant pinA17
-#29 constant pinA18
-#30 constant pinA19
-#31 constant pinA20
-
+[ifdef] float
 \ Test for analogWrite to DAC0
 decimal
 3.1415926535E0 fconstant pi
@@ -81,7 +36,42 @@ pi 2E f* fconstant 2pi
    key? until
    fdrop
 ;
+[then]
+
+fl ph.fth    \ pH probe via ADC
+fl pump.fth  \ Pump controller via GPIOs and motor driver
+
+: init-i2c  ( -- )  #10 9 i2c-setup  ;
+
+\ I2C devices
+fl ina219.fth
+fl mcp23008.fth
+fl mcp23017.fth
+fl fixture.fth
+fl ../bluez/colors.fth
+fl ../bluez/rgblcd.fth
+fl ../esp8266/pca9685.fth
+fl ../esp8266/ms5803.fth
+fl ../esp8266/bme280.fth
+fl ../esp8266/vl6180x.fth
+fl ../esp8266/ads1115.fth \ Possibly unnecessary since Teensy3 has good ADCs
+fl sht21.fth
+
+fl ../esp8266/ds18x20.fth  \ Onewire temperature probe
+#23 to ds18x20-pin  \ Needs 4.7K pullup
+
+: pump-setup  ( -- )
+   valve-gpio #gpios  bounds  do  0 i gpio-pin!  i gpio-is-output  loop
+;
+
+fl ../../cforth/printf.fth
+fl esp8266_at.fth
 
 
-
+\ Replace 'quit' to make CForth auto-run some application code
+\ instead of just going interactive.
+: app  ." CForth" cr decimal  pump-setup  init-i2c quit  ;
+[else]
+: app ." CForth" cr decimal  quit  ;
+[then]
 " app.dic" save

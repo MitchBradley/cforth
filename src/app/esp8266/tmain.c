@@ -1,5 +1,7 @@
 // Top-level routine for starting Forth
 
+#include "forth.h"
+
 void *callback_up;
 
 void lua_main()

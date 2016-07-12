@@ -1,16 +1,19 @@
 // Top-level routine for starting Forth
 
+#include "forth.h"
+#include "compiler.h"
+
 #ifdef STANDALONE
-main()
+void main()
 #else
-cforth()
+void cforth()
 #endif
 {
-    void *up;
+    cell *up;
 
-    init_io();   // Perform platform-specific initialization
+    init_io(0, (char **)0, up);   // Perform platform-specific initialization
 
-    up = (void *)init_forth();
-    execute_word("app", up);  // Call the top-level application word
+    up = init_forth();
+    (void)execute_word("app", up);  // Call the top-level application word
 //    execute_word("quit", up);  // Call the Forth text interpreter
 }

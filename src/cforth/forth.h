@@ -50,6 +50,7 @@ extern const struct header builtin_hdr;
 
 cell pfread(cell *sp, cell len, void *fid, cell *up);
 cell pfwrite(void *adr, cell len, void *fid, cell *up);
+cell *init_forth(void);
 void init_io(int argc, char **argv, cell *up);
 int next_arg(cell *up);
 void linemode(void);

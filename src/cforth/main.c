@@ -38,7 +38,7 @@ extern cell *prepare_dictionary(int *argcp, char *(*argvp[]));
 #include <setjmp.h>
 #include <signal.h>
 
-#ifdef WIN32
+#if defined(WIN32) || defined(__MINGW32__)
 #define sigsetjmp(jb,s) setjmp(jb)
 #define siglongjmp(jb,v) longjmp(jb,v)
 #define sigjmp_buf jmp_buf

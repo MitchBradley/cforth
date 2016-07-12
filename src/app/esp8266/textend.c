@@ -563,6 +563,21 @@ int myspiffs_format(void);
 extern void SPIRead(void);
 extern void raw_putchar(unsigned char c);
 
+uint8_t owpin;
+uint8_t owpower;
+void ow_init(uint8_t pin, int power) { owpin = pin; owpower = power; onewire_init(owpin); };
+uint8_t ow_reset() { return onewire_reset(owpin); };
+void ow_select(const uint8_t rom[8]) { onewire_select(owpin, rom); };
+void ow_skip() { onewire_skip(owpin); };
+void ow_write(uint8_t v) { onewire_write(owpin, v, owpower); };
+void ow_write_bytes(const uint8_t *buf, uint16_t count) { onewire_write_bytes(owpin, buf, count, owpower); };
+uint8_t ow_read() { return onewire_read(owpin); };
+void ow_read_bytes(uint8_t *buf, uint16_t count) { onewire_read_bytes(owpin, buf, count); };
+void ow_depower() { onewire_depower(owpin); };
+void ow_reset_search() { onewire_reset_search(owpin); };
+void ow_target_search(uint8_t family_code) { onewire_target_search(owpin, family_code); };
+uint8_t ow_search(uint8_t *newAddr) { onewire_search(owpin, newAddr); };
+
 cell ((* const ccalls[])()) = {
   C(raw_putchar)      //c m-emit  { i.char -- }
 
@@ -577,21 +592,21 @@ cell ((* const ccalls[])()) = {
 
   C(SPIRead) //c spi-read { i.len a.buf i.id -- }
 
-  C(onewire_init) //c ow-init { i.id -- }
-  C(onewire_reset) //c ow-reset  { i.id -- i.present? }
-  C(onewire_select) //c ow-select  { a.romp i.id -- }
-  C(onewire_skip) //c ow-skip  { i.id -- }
-  C(onewire_write) //c ow-b!  { i.power i.byte i.id -- }
-  C(onewire_write_bytes) //c ow-write  { i.power i.len a.adr i.id -- }
-  C(onewire_read) //c ow-b@  { i.id -- }
-  C(onewire_read_bytes) //c ow-read  { i.len a.adr i.id -- }
-  C(onewire_depower) //c ow-depower  { i.id -- }
-  C(onewire_reset_search) //c ow-reset-search  { i.id -- }
-  C(onewire_target_search) //c ow-target-search  { i.family i.id -- }
-  C(onewire_search) //c ow-search  { a.newaddr i.id -- i.ok? }
-  C(onewire_crc8) //c ow-crc8  { i.len a.adr -- i.crc }
-  C(onewire_check_crc16) //c ow-check-crc16  { i.crc a.invcrc i.len a.input -- i.ok? }
-  C(onewire_crc16) //c ow-crc16  { i.crc i.len a.adr -- i.crc }
+  C(ow_init)		//c ow-init { i.power i.id -- }
+  C(ow_reset)		//c ow-reset  { -- i.present? }
+  C(ow_select)		//c ow-select  { a.romp -- }
+  C(ow_skip)		//c ow-skip  { -- }
+  C(ow_write)		//c ow-b!  { i.byte -- }
+  C(ow_write_bytes)	//c ow-write  { i.len a.adr -- }
+  C(ow_read)		//c ow-b@  { -- }
+  C(ow_read_bytes)	//c ow-read  { i.len a.adr -- }
+  C(ow_depower)		//c ow-depower  { -- }
+  C(ow_reset_search)	//c ow-reset-search  { -- }
+  C(ow_target_search)	//c ow-target-search  { i.family -- }
+  C(ow_search)		//c ow-search  { a.newaddr -- i.ok? }
+  C(onewire_crc8)	//c ow-crc8  { i.len a.adr -- i.crc }
+  C(onewire_check_crc16)//c ow-check-crc16  { i.crc a.invcrc i.len a.input -- i.ok? }
+  C(onewire_crc16)	//c ow-crc16  { i.crc i.len a.adr -- i.crc }
 
   C(i2c_setup)                //c i2c-setup     { i.scl i.sda -- }
   C(i2c_master_start)         //c i2c-start     { -- }

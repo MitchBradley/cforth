@@ -12,6 +12,10 @@
 #include "forth.h"
 #include "compiler.h"
 
+int kbhit(void);
+int getkey(void);
+int putchar(int c);
+
 int isinteractive() {  return (1);  }
 
 void emit(u_char c, cell *up)

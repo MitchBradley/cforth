@@ -18,8 +18,8 @@
    false
 ;
 : find-first-ds18x20  ( -- )
-   ds18x20-pin ow-init
-   begin  ds18x20-addr ds18x20-pin ow-search  while
+   1 ds18x20-pin ow-init
+   begin  1 ds18x20-addr ow-search  while
       is-ds18x20?  if  exit  then
    repeat
    true abort" DS18B20 not found"
@@ -28,18 +28,16 @@
 \needs bwjoin  : bwjoin  ( low high -- )  8 lshift or  ;
 \needs le-w@  : le-w@  ( adr -- w )  dup c@ swap 1+ c@ bwjoin  ;
 : ds18x20-command  ( cmd -- )
-   ds18x20-pin ow-reset  0= abort" No Onewire presence pulse"
-   ds18x20-addr ds18x20-pin ow-select
-   \ 1 is "hold line high" after write, for parasitic power.
-   \ 0 didn't work for me even though my 18B20 has a separate power line.
-   1 swap ds18x20-pin ow-b!
+   ow-reset 0= abort" No Onewire presence pulse"
+   ds18x20-addr ow-select
+   ow-b!
 ;
 : ds18x20-start  ( -- )  $44 ds18x20-command  ;
 
 9 buffer: ds18x20-data
 : ds18x20-temp@  ( -- t*16 )
    $be ds18x20-command
-   9 ds18x20-data ds18x20-pin ow-read
+   9 ds18x20-data ow-read
    9 ds18x20-data ow-crc8-ok?  0=  abort" DS18B20 bad CRC"  \ Could retry
    ds18x20-data le-w@ w->n   ( temp )
    \ DS18B20 has four fractional bits, DS18S20 has only one
@@ -57,9 +55,11 @@
 0 value first-ds18x20
 0 value end-ds18x20
 : find-all-ds18x20s  ( -- )
-   ds18x20-pin ow-init
+   \ 1 is "hold line high" after write, for parasitic power.
+   \ 0 didn't work for me even though my 18B20 has a separate power line.
+   1 ds18x20-pin ow-init
    here to first-ds18x20
-   begin  ds18x20-addr ds18x20-pin ow-search  while
+   begin  ds18x20-addr ow-search  while
       is-ds18x20?  if
          ds18x20-addr here move  8 allot
       then
@@ -69,4 +69,3 @@
 : #ds18x20s  ( -- count )  end-ds18x20 first-ds18x20 -  8 /  ;
 \ Use addresses from the array just created in place of ds18x20-addr
 [then]
-

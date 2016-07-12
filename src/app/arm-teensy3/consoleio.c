@@ -24,7 +24,9 @@ void tx(char c)
     if (USB_SERIAL_ON) {
 	usb_serial_putchar(c);
     }
+#ifdef USE_UART
     serial_putchar(c);
+#endif
 }
 
 int putchar(int c)
@@ -38,7 +40,10 @@ int kbhit() {
     // return usb_serial_available() != 0;
     if(USB_SERIAL_ON && (usb_serial_available() != 0))
 	return 1;
+#ifdef USE_UART
     return serial_available() != 0;
+#endif
+    return 0;
 }
 
 int getkey()
@@ -50,7 +55,10 @@ int getkey()
     if(USB_SERIAL_ON && (usb_serial_available() != 0)) {
 	return usb_serial_getchar();
     }
+#ifdef USE_UART
     return serial_getchar();
+#endif
+    return 0;
 }
 
 void init_io(int argc, char **argv, cell *up)

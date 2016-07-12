@@ -46,13 +46,13 @@ warning !
    repeat
    2drop  0 0 (local)
 ; immediate
-: x1  ( n -- n n^2 n^3 )  locals| n |  n  dup n *  dup n *  ;
+\ Test:
+\ : x1  ( n -- n n^2 n^3 )  locals| n |  n  dup n *  dup n *  ;
 
 
 \ Bradley Forthware's Syntax, with "ins" and "locals", but not "outs"
-variable local#
-d# 32 8 * buffer: locnames
-: >locname  ( n -- adr )  d# 32 *  locnames +  ;
+0 value locnames
+0 value last-locname
 
 variable ;seen?
 variable -seen?
@@ -61,18 +61,32 @@ variable -seen?
       2drop                                    ( )
    else                                        ( adr len )  \ scratch or input
       ;seen? @  if  postpone false  then       ( adr len )  \ scratch
-      local# @  >locname  place  1 local# +!   ( )
+     tuck last-locname place                   ( len )
+     1+ last-locname + to last-locname         ( )
    then
 ;
-: declare-locals  ( -- )	\ Declare locals in reverse order
-   local# @  ?dup  if
-      begin  ?dup  while  1- dup >locname count  (local)  repeat
-      0 0 (local)
-   then 
+
+: -locname  ( -- adr len )
+    begin  -1 last-locname +!  last-locname @ c@ #32 <  until
+    last-locname @ count
+;
+: declare-locals  ( -- )
+   last-locname locnames <>  if   ( )
+      last-locname   begin        ( adr )
+         1-  dup c@ #32 <  if     ( adr' )
+            dup count (local)     ( adr )
+         then                     ( adr )
+         dup locnames =           ( adr )
+      until                       ( adr )
+      drop                        ( )
+      0 0 (local)                 ( )
+   then                           ( )
 ;
 
 : {  ( "name ... ; name ... -- name ... }" -- )
-   -seen? off  ;seen? off  local# off
+   -seen? off  ;seen? off
+   here #20 na+ to locnames
+   locnames to last-locname
    begin
       parse-word
       over c@  case
@@ -84,4 +98,5 @@ variable -seen?
    until                                              ( )
    declare-locals
 ; immediate
-: x2  { n -- }  n  dup n *  dup n *  ;
+\ Test:
+\ : x2  { n -- }  n  dup n *  dup n *  ;

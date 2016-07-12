@@ -1,5 +1,7 @@
 #include "forth.h"
 
+#undef __STRICT_ANSI__
+
 #ifdef FLOATING
 #include "fprims.h"
 #include "prims.h"	/* Needed for FPAREN_LIT */

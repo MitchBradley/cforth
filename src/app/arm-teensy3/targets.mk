@@ -1,5 +1,5 @@
 CONFIG += -DBITS32
-CONFIG += -DFLOATING -DMOREFP
+# CONFIG += -DFLOATING -DMOREFP
 
 CC:=gcc
 
@@ -30,11 +30,14 @@ include $(SRC)/cforth/targets.mk
 DICTIONARY=ROM
 DICTSIZE=0xc000
 
-include $(SRC)/cforth/embed/targets.mk
+CONFIG += -DBITS32
+CONFIG += -DFLOATING -DMORE_FP
+CFLAGS += -m32
+TCFLAGS += -MMD -g -Os -std=c99
+#TCFLAGS += -MMD -g -Os -std=c99
+TCFLAGS += -DF_CPU=96000000
 
-# CFLAGS += -DBITS32 -m32 -DFLOATING -DMORE_FP
-# TCFLAGS += -MMD -g -Os -DBITS32 -DFLOATING -DMORE_FP
-TCFLAGS += -MMD -g -Os
+include $(SRC)/cforth/embed/targets.mk
 
 DUMPFLAGS = --disassemble -z -x -s
 
@@ -45,6 +48,8 @@ INCS += -I$(SRC)/app/arm-teensy3
 # Platform-specific object files for low-level startup and platform I/O
 
 PLAT_OBJS =  ttmain.o tconsoleio.o
+PLAT_OBJS += ti2c-bitbang.o
+PLAT_OBJS += tonewire.o
 
 # Object files for the Forth system and application-specific extensions
 

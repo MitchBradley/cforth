@@ -1,3 +1,4 @@
+\ Driver for MS5803 Barometer and Thermometer
 $77 value ms-slave
 : ms-cmd  ( cmd -- )
    ms-slave i2c-start-write  ( err? )
