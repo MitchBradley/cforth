@@ -65,7 +65,7 @@ HELPERS=kernel.dic meta makename meta.exe makename.exe makeccalls
 DERIVED=dict.h dicthdr.h userarea.h init.x prims.h vars.h forth.ip ccalls.fth
 BACKUPS=*.BAK *.CKP ,* *~
 ARTIFACTS = $(BASEOBJS) $(METAOBJS) $(HOSTOBJS) \
-  $(HELPERS) $(DERIVED) $(BACKUPS) *.core *.o
+  $(HELPERS) $(DERIVED) $(BACKUPS) *.core *.o *.exe *.d tccalls.fth
 
 %.o: %.c $(INCLUDE)
 

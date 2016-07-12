@@ -62,6 +62,8 @@ TSFLAGS += -DRAMTOP=${RAMTOP}
 
 LIBGCC= -lgcc
 
+ttmain.o: vars.h
+
 app.o: $(PLAT_OBJS) $(FORTH_OBJS)
 	@echo Linking $@ ... 
 	$(TLD)  -o $@  -r  $(PLAT_OBJS) $(FORTH_OBJS)
