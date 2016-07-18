@@ -21,3 +21,16 @@ fresh      2.5M -150K .254V
 4 tsp/3Q   400K -400K .037V
                       
 [then]
+
+
+
+/ TODO
+0 value ec-const-resistor ( -- r{0..4096} )
+
+: ec-measure ( -- ec{0..4096} )
+  ec-const-resistor    ( rc )
+  ec-read0 ec-read1 -  ( rc dv )
+  4096 over -          ( rc dv vcc-dv )
+  swap 4096 +          ( rc vcc-dv vcc+dv )
+  */                   ( ec )
+;
