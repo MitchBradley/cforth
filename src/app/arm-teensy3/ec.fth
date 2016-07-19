@@ -23,21 +23,28 @@ fresh      2.5M -150K .254V
 [then]
 
 
+\ TODO
+0 value ec-const-resistor ( -- r{0..4095} )
 
 : ec-charge ( -- )
    #12 analogReadRes
    ec-lo-gpio gpio-is-output
-   0 ec-lo-gpio gpio-pin!
+   0 ec-lo-gpio gpio-pin! \ charge up
    begin
-     \ charge
-     ec-hi-gpio gpio-is-output
-     1 ec-hi-gpio gpio-pin!
-     #5 ms
-     \ check if Vin is > 1.6V
      ec-hi-gpio gpio-is-input
      ec-analog-pin analogRead
-     2048 >
-   until
+     #1536 < while \ 1.24V
+     ec-hi-gpio gpio-is-output
+     1 ec-hi-gpio gpio-pin!  #5 ms
+   repeat
+   1 ec-lo-gpio gpio-pin! \ charge down
+   begin
+     ec-hi-gpio gpio-is-input
+     ec-analog-pin analogRead
+     #2560 > while \ 2.06V
+     ec-hi-gpio gpio-is-output
+     0 ec-hi-gpio gpio-pin!  #5 ms
+   repeat
 ;
 
 : ec-volt-diff ( -- dv{0..4095} )
@@ -51,20 +58,18 @@ fresh      2.5M -150K .254V
      ec-analog-pin analogRead -
    loop
    #20 /
+   0 ec-lo-gpio gpio-pin!
 ;
 
-
-\ TODO
-0 value ec-const-resistor ( -- r{0..4095} )
-
 : ec-measure ( -- ec*1000 )
-   ec-volt-diff         ( dv )
-   4096 over +          ( dv vcc+dv )
-   4096 rot -           ( vcc+dv vcc-dv )
-   dup 0= if            ( vcc+dv vcc-dv )
-     999999
+   ec-volt-diff          ( dv )
+   #4096 over +          ( dv vcc+dv )
+   #4096 rot -           ( vcc+dv vcc-dv )
+   dup 0= if             ( vcc+dv vcc-dv )
+     2drop
+     #999999             ( 999.999 )
    else
-     ec-const-resistor    ( vcc+dv vcc-dv r )
-     * 1000 -rot */       ( ec*1000 )
+     ec-const-resistor   ( vcc+dv vcc-dv r )
+     * #1000 -rot */     ( ec*1000 )
    then
 ;
