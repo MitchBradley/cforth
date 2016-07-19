@@ -23,31 +23,49 @@ fresh      2.5M -150K .254V
 [then]
 
 
-\ TODO
-0 value ec-const-resistor ( -- r{0..4095} )
+: .volts ( v{0..4095} -- )
+  #330 #4095 */ n.nn$ type
+  'V' emit
+;
+
+
+\ TODO: figure out these values
+: ec-scalar ( -- uS/cm ) #1 ;
+: ec-upper #30000 ;
+
+
+#2730 value ec-bounds-max ( max:2.2V )
+#1365 value ec-bounds-min ( min:1.1V )
+: ec-charge-ms ( -- ) #200 ms ;
+
 
 : ec-charge ( -- )
    #12 analogReadRes
    ec-lo-gpio gpio-is-output
+
    0 ec-lo-gpio gpio-pin! \ charge up
    begin
      ec-hi-gpio gpio-is-input
      ec-analog-pin analogRead
-     #1536 < while \ 1.24V
+     dup .volts space
+     ec-bounds-min < while
      ec-hi-gpio gpio-is-output
-     1 ec-hi-gpio gpio-pin!  #5 ms
+     1 ec-hi-gpio gpio-pin!  ec-charge-ms
    repeat
+   drop
+
    1 ec-lo-gpio gpio-pin! \ charge down
    begin
      ec-hi-gpio gpio-is-input
      ec-analog-pin analogRead
-     #2560 > while \ 2.06V
+     dup .volts space
+     ec-bounds-max > while
      ec-hi-gpio gpio-is-output
-     0 ec-hi-gpio gpio-pin!  #5 ms
+     0 ec-hi-gpio gpio-pin!  ec-charge-ms
    repeat
 ;
 
-: ec-volt-diff ( -- dv{0..4095} )
+: ec-volt-diff ( -- dv{-4095..+4095} )
    ec-setup
    0 #20 0 do
      1 ec-hi-gpio gpio-pin!
@@ -61,15 +79,15 @@ fresh      2.5M -150K .254V
    0 ec-lo-gpio gpio-pin!
 ;
 
-: ec-measure ( -- ec*1000 )
+: ec-measure ( -- ec{uS/cm} )
    ec-volt-diff          ( dv )
+   0 max                 ( dv )
    #4096 over +          ( dv vcc+dv )
    #4096 rot -           ( vcc+dv vcc-dv )
    dup 0= if             ( vcc+dv vcc-dv )
-     2drop
-     #999999             ( 999.999 )
-   else
-     ec-const-resistor   ( vcc+dv vcc-dv r )
-     * #1000 -rot */     ( ec*1000 )
+     \ divide by zero?
+     2drop ec-upper exit
    then
+   ec-scalar             ( vcc+dv vcc-dv c )
+   -rot */               ( ec )
 ;
