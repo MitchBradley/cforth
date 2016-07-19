@@ -30,7 +30,7 @@ fresh      2.5M -150K .254V
 
 
 \ TODO: figure out these values
-: ec-scalar ( -- uS/cm ) #1 ;
+: ec-scalar ( -- uS/cm ) #500 ;
 : ec-upper #30000 ;
 
 
