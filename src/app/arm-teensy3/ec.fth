@@ -2,19 +2,9 @@
 #21 constant ec-lo-gpio
 pinA8 constant ec-analog-pin  \ GPIO 22
 : ec-setup  ( -- )
-   ec-hi-gpio gpio-is-output
+   ec-hi-gpio gpio-is-input
    ec-lo-gpio gpio-is-output
    #12 analogReadRes
-;
-: ec-read0  ( -- n )
-   1 ec-lo-gpio gpio-pin!
-   0 ec-hi-gpio gpio-pin!
-   ec-analog-pin analogRead
-;
-: ec-read1  ( -- n )
-   0 ec-lo-gpio gpio-pin!
-   1 ec-hi-gpio gpio-pin!
-   ec-analog-pin analogRead
 ;
 0 [if]
 fresh      2.5M -150K .254V
@@ -24,8 +14,9 @@ fresh      2.5M -150K .254V
 
 
 : .volts ( v{0..4095} -- )
+  dup 0< if negate '-' emit then
   #330 #4095 */ n.nn$ type
-  'V' emit
+  ." V" cr
 ;
 
 
@@ -34,49 +25,86 @@ fresh      2.5M -150K .254V
 : ec-upper #30000 ;
 
 
-#2730 value ec-bounds-max ( max:2.2V )
-#1365 value ec-bounds-min ( min:1.1V )
-: ec-charge-ms ( -- ) #200 ms ;
+#248 value ec-bounds-min ( min:0.2V )
+#124 value ec-bounds-max ( max:0.1V )
 
+: ec-get-charge ( -- v{0..4095} )
+   ec-hi-gpio gpio-is-input
+   0 ec-lo-gpio gpio-pin!
+   ec-analog-pin analogRead
+   dup 0> if exit then
+   1 ec-lo-gpio gpio-pin!
+   ec-analog-pin analogRead
+   4096 -
+;
 
-: ec-charge ( -- )
-   #12 analogReadRes
-   ec-lo-gpio gpio-is-output
+: ec-charge ( -- v )
+   ec-hi-gpio gpio-is-output
+   1 ec-hi-gpio gpio-pin!
+   0 ec-lo-gpio gpio-pin!
+   #50 ms
+   ec-hi-gpio gpio-is-input
+   #50 ms
+;
+: ec-discharge ( -- v )
+   ec-hi-gpio gpio-is-output
+   0 ec-hi-gpio gpio-pin!
+   1 ec-lo-gpio gpio-pin!
+   #50 ms
+   ec-hi-gpio gpio-is-input
+   #50 ms
+;
 
-   0 ec-lo-gpio gpio-pin! \ charge up
-   begin
-     ec-hi-gpio gpio-is-input
-     ec-analog-pin analogRead
-     dup .volts space
+: ec-auto-charge ( -- )
+   begin    key? if exit then
+     ec-get-charge
+     dup ." up " .volts
      ec-bounds-min < while
-     ec-hi-gpio gpio-is-output
-     1 ec-hi-gpio gpio-pin!  ec-charge-ms
+     ec-charge
    repeat
-   drop
-
-   1 ec-lo-gpio gpio-pin! \ charge down
-   begin
-     ec-hi-gpio gpio-is-input
-     ec-analog-pin analogRead
-     dup .volts space
+;
+: ec-auto-discharge ( -- )
+   begin    key? if exit then
+     ec-get-charge
+     dup ." down " .volts
      ec-bounds-max > while
-     ec-hi-gpio gpio-is-output
-     0 ec-hi-gpio gpio-pin!  ec-charge-ms
+     ec-discharge
    repeat
+;
+
+: ec-normalize ( -- )
+   ec-setup
+   ec-auto-charge
+   cr cr #200 ms
+   ec-auto-discharge
+;
+
+
+: ec-look ( -- v1 v0 )
+   ec-setup
+   ec-hi-gpio gpio-is-output
+   1 ec-hi-gpio gpio-pin!
+   0 ec-lo-gpio gpio-pin!
+   ec-analog-pin analogRead .volts
+   0 ec-hi-gpio gpio-pin!
+   1 ec-lo-gpio gpio-pin!
+   ec-analog-pin analogRead .volts
+   ec-hi-gpio gpio-is-input
 ;
 
 : ec-volt-diff ( -- dv{-4095..+4095} )
    ec-setup
+   ec-hi-gpio gpio-is-output
    0 #20 0 do
      1 ec-hi-gpio gpio-pin!
-     0 ec-lo-gpio gpio-pin! #5 ms
+     0 ec-lo-gpio gpio-pin!
      ec-analog-pin analogRead +
      0 ec-hi-gpio gpio-pin!
-     1 ec-lo-gpio gpio-pin! #5 ms
+     1 ec-lo-gpio gpio-pin!
      ec-analog-pin analogRead -
    loop
    #20 /
-   0 ec-lo-gpio gpio-pin!
+   ec-hi-gpio gpio-is-input
 ;
 
 : ec-measure ( -- ec{uS/cm} )
