@@ -25,7 +25,7 @@ fl xmifce.fth
 fl ../../lib/crc16.fth
 fl ../../lib/xmodem.fth
 also modem
-: rx  ( -- )  pad  unused here pad - -  (receive)  #100 ms  ;
+: rx  ( -- )  pad  unused pad here - -  (receive)  #100 ms  ;
 previous
 
 : .ssid  ( -- )  pad wifi-ap-config@ drop pad cscount type  ;
@@ -79,16 +79,9 @@ fl bme280.fth
 fl pca9685.fth
 fl hcsr04.fth
 
-: init-all  ( -- )
-   ['] init-vl6180x catch  if  ." VL6180x init failed" cr  then
-   ['] init-ds18x20 catch  if  ." DS18x20 init failed" cr  then
-   ['] init-ads     catch  if  ." ADS1115 init failed" cr  then
-   ['] init-bme     catch  if  ." BME280 init failed" cr  then
-   ['] init-pca     catch  if  ." PCA9685 init failed" cr  then
-   ['] init-hcsr04  catch  if  ." HC-SR04 init failed" cr  then
-;
-
 fl server.fth
+
+\ fl serve-sensors.fth
 
 fl car.fth
 
