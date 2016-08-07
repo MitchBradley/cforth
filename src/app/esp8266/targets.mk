@@ -8,7 +8,9 @@ APPLOADFILE = app.fth
 # i.e. the list of files that APPLOADFILE floads.  It's for dependency checking.
 APPSRCS = $(wildcard $(APPPATH)/*.fth)
 
-default: app.o
+default: nodemcu-fw
+
+# default: app.o
 
 # Makefile fragment for the final target application
 
@@ -76,3 +78,11 @@ date.o:
 EXTRA_CLEAN += *.elf *.dump *.nm *.img date.c $(FORTH_OBJS) $(PLAT_OBJS)
 
 include $(SRC)/cforth/embed/targets.mk
+
+.PHONY: nodemcu-fw
+
+nodemcu-fw: app.o
+	(cd $(NODEMCU) && makeit)
+
+download: nodemcu-fw
+	(cd $(NODEMCU) && loadit)

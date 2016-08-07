@@ -13,9 +13,10 @@ CC := gcc
 GCCPATH := C:/
 CROSS ?= $(GCCPATH)xtensa-lx106-elf/bin/xtensa-lx106-elf-
 #BASE = /Users/wmb/
-BASE = /c/Users/wmb/Documents/Archive/from-MacBookPro/
+NODEMCUBASE = $(TOPDIR)/..
 
-NODEMCU ?= $(BASE)github/nodemcu-firmware
+NODEMCU ?= $(NODEMCUBASE)/nodemcu-firmware
+$(info NODEMCU $(NODEMCU))
 INCS += -I$(NODEMCU)/app/include
 INCS += -I$(NODEMCU)/app/platform
 INCS += -I$(NODEMCU)/app/spiffs
