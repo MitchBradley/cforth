@@ -2,11 +2,11 @@
 
 #include "forth.h"
 
-void *callback_up;
+cell *callback_up;
 
 void lua_main()
 {
-    init_io();   // Perform platform-specific initialization
+    init_io(0, (char **)0, (cell *)callback_up);   // Perform platform-specific initialization
 
     callback_up = (void *)init_forth();
     execute_word("app", callback_up);  // Call the top-level application word
