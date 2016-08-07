@@ -247,17 +247,85 @@ parse_word(u_char **adrp, cell *up)
 #define to_name_adr(xt) (to_name_len(xt) - name_len(xt))
 #define isimmediate(xt) ((*to_name_len(xt)) & IMMEDBIT)
 
-int
-search_wid(char *adr, cell len, vocabulary_t *wid, xt_t *xtp, cell *up)
+#ifndef NO_COMPLETION
+xt_t next_initial_match(char *adr, cell len, xt_t dictp, cell *up)
 {
     /* The first character in the string is the Forth count field. */
-    register u_char *str,*ptr;
-    register int length;
-    register xt_t dictp;
+    u_char *str,*ptr;
+    int length;
 
-    for ( dictp = XT_FROM_CT(*hash(wid, adr, len), up);
-          dictp != (xt_t)V(TORIGIN);
-        ) {
+    while (dictp != (xt_t)V(TORIGIN)) {
+        if ( len > name_len(dictp)) {
+            goto nextword;
+        }
+	length = len;
+        str = to_name_adr(dictp);
+        ptr = (u_char *)adr;
+        while ( length-- ) {
+            if ( *str++ != *ptr++ ) {
+                goto nextword;
+            }
+        }
+
+	return dictp;
+
+      nextword:
+        dictp = XT_FROM_CT(*to_link(dictp), up);
+
+    }
+    return ((xt_t)0);	       /* Not found */
+}
+
+// adr, len - initial substring to search for
+// matchnum - which matched name to return - 0 for the first, 1 for the second, ...
+// namep, namelen - one of the matched names
+int num_initial_matches(char *adr, cell len,
+			int matchnum, char **namep, int *namelen,
+			cell *up)
+{
+    char *canonstr;
+    char strbuf[32];
+    vocabulary_t *voc, *last_voc;
+    int nmatches = 0;
+    *namelen = 0;
+    *namep = (char *)0;
+
+    canonstr = alcanonical(adr, len, strbuf, up);
+
+    last_voc = (vocabulary_t *)0;
+    int i;
+    for (i = 0; i < NVOCS; i++) {
+        voc = (vocabulary_t *) XT_FROM_CT( ((token_t *)&V(CONTEXT))[i], up);
+        if ( voc == (vocabulary_t *)V(TORIGIN))
+            continue;
+        if (voc != last_voc) {
+	    xt_t dictp = XT_FROM_CT(*hash(voc, canonstr, len), up);
+	    while (dictp != (xt_t)V(TORIGIN)) {
+		xt_t xt = next_initial_match(canonstr, len, dictp, up);
+		if (xt == (xt_t)0) {
+		    break;
+		}
+		if (nmatches == matchnum) {
+		    *namelen = name_len(xt);
+		    *namep = to_name_adr(xt);
+		}
+		++nmatches;
+		dictp = XT_FROM_CT(*to_link(xt), up);
+	    }
+	}
+        last_voc = voc;
+    }
+    return nmatches;
+}
+#endif
+
+xt_t next_match(char *adr, cell len, xt_t dictp, cell *up)
+{
+    /* The first character in the string is the Forth count field. */
+    u_char *str,*ptr;
+    int length;
+
+    while (dictp != (xt_t)V(TORIGIN)) {
 
         length = name_len(dictp);
 
@@ -272,14 +340,23 @@ search_wid(char *adr, cell len, vocabulary_t *wid, xt_t *xtp, cell *up)
             }
         }
 
-        *xtp = dictp;
-        return ( isimmediate(dictp) ? 1 : -1 );
+	return dictp;
 
       nextword:
         dictp = XT_FROM_CT(*to_link(dictp), up);
 
     }
-    return (0);	       /* Not found */
+    return ((xt_t)0);	       /* Not found */
+}
+
+int
+search_wid(char *adr, cell len, vocabulary_t *wid, xt_t *xtp, cell *up)
+{
+    *xtp = next_match(adr, len, XT_FROM_CT(*hash(wid, adr, len), up), up);
+    if (*xtp == (xt_t)0) {
+	return 0;
+    }
+    return isimmediate(*xtp) ? 1 : -1;
 }
 
 int

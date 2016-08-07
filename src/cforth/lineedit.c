@@ -1,5 +1,6 @@
 #include "forth.h"
 #include "specialkeys.h"
+#include "string.h"
 
 extern int key();
 
@@ -202,6 +203,163 @@ void forward_char(void *up)
     }
 }
 
+void forward_word(void *up)
+{
+    while ((thisaddr < endaddr) && (*thisaddr == ' ')) {
+        emit(*thisaddr, up);
+        ++thisaddr;
+    }
+    while ((thisaddr < endaddr) && (*thisaddr != ' ')) {
+        emit(*thisaddr, up);
+        ++thisaddr;
+    }
+}
+
+void backward_word(void *up)
+{
+    if (startaddr >= endaddr) {
+	return;
+    }
+    // If already at the beginning of a word, dislodge the cursor
+    if ((thisaddr < endaddr) && (*thisaddr != ' ') &&
+	(thisaddr > startaddr) && (thisaddr[-1] == ' ')) {
+        emit(BS, up);
+        --thisaddr;
+    }
+    // Scan backward over spaces
+    while ((thisaddr < endaddr) && (*thisaddr == ' ') && (thisaddr > startaddr)) {
+        emit(BS, up);
+        --thisaddr;
+    }
+    // Scan backward to a non-space just after a space
+    while ((thisaddr > startaddr) && (thisaddr[-1] != ' ')) {
+        emit(BS, up);
+        --thisaddr;
+    }
+}
+
+int isdelim(char *addr)
+{
+    return (addr < startaddr) || (addr == endaddr) || (*addr == ' ');
+}
+
+static char word[32];
+void find_word_under_cursor(cell *up)
+{
+    int i = 0;
+    word[i] = '\0';
+    char *taddr = thisaddr;
+
+    if (startaddr == endaddr) {
+	return;
+    }
+    if ( (taddr < endaddr) && (*taddr == ' ') &&
+	  (taddr > startaddr) && (taddr[-1] == ' ')
+	) {
+	return;
+    }
+    while ((taddr > startaddr) && (taddr[-1] != ' ')) {
+	--taddr;
+    }
+    while ((taddr < endaddr) && (*taddr != ' ')) {
+	if (i != 32) {
+	    word[i++] = *taddr;
+	}
+	++taddr;
+    }
+    word[i] = '\0';
+    while (thisaddr < taddr) {
+	emit(*thisaddr++, up);
+    }
+}
+
+int num_initial_matches(char *adr, cell len, int matchnum, char **namep, int *actual_len, cell *up);
+
+static void highlight(cell *up)
+{
+    emit(0x1b, up);
+    emit('[', up);
+    emit('3', up);
+    emit('4', up);
+    emit('m', up);
+}
+
+static void lowlight(cell *up)
+{
+    emit(0x1b, up);
+    emit('[', up);
+    emit('0', up);
+    emit('m', up);
+}
+
+#ifndef NO_COMPLETION
+static int nmatches = 0;
+static int matchlen;
+static int thismatch = 0;
+
+void complete_word(cell *up)
+{
+    find_word_under_cursor(up);
+    if (*word == '\0') {
+	return;
+    }
+    char *name;
+    int len = strlen(word);
+    nmatches = num_initial_matches(word, len, 0, &name, &matchlen, up);
+
+    if (nmatches == 0) {
+	return;
+    }
+    if (nmatches == 1) {
+	while(len < matchlen) {
+	    addchar(name[len++], up);
+	}
+	addchar(' ', up);
+	nmatches = 0;
+	return;
+    }
+
+    while (len < matchlen) {
+	int nmatches2, matchlen2;
+	char *name2;
+	word[len] = name[len];
+	nmatches2 = num_initial_matches(word, len+1, 0, &name2, &matchlen2, up);
+	if (nmatches2 != nmatches) {
+	    break;
+	}
+	addchar(word[len++], up);
+    }
+    word[len] = '\0';
+
+    thismatch = 0;
+    highlight(up);
+    while (len < matchlen) {
+	addchar(name[len++], up);
+    }
+    lowlight(up);
+}
+
+void propose_word(cell *up)
+{
+    if (++thismatch == nmatches) {
+	thismatch = 0;
+    }
+    int newmatchlen;
+    char *name;
+    int len = strlen(word);
+    int nmatches = num_initial_matches(word, len, thismatch, &name, &newmatchlen, up);
+    while (matchlen > len) {
+	erase_char(up);
+	--matchlen;
+    }
+    highlight(up);
+    while (matchlen < newmatchlen) {
+	addchar(name[matchlen++], up);
+    }
+    lowlight(up);
+}
+#endif
+
 static int escaping;
 static int history_num = -1;
 
@@ -231,7 +389,16 @@ int lineedit_step(int c, cell *up)
 
 	// Expecting [ as second character of escape sequence
 	if (escaping == 1) {
-            escaping = (c == '[') ? 2 : 0;
+	    if (c >= 'A' && c <= 'Z') {
+		c += 'a' - 'A';
+	    }
+	    switch (c)
+	    {
+	    case '[': escaping = 2;  return 0;
+	    case 'f': forward_word(up); break;
+	    case 'b': backward_word(up); break;
+	    }
+	    escaping = 0;
 	    return 0;
 	}
 
@@ -266,6 +433,18 @@ int lineedit_step(int c, cell *up)
 		return 0;
 	    }
 	}
+
+#ifndef NO_COMPLETION
+	if (c == CTRL('i')) {
+	    if (nmatches) {
+		propose_word(up);
+	    } else {
+		complete_word(up);
+	    }
+	    return 0;
+	}
+	nmatches = 0;
+#endif
 
 	switch (c)
 	{
