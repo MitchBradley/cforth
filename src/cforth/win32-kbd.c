@@ -31,7 +31,7 @@ int keyboard_raw() {
     return rawmode;
 }
 
-#if 1
+#if 0
 int kbhit(void);
 int key_avail(void)
 {
