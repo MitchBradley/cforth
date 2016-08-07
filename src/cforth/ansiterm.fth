@@ -7,6 +7,8 @@ headerless
 : .esc[nx      ( n c -- n )  .esc[ over put-n (emit  ;
 headers
 
+: reset        ( -- )     control [ (emit  [char] c (emit  ;
+
 : left         ( -- )     [char] D .esc[x  -1 #out  +!  ;
 : right        ( -- )     [char] C .esc[x   1 #out  +!  ;
 : up           ( -- )     [char] A .esc[x  -1 #line +!  ;
