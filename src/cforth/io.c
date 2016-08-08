@@ -272,26 +272,15 @@ cell log_extent(cell *log_base, cell *up)
 
 void emit(u_char c, cell *up)
 {
-    int advance;
-
     log_char(c);
 
     if (output_file) {
-	advance = ansi_emit(c, output_file);
-	if (advance == -1) {
+	if (ansi_emit(c, output_file) == -1) {
 	    (void)putc((char)c, output_file);
 	    if ( c == '\r')
 		(void)fflush(output_file);
-	    advance = 1;
 	}
-    } else {
-	advance = 1;
     }
-    if ( c == '\n' || c == '\r' ) {
-        V(NUM_OUT) = 0;
-        V(NUM_LINE)++;
-    } else
-        V(NUM_OUT) += advance;
 }
 
 void cprint(const char *str, cell *up)

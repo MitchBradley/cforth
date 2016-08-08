@@ -1,3 +1,14 @@
+: move  ( from to len -- )
+   -rot  2dup u< if  rot cmove>   else  rot  cmove then
+;
+: ."  ( "string" -- )
+   state @  if
+      compile (.") ,"
+   else
+      [char] " parse type
+   then
+; immediate
+
 : ok ;
 : trigger  0 0 2>r 2r>  drop drop  ; immediate
 \ : [cr] cr ; immediate
@@ -10,8 +21,6 @@ decimal
 : /n  1 cells  ;
 : na1+  cell+  ;
 : na+  cells +  ;
-
-/token constant #align
 
 \ : again  ( sys -- )  postpone branch <resolve  ;  immediate
 
@@ -36,8 +45,7 @@ decimal
 : 0>= ( n -- flag )  0< 0=  ;
 : (s  ( -- )  postpone (  ; immediate
 : pad  ( -- adr )  here 100 +  ;
-: space  ( -- )  bl emit  ;
-: spaces  ( n -- )  0 max 0 ?do space loop  ;
+
 \ : c,  ( char -- )   here  1 allot  c!  ;
 
 : fm/mod  ( d.dividend n.divisor -- n.rem n.quot )
@@ -54,11 +62,6 @@ decimal
 : */  ( n n.num n.denom -- n.quot )  */mod nip  ;
 
 : noop  ( -- )  ;
-
-: aligned  ( adr -- aligned-adr )
-   [ #align 1- ] literal +  [ #align negate ] literal and
-;
-: align  ( -- )  here here aligned swap - allot  ;
 
 : laligned  ( adr -- aligned-adr )  3 +  -4 and  ;
 : lalign  ( -- )  here here laligned swap - allot  ;
@@ -89,7 +92,6 @@ hex
    dup c@ 3f and  ( len_byte_adr len )
    tuck - swap    ( adr len )
 ;
-: .name  ( acf -- )  >name$ type space  ;
 : lastacf  ( -- acf )  last token@  ;
 : body>  ( apf -- acf )  /token -  ;
 decimal
@@ -131,29 +133,6 @@ decimal
 \ : token@  ( adr -- acf)
 \    @  ( acf| prim )  dup primitive?  if  origin swap na+ @  then
 \ ;
-: crash  ( -- )  \ unitialized execution vector routine
-  r@ /token - token@         ( use the return stack to see who called us )
-   dup ['] execute =  if
-      \ XXX display the location in the input buffer
-   else   .name   then
-\   ." <--deferred word not initialized " abort
-;
-\ : (set-relocation-bit)  ( adr -- adr )
-\   dup  origin here between  over  up@ dup user-size + between  or  if
-\      dup >relbit over c@ or swap c!
-\   then
-\ ;
-: defer  ( -- )
-   create
-   (defer) here body>
-\t16 w!
-\t32  !
-\t64  !
-   here /n ualloc ,
-
-   >user ['] crash token!
-;
-defer defxx
 \ defer set-relocation-bit
 
 \ Note: It might be possible to define:
@@ -210,6 +189,57 @@ defer defxx
 ; immediate
 
 ' noop to status
+' sys-emit to (emit
+' sys-cr to cr
+
+: emit  ( c -- )  1 #out +!  (emit   ;
+: bounds  ( adr len -- endadr startadr )  over + swap  ;
+: (type  ( adr len -- )  bounds  ?do  i c@ emit  loop  ;
+' (type to type
+
+: space  ( -- )  bl emit  ;
+: spaces  ( n -- )  0 max 0 ?do space loop  ;
+: .name  ( acf -- )  >name$ type space  ;
+: crash  ( -- )  \ unitialized execution vector routine
+  r@ /token - token@         ( use the return stack to see who called us )
+   dup ['] execute =  if
+      \ XXX display the location in the input buffer
+   else   .name   then
+\   ." <--deferred word not initialized " abort
+;
+\ : (set-relocation-bit)  ( adr -- adr )
+\   dup  origin here between  over  up@ dup user-size + between  or  if
+\      dup >relbit over c@ or swap c!
+\   then
+\ ;
+: defer  ( -- )
+   create
+   (defer) here body>
+\t16 w!
+\t32  !
+\t64  !
+   here /n ualloc ,
+
+   >user ['] crash token!
+;
+defer defxx
+
+: (where1)  ( -- )
+   source                 ( adr len )
+   ." Error at: "
+   over >in @ type        ( adr len )
+   ."  |  "               ( adr len )
+   >in @ /string type cr  ( )
+;
+' (where1) \ to where1
+
+: (.not-found)  ( name$ -- )  cr  type ."  ?"  cr  where1  ;
+' (.not-found) to .not-found
+
+: (prompt)  ( -- )
+   state @  if  ."  ] "  else  ." ok "  then
+;
+' (prompt) to prompt
 
 : header  ( "name" -- )  safe-parse-word $header  ;
 
@@ -225,7 +255,6 @@ decimal
 defer exit?  ( -- flag )
 ' key? to exit?
 
-: bounds  ( adr len -- endadr startadr )  over + swap  ;
 
 \ A convenient word for stepping through and displaying a range of locations
 : ..  ( adr -- adr' )  dup @ . na1+  ;
@@ -244,22 +273,6 @@ defer exit?  ( -- flag )
    safe-parse-word drop c@  bl 1- and  state @  if  postpone literal  then
 ; immediate
 
-: move  ( from to len -- )
-   -rot  2dup u< if  rot cmove>   else  rot  cmove then
-;
-: place  ( adr len to-adr -- )  2dup c!  2dup + 1+  0 swap c!  1+ swap move  ;
-: pack  ( adr len to-adr -- to-adr )  dup >r place r>  ;
-
-\ The following two words define the format of in-line strings
-: extract-str  ( ip -- ip' adr len )  count 2dup + 1+ aligned -rot  ;
-: ",  ( adr len -- )  tuck  here place  ( len )  2+ allot  align  ;
-
-: skipstr  ( -- adr len )
-   r> ip@              ( return-adr ip ) 
-   extract-str         ( return-adr ip' adr len )
-   rot ip!             ( return-adr adr len )
-   rot >r              ( adr len )
-;
 : ("s)  ( -- str-adr )  skipstr drop 1-  ;
 : (")  ( -- adr len )  skipstr  ;
 
@@ -274,16 +287,6 @@ defer exit?  ( -- flag )
 : c"  \ string  ( -- adr )
    [char] " parse  2dup + 0 swap c!   ( adr len )
    state @  if  postpone csliteral  else  drop  then
-; immediate
-
-: ,"  ( "string" -- )  [char] " parse ",  ;
-
-: ."  ( "string" -- )
-   state @  if
-      postpone (.") ,"
-   else
-      [char] " parse type
-   then
 ; immediate
 
 nuser 'abort$
@@ -612,7 +615,5 @@ create nullstring 0 c,
 alias purpose: \
 alias headerless noop
 alias headers noop
-: (emit  ( n -- )  #out @ swap  emit  #out !  ;
-: (type  ( adr len -- )  #out @ -rot  type  #out !  ;
 : upc  ( char -- char' )  dup 'a' 'z' between  if  $20 invert and  then  ;
 alias #-buf pad

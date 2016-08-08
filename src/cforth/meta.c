@@ -117,14 +117,6 @@ void alcomma_string(u_char *adr, cell len, cell *up)
     align(up);
 }
 
-void dodotquote(cell *up)  {
-    cell adr;
-    cell len;
-    compile(P_DOT_QUOTE);
-    len = parse('"', &adr, up);
-    alcomma_string((u_char *)adr, len, up);
-}
-
 void doparen(cell *up)     { cell adr; (void) parse(')', &adr, up);  }
 void dobackslash(cell *up) { cell adr; (void) parse('\n', &adr, up); }
 void dobractick(cell *up)  { compile(PAREN_TICK); }
@@ -165,7 +157,6 @@ struct metatab {  char *name; void (*func)(); } metawords[] = {
 	"repeat",	dorepeat,
 	"again",	doagain,
 	"until",	dountil,
-	".\"",		dodotquote,
 	"p",		doprim,
 	"u",		donuser,
 	"t",		dotuser,

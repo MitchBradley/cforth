@@ -1,3 +1,7 @@
+defer (emit
+defer cr
+defer type
+
 \ : false  0  ;
 \ : true  -1  ;
  0 constant false
@@ -36,14 +40,8 @@ nuser 'source-id
 
 : /string  ( c-addr1 u1 n -- c-addr2 u2 )  tuck -  -rot +  swap  ;
 
-: where1  ( -- )
-   source                 ( adr len )
-   ." Error at: "
-   over >in @ type        ( adr len )
-   ."  |  "               ( adr len )
-   >in @ /string type cr  ( )
-;
-: .not-found  ( name$ -- )  cr  type ."  ?"  cr  where1  ;
+defer where1
+defer .not-found
 
 : $do-undefined   ( name$ -- )
    .not-found
@@ -82,10 +80,10 @@ nuser 'source-id
    source drop					     ( adr )
    source-id  if                                     ( adr )
       /tib source-id read-line  if                   ( cnt more? )
-         ." read error in refill"  abort             ( cnt more? )
+         -98 throw                                   ( -- )
       then                                           ( cnt more? )
       over /tib =  if                                ( cnt more? )
-         ." line too long in input file"  abort      ( cnt more? )
+         -97 throw                                   ( cnt more? )
       then                                           ( cnt more? )
    else                                              ( adr )
       /tib accept                                    ( cnt )
@@ -110,12 +108,8 @@ nuser 'source-id
    r> drop              ( 0 )    \ Don't need saved stack pointer
 ;
 defer status
-: prompt  ( -- )
-   interactive?  if	\ Suppress prompt if input is redirected to a file
-      status
-      state @  if  ."  ] "  else  ." ok "  then
-   then
-;
+defer prompt
+
 : clear  ( ?? -- )  sp0 @ sp!  ;
 defer .error
 nuser 'exit-interact?
@@ -123,8 +117,11 @@ nuser 'exit-interact?
    tib /tib 0 set-input
    [compile] [
    begin
-      depth 0<  if  ." Stack Underflow" cr  clear  then
-      prompt
+      depth 0<  if  -99 throw  then
+      interactive?  if	\ Suppress prompt if input is redirected to a file
+         status
+	 prompt
+      then
    refill  while
       ['] (interpret catch  ??cr  ?dup if  [compile] [  .error  ( clear ) then
    'exit-interact? @ until then

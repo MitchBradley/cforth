@@ -43,7 +43,6 @@ static void fill_bytes(u_char *to, u_cell length, u_char with);
 static cell digit(cell base, u_char c);
 static void ip_canonical(char *adr, cell len, cell *up);
 static cell tonumber(cell *adrp, cell len, cell *nhigh, cell *nlow, cell *up);
-static void type(u_char * adr, cell len, cell *up);
 static void umdivmod(u_cell *dhighp, u_cell *dlowp, u_cell u);
 static void umtimes(u_cell *dhighp, u_cell *dlowp, u_cell u1, u_cell u2);
 static void mtimesdiv(cell *dhighp, cell *dlowp, cell n1, cell n2);
@@ -419,13 +418,8 @@ execute:
     push(scr);
     next;
 
-/*$p emit */    case EMIT:    emit ((u_char)tos, up);    loadtos;    next;
-/*$p cr */      case CR:    emit ('\n', up);    next;
-
-/*$p type */    case TYPE:
-    type( (u_char *)(*sp++), tos, up);
-    loadtos;
-    next;
+/*$p sys-emit */    case EMIT:    emit((u_char)tos, up);    loadtos;    next;
+/*$p sys-cr */      case CR:      emit('\n', up);  V(NUM_OUT) = 0;  V(NUM_LINE)++;  next;
 
 /*$p >body */    case TO_BODY:   tos += sizeof (token_t); next;
 /*$p allot */    case ALLOT:
@@ -769,12 +763,6 @@ execute:
 /*$p (does) */  case P_DOES:
     tokstore(CT_FROM_XT(ip, up), (token_t *)LAST);
     ip = *rp++;
-    next;
-
-/*$p (.") */    case P_DOT_QUOTE:
-    ascr = (u_char *)ip;
-    type( ascr+1, (cell)*ascr, up);
-    ip = aligned( ascr + *ascr + 2);
     next;
 
 /*$p compile */ case COMPILE: compile(*ip++);    next;
@@ -1394,13 +1382,6 @@ execute_word(char *s, cell *up)
 /*$u 'debug     e TICK_DEBUG:   */
 /*$t current    e CURRENT:      */
 /*$t context    e CONTEXT:      *$UUUUUUUUUUUUUUU */ /* 15 extra voc slots */
-
-static void
-type(u_char *adr, cell len, cell *up)
-{
-    while (len--)
-        emit(*adr++, up);
-}
 
 int
 find_local(char *adr, int plen, xt_t *xtp, cell *up)

@@ -16,7 +16,6 @@ CROSS ?= $(GCCPATH)xtensa-lx106-elf/bin/xtensa-lx106-elf-
 NODEMCUBASE = $(TOPDIR)/..
 
 NODEMCU ?= $(NODEMCUBASE)/nodemcu-firmware
-$(info NODEMCU $(NODEMCU))
 INCS += -I$(NODEMCU)/app/include
 INCS += -I$(NODEMCU)/app/platform
 INCS += -I$(NODEMCU)/app/spiffs

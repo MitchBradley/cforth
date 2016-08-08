@@ -20,11 +20,6 @@ int isinteractive() {  return (1);  }
 
 void emit(u_char c, cell *up)
 {
-    if ( c == '\n' || c == '\r' ) {
-        V(NUM_OUT) = 0;
-        V(NUM_LINE)++;
-    } else
-        V(NUM_OUT)++;
     (void)putchar((char)c);
 }
 
@@ -48,9 +43,6 @@ void alerror(char *str, int len, cell *up)
 {
     while (len--)
         emit((u_char)*str++, up);
-
-    /* Sequences of calls to error() eventually end with a newline */
-    V(NUM_OUT) = 0;
 }
 
 int moreinput() {    return (1);  }
