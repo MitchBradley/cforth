@@ -66,6 +66,8 @@ fl ../esp8266/ds18x20.fth  \ Onewire temperature probe
 
 fl ../../cforth/printf.fth
 fl esp8266_at.fth
+fl ec.fth
+fl pump-ctl.fth
 
 
 \ Replace 'quit' to make CForth auto-run some application code

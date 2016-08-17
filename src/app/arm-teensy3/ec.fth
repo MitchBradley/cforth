@@ -12,21 +12,23 @@ fresh      2.5M -150K .254V
                       
 [then]
 
+: n.nnn$
+   push-decimal <# u# u# u# #46 hold u#s u#>
+   pop-base save$
+;
 
 : .volts ( v{0..4095} -- )
   dup 0< if negate '-' emit then
-  #330 #4095 */ n.nn$ type
+  #3300 #4095 */ n.nnn$ type
   ." V" cr
 ;
 
 
-\ TODO: figure out these values
-: ec-scalar ( -- uS/cm ) #500 ;
-: ec-upper #30000 ;
+\ TODO: calibrate these values
+#500 value ec-scalar ( uS/cm )
+: ec-very-high #30000 ;
 
 
-#248 value ec-bounds-min ( min:0.2V )
-#124 value ec-bounds-max ( max:0.1V )
 
 : ec-get-charge ( -- v{0..4095} )
    ec-hi-gpio gpio-is-input
@@ -35,10 +37,14 @@ fresh      2.5M -150K .254V
    dup 0> if exit then
    1 ec-lo-gpio gpio-pin!
    ec-analog-pin analogRead
+   \ ." neg charge" cr
    4096 -
 ;
 
-: ec-charge ( -- v )
+#50 value ec-bounds-lo \ 0.04V
+#25 value ec-bounds-hi \ 0.02V
+
+: ec-charge ( -- )
    ec-hi-gpio gpio-is-output
    1 ec-hi-gpio gpio-pin!
    0 ec-lo-gpio gpio-pin!
@@ -46,7 +52,7 @@ fresh      2.5M -150K .254V
    ec-hi-gpio gpio-is-input
    #50 ms
 ;
-: ec-discharge ( -- v )
+: ec-discharge ( -- )
    ec-hi-gpio gpio-is-output
    0 ec-hi-gpio gpio-pin!
    1 ec-lo-gpio gpio-pin!
@@ -58,16 +64,18 @@ fresh      2.5M -150K .254V
 : ec-auto-charge ( -- )
    begin    key? if exit then
      ec-get-charge
-     dup ." up " .volts
-     ec-bounds-min < while
+     \ dup ." up " .volts
+     ec-bounds-lo <
+   while
      ec-charge
    repeat
 ;
 : ec-auto-discharge ( -- )
    begin    key? if exit then
      ec-get-charge
-     dup ." down " .volts
-     ec-bounds-max > while
+     \ dup ." down " .volts
+     ec-bounds-hi >
+   while
      ec-discharge
    repeat
 ;
@@ -75,12 +83,14 @@ fresh      2.5M -150K .254V
 : ec-normalize ( -- )
    ec-setup
    ec-auto-charge
-   cr cr #200 ms
+   #200 ms
+   ec-auto-discharge
+   #200 ms
    ec-auto-discharge
 ;
 
 
-: ec-look ( -- v1 v0 )
+: ec-look ( -- )
    ec-setup
    ec-hi-gpio gpio-is-output
    1 ec-hi-gpio gpio-pin!
@@ -94,6 +104,7 @@ fresh      2.5M -150K .254V
 
 : ec-volt-diff ( -- dv{-4095..+4095} )
    ec-setup
+   ec-auto-discharge
    ec-hi-gpio gpio-is-output
    0 #20 0 do
      1 ec-hi-gpio gpio-pin!
@@ -109,12 +120,11 @@ fresh      2.5M -150K .254V
 
 : ec-measure ( -- ec{uS/cm} )
    ec-volt-diff          ( dv )
-   0 max                 ( dv )
    #4096 over +          ( dv vcc+dv )
    #4096 rot -           ( vcc+dv vcc-dv )
    dup 0= if             ( vcc+dv vcc-dv )
      \ divide by zero?
-     2drop ec-upper exit
+     2drop ec-very-high exit
    then
    ec-scalar             ( vcc+dv vcc-dv c )
    -rot */               ( ec )
