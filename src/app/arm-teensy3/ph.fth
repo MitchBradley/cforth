@@ -39,6 +39,15 @@ decimal
 : nn.n  ( -- )  push-decimal <# u# '.' hold u#s u#> type pop-base  ;
 : .pH  ( -- )  pH*10  nn.n  ;
 
+
+#55 value pH-limit-low
+#65 value pH-limit-high
+
+
+
+
+
+0 [if]
 0 value ph-timer
 #60000 value ph-timer-interval
 : clear-ph-timer  ( -- )  0 to ph-timer  ;
@@ -127,3 +136,4 @@ defer ph-high-state
 
 : init-ph  ( -- )  ['] ph-ok-state to ph-state  ;
 init-ph
+[then]

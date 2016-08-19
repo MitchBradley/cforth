@@ -10,7 +10,7 @@ fl ../../lib/tek.fth
 fl gpio.fth
 fl adcpins.fth
 
-2 constant valve-gpio
+2 constant water-gpio
 3 constant spritz-gpio
 4 constant recirc-gpio
 5 constant nutrient-gpio
@@ -38,9 +38,6 @@ pi 2E f* fconstant 2pi
 ;
 [then]
 
-fl ph.fth    \ pH probe via ADC
-fl pump.fth  \ Pump controller via GPIOs and motor driver
-
 : init-i2c  ( -- )  #10 9 i2c-setup  ;
 
 \ I2C devices
@@ -61,12 +58,41 @@ fl ../esp8266/ds18x20.fth  \ Onewire temperature probe
 #23 to ds18x20-pin  \ Needs 4.7K pullup
 
 : pump-setup  ( -- )
-   valve-gpio #gpios  bounds  do  0 i gpio-pin!  i gpio-is-output  loop
+   water-gpio #gpios  bounds  do  0 i gpio-pin!  i gpio-is-output  loop
 ;
 
+fl ph.fth    \ pH probe via ADC
+fl pump.fth  \ Pump controller via GPIOs and motor driver
 fl ../../cforth/printf.fth
-fl esp8266_at.fth
+fl esp8266_at.fth \ esp8266 HTTP server
+fl ec.fth \ electrical conductivity sensor
+fl pump-ctl.fth \ pump control state machine
 
+: init-all
+   pump-setup
+   init-i2c
+   init-vl6180x
+   init-pump-ctl
+   init-bme
+   start-server
+;
+
+: main-loop
+   1
+   begin
+     handle-request
+     \ blah
+     1- dup 0= if
+       drop #500
+       pump-ctl
+       .pump-ctl
+     then
+     #1 ms
+     key?
+   until
+   drop
+   init-pump-ctl \ resets pumps
+;
 
 \ Replace 'quit' to make CForth auto-run some application code
 \ instead of just going interactive.
