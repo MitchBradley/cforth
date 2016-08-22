@@ -85,3 +85,5 @@ cell pfsize(cell f, cell *up)
 {
     return 0;
 }
+
+cell isstandalone() { return 1; }
