@@ -14,7 +14,7 @@ defer pump-ctl
 #5000 value pH-up-ms
 #5000 value pH-down-ms
 
-#70000 value pH-ctl-cooldown
+#80000 value pH-ctl-cooldown
 #100 ( mm ) value wl-threshold
 
 
@@ -49,7 +49,7 @@ defer pumping-state
 
 \ monitor sensors
 : monitor-water-level ( -- action? )
-   vl-distance wl-threshold > dup if
+   vl-avg-dist wl-threshold > dup if
      wl-fill-ms water-gpio set-pumping
    then
 ;
@@ -98,10 +98,10 @@ defer pumping-state
 
 : .pump-ctl ( -- )
    target-pump 0= if
-     ." monitoring" cr
+     ." monitoring, ph = " .pH cr
    else
      target-pump case
-       water-gpio   of ." filling" endof
+       water-gpio   of ." filling, dist = " vl-avg-dist . ." mm" endof
        spritz-gpio  of ." spritzing" endof
        recirc-gpio  of ." recirculating" endof
        pH-up-gpio   of ." pH up" endof
@@ -115,6 +115,5 @@ defer pumping-state
    then
 ;
 : init-pump-ctl ( -- )
-   get-msecs pH-ctl-cooldown - to last-pH-ctl
    set-monitoring
 ;
