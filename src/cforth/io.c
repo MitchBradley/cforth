@@ -189,13 +189,14 @@ void add_path(FILE *fp, char *name)
 
 #define STRINGINPUT (FILE *) -1
 
-int
-isinteractive()
+int isinteractive()
 {
     if ( input_file == STRINGINPUT )
 	return 0;
     return isatty(fileno(input_file));
 }
+
+int isstandalone() { return 0; }
 
 void title(cell *up)
 {

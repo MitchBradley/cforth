@@ -1,13 +1,51 @@
+defer tx
+#256 constant /chunk
+/chunk buffer: reply-buf
+0 value reply-len
+: flush-reply  ( -- )
+   reply-len  if
+      '*' sys-emit
+      reply-buf reply-len tx
+      0 to reply-len
+   then
+;
+: reply  ( c )
+   reply-len /chunk =  if  flush-reply  then  ( c )
+   reply-buf reply-len + c!                   ( )
+   reply-len 1+ to reply-len                  ( )
+;
+: reply+emit  ( c -- )  dup sys-emit  reply  ;
+: reply+cr  ( -- )  #13 reply  #10 reply+emit  ;
+: reply-on  ( -- )
+   ['] reply+emit to (emit
+   ['] reply+cr   to cr
+;
+: reply-off  ( -- )
+   ['] sys-emit to (emit
+   ['] sys-cr   to cr
+;
+: reply{  ( -- )  0 to reply-len  reply-on  ;
+: }reply  ( -- )  flush-reply   reply-off  ;
+
 #80 value port   0 value server  0 value client
-: t ( adr len -- )
+: tcp-transmit  ( adr len -- )
+reply-off
    begin       ( adr len )
-      2dup client send  case      ( adr len )
-         0 of  2drop exit  endof  ( adr len )
-        -7 of  5 ms  endof        ( adr len )  \ retry after a delay
+      2dup client 
+.s cr
+send  
+.s cr
+case      ( adr len )
+         0 of  2drop 
+reply-on  exit  endof  ( adr len )
+        -7 of  'W' sys-emit #400 ms 'w' sys-emit       endof  ( adr len )  \ retry after a delay
         ( default )  ." TCP error " .d cr  2drop exit
+      endcase
    again
 ;
-: tcr ( -- )  " "r"n" t  ;
+' tcp-transmit to tx
+alias t tcp-transmit
+: tcr ( -- )  " "r"n" tcp-transmit  ;
 
 #128 buffer: file-buf
 : remove-eofs  ( adr len -- adr len' )
@@ -24,12 +62,12 @@
    ?dup while                           ( actual )
       file-buf swap remove-eofs         ( adr len )
       verbose?  if  2dup type  then     ( adr len )
-      t                                 ( )
+      tcp-transmit                      ( )
    repeat
    r> close-file drop
 ;
 
-: hello  " Hello from ESP8266" t  ;
+: hello  " Hello from ESP8266" tcp-transmit  ;
 defer homepage   ' hello to homepage
 defer server-init  ' noop to server-init
 : collapse$  ( adr len n -- adr len-n )
@@ -69,6 +107,7 @@ defer server-init  ' noop to server-init
 : $=  ( $1 $2 -- )  compare 0=  ;
 : find-cmd  ( -- false | val$ true )
    args-adr args-len urldecode$ ( $ )
+   2dup tcp-transmit  tcr       ( $ )
    begin  dup  while            ( $ )
       '&' left-parse-string     ( $'  head$ )
       '=' left-parse-string     ( $   val$ name$ )
@@ -80,25 +119,21 @@ defer server-init  ' noop to server-init
    repeat                       ( $ )
    2drop false                  ( false )
 ;
-#256 constant /chunk
+
 : do-forth  ( -- )
-    find-cmd  if
-       \ This will do for initial testing, but we really should hook (emit so we can
-       \ send when a smaller buffer fills up, instead of possibly creating
-       \ a large log that uses too much memory
-       log{ evaluate }log
-       log$  begin  dup  while   ( adr len )
-	  2dup /chunk min  tuck  ( adr len  adr thislen )
-	  tuck t                 ( adr len thislen )
-          /string                ( adr len )
-       repeat                    ( adr 0 )
-       2drop
-   then
+    find-cmd  if  reply{ evaluate }reply  then
 ;
-: rcv   ( adr len handle -- )
-   to client                            ( adr len )
-   5 client tcp-bufcnt!
+#256 buffer: url-buf
+0 value url-len
+: save-url  ( adr len -- )
+   dup to url-len      ( adr len )
+   url-buf swap move   ( )
+;
+
+: handle-rcv  ( -- )
+   7 client tcp-bufcnt!
    \ client .espconn   
+   url-buf url-len                      ( url$ )
    http-get?  if                        ( url$ )
       2dup " /favicon.ico" $=  if       ( url$ )
          2drop                          ( )
@@ -122,7 +157,16 @@ defer server-init  ' noop to server-init
    then
    client tcp-disconnect
 ;
-: ds ." Disconn " .espconn ;  : cn ." Conn " .espconn ;  : tx ." Sent " .espconn ;
+: rcv   ( adr len handle -- )
+." Client is " dup . cr
+   to client   save-url    ( )
+   \ Schedule the work for later so we do not have
+   \ nested callbacks if the reply takes a long
+   \ time and must do "ms" to avoid watchdogs.
+   ['] handle-rcv 2 alarm
+;
+
+\ : ds ." Disconn " .espconn ;  : cn ." Conn " .espconn ;  : tx ." Sent " .espconn ;
 : serve
    server-init
    0 0 0  \ 0 ['] ds ['] cn
@@ -130,9 +174,5 @@ defer server-init  ' noop to server-init
    ." Serving " .ssid space ipaddr@ .ipaddr cr
 ;
 : unserve  ( -- )  server unlisten  ;
-
-: reply  ( -- )  " Okay!"r"n" client send client tcp-disconnect  ;
-: r1 0 parse client send " "r"n" client send  ;
-: r r1 client tcp-disconnect  ;
 
 : udp-serve   0 ['] rcv " 0.0.0.0" #1234 udp-listen to server  ;

@@ -194,18 +194,22 @@ decimal
 
 : emit  ( c -- )  1 #out +!  (emit   ;
 : bounds  ( adr len -- endadr startadr )  over + swap  ;
-: (type  ( adr len -- )  bounds  ?do  i c@ emit  loop  ;
-' (type to type
+\ Does not affect #out
+: (type  ( adr len -- )  bounds  ?do  i c@ (emit  loop  ;
+: do-type  ( adr len -- )  bounds  ?do  i c@ emit  loop  ;
+' do-type to type
 
 : space  ( -- )  bl emit  ;
 : spaces  ( n -- )  0 max 0 ?do space loop  ;
 : .name  ( acf -- )  >name$ type space  ;
 : crash  ( -- )  \ unitialized execution vector routine
-  r@ /token - token@         ( use the return stack to see who called us )
+\   ." Uninitialized defer word "
+   ip@ /token - token@         ( use the return stack to see who called us )
    dup ['] execute =  if
+      where1
       \ XXX display the location in the input buffer
-   else   .name   then
-\   ." <--deferred word not initialized " abort
+   else   .name  ." -- "  then
+   ." deferred word not initialized " abort
 ;
 \ : (set-relocation-bit)  ( adr -- adr )
 \   dup  origin here between  over  up@ dup user-size + between  or  if
@@ -220,7 +224,7 @@ decimal
 \t64  !
    here /n ualloc ,
 
-   >user ['] crash token!
+   >user ['] crash swap token!
 ;
 defer defxx
 
@@ -231,7 +235,7 @@ defer defxx
    ."  |  "               ( adr len )
    >in @ /string type cr  ( )
 ;
-' (where1) \ to where1
+' (where1) to where1
 
 : (.not-found)  ( name$ -- )  cr  type ."  ?"  cr  where1  ;
 ' (.not-found) to .not-found
@@ -313,7 +317,6 @@ defer restore-output  ( -- )
    then
 ;
 
-defer where
 ' (where to where
 
 : ?stack  ( -- )

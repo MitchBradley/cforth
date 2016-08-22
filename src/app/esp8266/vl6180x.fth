@@ -53,3 +53,7 @@ here vl-init-table - constant /vl-init-table
    $62 vl@
 ;
 : .vl-distance  ( -- )  vl-distance .d  ." mm"  ;
+
+: vl-avg-dist ( -- n )
+   0  #10 0  do  vl-distance +  loop  #10 /
+;

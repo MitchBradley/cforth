@@ -454,6 +454,7 @@ int lineedit_step(int c, cell *up)
 	case '\n':
 	case '\r':
 	    emit('\n', up);
+            V(NUM_OUT) = 0;
 	    return 1;
 	case -1:
 	    return 1;

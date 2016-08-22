@@ -69,6 +69,9 @@ const u_char nullrelmap[1] = { 0 };
   #define HIGH(a)((a) >> 16)
 #endif
 
+void udot(u_cell u, cell *up);
+void udotx(u_cell u, cell *up);
+
 // int printing = 0;
 // Execute an array of Forth execution tokens.
 int
@@ -110,6 +113,11 @@ doprim:
     switch (token) {
     case 0:
         FTHERROR("Tried to execute a null token\n");
+//      udotx((u_cell)ip-sizeof(*ip), up);
+//      udotx((u_cell)sp, up);
+//      udotx((u_cell)rp, up);
+//      udotx((u_cell)*rp, up);
+//      emit('\n', up);
         /*                where(); */
         /*                udot((u_cell)ip); */
         goto abort;
@@ -618,15 +626,13 @@ execute:
     if (V(COMPLEVEL)) {
         --V(COMPLEVEL);
         if (V(COMPLEVEL) == 0) {      // Dropped back to level 0
-            compile(FINISHED);        // compile(EXIT);
+            compile(EXIT);            // compile(EXIT);
             V(DP) = V(SAVED_DP);
             V(LIMIT) = V(SAVED_LIMIT);
             V(STATE) = INTERPRETING;
             // XXX should check stack depth
-            *--rp = (xt_t)V(COMPBUF);       // Arrange to execute the compile buffer
-            *--sp = tos;   V(XSP) = (cell)sp;    V(XRP) = (cell)rp;
-            (void)inner_interpreter(up);
-            rp = (token_t **)V(XRP);  sp = (cell *)V(XSP);  loadtos;
+            ascr = (u_char *)V(COMPBUF);
+            goto colon;       // Execute the compile buffer as a colon definition
         }
     }
     next;
@@ -969,6 +975,7 @@ execute:
 /*$p hide */    case HIDE:      hide(up);    next;
 /*$p reveal */  case REVEAL:    reveal(up);  next;
 
+/*$p standalone? */     case STANDALONEQ:  push(isstandalone());   next;
 /*$p interactive? */    case INTERACTIVEQ: push(isinteractive());  next;
 /*$p more-input? */     case MOREINPUT:    push(moreinput());      next;
 /*$p origin */          case ORIGIN:       push(V(TORIGIN));       next;
@@ -1259,6 +1266,7 @@ default:   // Non-primitives - colon defs, constants, etc.
     switch (scr) {
 
 /*$c (:) */         case DOCOLON:
+    colon:
     *--rp = ip;  ip = (token_t *)ascr;  next;
 /*$c (constant) */  case DOCON:
     push(nfetch((cell *)ascr));
@@ -1299,7 +1307,6 @@ void spush(cell n, cell *up)
     *(cell *)V(XSP) = n;
 }
 
-void udot(unsigned int u, cell *up);
 int execute_xt(xt_t xt, cell *up)
 {
     token_t ctbuf[2];
@@ -1642,6 +1649,14 @@ void udot(unsigned int u, cell *up) {
     if (u>10)
         udot(u/10, up);
     emit('0'+u%10, up);
+}
+
+void udotx(unsigned int u, cell *up) {
+    int i;
+    for (i=28; i>=0; i -= 4) {
+	emit("0123456789abcdef"[(u>>i)&0xf], up);
+    }
+    emit(' ', up);
 }
 
 /* Carry calculation assumes 2's complement arithmetic. */

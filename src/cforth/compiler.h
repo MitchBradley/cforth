@@ -25,6 +25,7 @@ extern void alerror(char *str, int len, cell *up);
 extern void cprint(const char *str, cell *up);
 extern char* getmem(u_cell nbytes, cell *up);
 extern int isinteractive(void);
+extern int isstandalone(void);
 extern int moreinput(void);
 extern void makeimmediate(cell *up);
 extern void header(char *adr, cell len, cell *up);

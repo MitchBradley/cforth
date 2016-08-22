@@ -50,6 +50,7 @@ tconsoleio.o: vars.h
 
 PLAT_OBJS +=  tconsoleio.o
 PLAT_OBJS +=  ttmain.o
+PLAT_OBJS +=  tlwip.o
 
 # Object files for the Forth system and application-specific extensions
 
@@ -82,7 +83,10 @@ include $(SRC)/cforth/embed/targets.mk
 .PHONY: nodemcu-fw
 
 nodemcu-fw: app.o
-	(cd $(NODEMCU) && makeit)
+	(cd $(NODEMCU) && ./makeit)
 
 download: nodemcu-fw
-	(cd $(NODEMCU) && loadit)
+	/c/Program\ Files/AutoHotKey/AutoHotKey ~/Desktop/disconn_teraterm.ahk COM27
+	(cd $(NODEMCU) && ./loadit)
+	/c/Program\ Files/AutoHotKey/AutoHotKey ~/Desktop/connect_teraterm.ahk COM27
+

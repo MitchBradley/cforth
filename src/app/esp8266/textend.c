@@ -8,6 +8,14 @@
 
 #include "platform.h"
 
+cell tcp_write_sw();
+void tcp_accept1();
+void tcp_connect1();
+void tcp_sent1();
+void tcp_recv1();
+void tcp_poll1();
+void tcp_err1();
+
 cell deep_sleep(cell us, cell type)
 {
   // XXX need to save the state in the user area
@@ -170,7 +178,7 @@ static void register_tcp_callbacks(struct espconn *pesp_conn,
   espconn_regist_reconcb(pesp_conn, reconnected);
 }
 
-struct espconn *tcp_listen(int timeout,
+struct espconn *espconn_tcp_listen(int timeout,
                            unsigned port, const char *domain,
                            xt_t rx_xt, xt_t tx_xt,
                            xt_t conn_xt, xt_t disconn_xt, xt_t reconn_xt)
@@ -312,6 +320,18 @@ cell send(struct espconn *pesp_conn, uint16 len, uint8 *adr)
   return espconn_send(pesp_conn, adr, len);
 }
 
+
+struct tcp_pcb *tcp_new(void);
+void tcp_arg(struct tcp_pcb *pcb, void* arg);
+struct tcp_pcb *tcp_listen_with_backlog(struct tcp_pcb *pcb, uint8_t backlog);
+err_t tcp_bind(struct tcp_pcb *pcb, struct ip_addr *ipaddr, uint16_t port);
+void tcp_accepted(struct tcp_pcb *pcb);
+uint16_t tcp_sndbuf1(struct tcp_pcb *pcb);
+err_t tcp_output(struct tcp_pcb *pcb);
+void tcp_recved(struct tcp_pcb *pcb, uint16_t len);
+err_t tcp_close(struct tcp_pcb *pcb);
+void tcp_abort(struct tcp_pcb *pcb);
+
 cell i2c_send(cell byte)
 {
   i2c_master_writeByte((uint8_t)byte);
@@ -430,6 +450,19 @@ static void start_ms(cell ms)
 {
   ets_timer_setfn(&delay_timer, delay_callback, NULL);
   ets_timer_arm_new(&delay_timer, ms, 0, 1);
+}
+
+static os_timer_t alarm_timer;
+
+static void alarm_callback(void *arg)
+{
+  execute_xt((xt_t)arg, callback_up);
+}
+
+static void alarm(cell ms, cell xt)
+{
+  ets_timer_setfn(&alarm_timer, alarm_callback, (void *)xt);
+  ets_timer_arm_new(&alarm_timer, ms, 0, 1);
 }
 
 #if 0  // Doesn't work; counts milliseconds despite the 0 final argument
@@ -669,12 +702,12 @@ cell ((* const ccalls[])()) = {
   C(system_adc_read)        //c adc@ { -- n }
   C(system_get_vdd33)       //c vdd33@ { -- n }
 
-  C(system_get_sdk_version) //c sdk-version$ { -- $.vers }
+  C(system_get_sdk_version) //c sdk-version$ { -- a.vers }
   C(system_get_boot_version) //c boot-version@ { -- i.version }
   C(system_get_userbin_addr) //c userbin-addr@ { -- i.addr }
   C(system_get_boot_mode) //c boot-mode@ { -- i.mode }
-  C(system_restart_enhance) //c restart-enhance { uint8 bin_type, uint32 bin_addr -- i.stat }
-  C(system_update_cpu_freq) //c cpu-freq! { uint8 freq -- i.stat }
+  C(system_restart_enhance) //c restart-enhance { i.bin_type i.bin_addr -- i.stat }
+  C(system_update_cpu_freq) //c cpu-freq! { i.freq -- i.stat }
   C(system_get_cpu_freq) //c cpu-freq@ { -- i.mhz }
   C(system_get_flash_size_map) //c flash-size-map@ { -- i.enum }
   C(system_phy_set_max_tpw) //c phy-max-tpw! { i.max -- }
@@ -686,7 +719,7 @@ cell ((* const ccalls[])()) = {
   C(system_soft_wdt_stop) //c soft-wdt-stop { -- }
   C(system_soft_wdt_restart) //c soft-wdt-restart { -- }
   C(system_soft_wdt_feed) //c soft-wdt-feed { -- }
-  C(system_show_malloc) //c show_malloc { -- }
+  C(system_show_malloc) //c show-malloc { -- }
 
   C(wifi_set_phy_mode)      //c wifi-phymode!  { i.mode -- }
   C(wifi_get_phy_mode)      //c wifi-phymode@  { -- i.mode }
@@ -766,6 +799,8 @@ cell ((* const ccalls[])()) = {
   C(start_ms)               //c start-ms    { i.ms -- }
   C(ets_delay_us)           //c us          { i.usecs -- }
 
+  C(alarm)                  //c alarm       { i.xt i.ms -- }
+
   C(spi_flash_get_id)       //c flash-id    { -- i.id }
   C(spi_flash_erase_sector) //c flash-erase { i.sector -- i.result }
   C(spi_flash_write)        //c flash-write { i.len a.adr i.offset -- i.result }
@@ -775,14 +810,31 @@ cell ((* const ccalls[])()) = {
   C(xthal_get_ccount)       //c xthal_get_ccount  { -- i.count }
   C(node_restore)           //c node-restore { -- }
 
-  C(tcp_listen)             //c tcp-listen  { i.reconn_xt i.disconn_xt i.conn_xt i.tx_xt i.rx_xt $.domain i.port i.timeout -- a.handle }
+  C(espconn_tcp_listen)          //c tcp-listen  { i.reconn_xt i.disconn_xt i.conn_xt i.tx_xt i.rx_xt $.domain i.port i.timeout -- a.handle }
   C(udp_listen)             //c udp-listen  { i.tx_xt i.rx_xt $.domain i.port -- a.handle }
   C(unlisten)               //c unlisten    { a.handle -- }
-  C(my_tcp_connect)         //c tcp-connect { i.reconn_xt i.disconn_xt i.conn_xt i.tx_xt i.rx_xt $.domain i.port -- a.handle }
+  C(my_tcp_connect)         //c api-tcp-connect { i.reconn_xt i.disconn_xt i.conn_xt i.tx_xt i.rx_xt $.domain i.port -- a.handle }
   C(my_udp_connect)         //c udp-connect { i.tx_xt i.rx_xt $.domain i.port -- a.handle }
   C(my_tcp_disconnect)      //c tcp-disconnect  { a.handle -- }
   C(espconn_tcp_set_buf_count) //c tcp-bufcnt!  { i.num a.handle -- }
   C(send)                   //c send  { a.buf i.len a.handle -- i.stat }
+  C(tcp_write_sw)           //c tcp-write  { a.pcb -- i.stat }
+
+  C(tcp_new)                //c tcp-new  { -- a.pcb }
+  C(tcp_arg)                //c tcp-arg  { a.arg a.pcb -- }
+  C(tcp_bind)               //c tcp-bind  { i.port a.ipaddr a.pcb -- i.stat }
+  C(tcp_listen_with_backlog)//c tcp-listen-backlog  { i.backlog a.pcb1 -- a.pcb2 }
+  C(tcp_accept1)            //c tcp-accept  { i.xt a.pcb -- }
+  C(tcp_connect1)           //c tcp-connect  { i.xt i.port a.ipaddr a.pcb -- i.stat }
+  C(tcp_sent1)              //c tcp-sent  { i.xt a.pcb -- }
+  C(tcp_recv1)              //c tcp-recv  { i.xt a.pcb -- }
+  C(tcp_poll1)              //c tcp-poll  { i.interval i.xt a.pcb -- }
+  C(tcp_err1)               //c tcp-err   { i.xt a.pcb -- }
+  C(tcp_sndbuf1)            //c tcp-sendbuf  { a.pcb -- i.#bytes }
+  C(tcp_output)             //c tcp-output  { a.pcb -- i.stat }
+  C(tcp_recved)             //c tcp-recved  { i.len a.pcb -- }
+  C(tcp_close)              //c tcp-close   { a.pcb -- i.stat }
+  C(tcp_abort)              //c tcp-abort   { a.pcb -- }
 };
 
 #if 0

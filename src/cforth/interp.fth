@@ -41,6 +41,7 @@ nuser 'source-id
 : /string  ( c-addr1 u1 n -- c-addr2 u2 )  tuck -  -rot +  swap  ;
 
 defer where1
+defer where
 defer .not-found
 
 : $do-undefined   ( name$ -- )

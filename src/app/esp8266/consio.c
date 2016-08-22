@@ -14,14 +14,10 @@
 #include "compiler.h"
 
 int isinteractive() {  return (1);  }
+int isstandalone() {  return (1);  }
 
 void emit(u_char c, cell *up)
 {
-    if ( c == '\n' || c == '\r' ) {
-        V(NUM_OUT) = 0;
-        V(NUM_LINE)++;
-    } else
-        V(NUM_OUT)++;
     (void)putchar((char)c);
 }
 
