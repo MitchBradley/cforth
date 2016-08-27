@@ -108,8 +108,10 @@ defer .not-found
    r> handler !         ( 0 )    \ Restore previous handler
    r> drop              ( 0 )    \ Don't need saved stack pointer
 ;
+defer to-hook
 defer status
 defer prompt
+defer header
 
 : clear  ( ?? -- )  sp0 @ sp!  ;
 defer .error

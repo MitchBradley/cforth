@@ -163,7 +163,9 @@ decimal
 : link!  ( link adr -- )  token!  ;
 : link,  ( link -- )  token,  ;
 
+: !null-token  ( adr -- )  origin swap token!  ;
 : non-null?  ( link -- false | link true )  dup origin <>  dup 0=  if  nip  then  ;
+: get-token?  ( adr -- false | token true )  token@ non-null?  ;
 
 : ,unum  ( #bytes -- )  #user @  here branch!  /branch allot  #user +!  ;
 
@@ -176,13 +178,14 @@ decimal
 ;
 0 value isvalue
 
-: (to)  ( n xt -- data-adr )
+: (to)  ( n xt -- )
    dup >body  swap cf@         ( n 'body cf )
    dup (value)      =  if  drop >user !      exit  then
    dup (defer)      =  if  drop >user token! exit  then
    dup (user)       =  if  drop >user !      exit  then
    dup (vocabulary) =  if  drop >user token! exit  then
-   drop !
+\   drop !
+   drop body> to-hook
 ;
 : to  ( "name" [ val ] -- )	\ val is present only in interpret state
    state @  if   postpone ['] postpone (to)  else  ' (to)  then
@@ -202,6 +205,8 @@ decimal
 : space  ( -- )  bl emit  ;
 : spaces  ( n -- )  0 max 0 ?do space loop  ;
 : .name  ( acf -- )  >name$ type space  ;
+: to-error  ( data acf -- )  ." Can't use to with " .name cr ( -32 ) abort  ;
+' to-error to to-hook
 : crash  ( -- )  \ unitialized execution vector routine
 \   ." Uninitialized defer word "
    ip@ /token - token@         ( use the return stack to see who called us )
@@ -216,17 +221,6 @@ decimal
 \      dup >relbit over c@ or swap c!
 \   then
 \ ;
-: defer  ( -- )
-   create
-   (defer) here body>
-\t16 w!
-\t32  !
-\t64  !
-   here /n ualloc ,
-
-   >user ['] crash swap token!
-;
-defer defxx
 
 : (where1)  ( -- )
    source                 ( adr len )
@@ -245,7 +239,16 @@ defer defxx
 ;
 ' (prompt) to prompt
 
-: header  ( "name" -- )  safe-parse-word $header  ;
+: (header)  ( "name" -- )  safe-parse-word $header  ;
+' (header) to header
+
+: defer  ( -- )
+   header defer-cf
+   here /n ualloc ,
+
+   >user ['] crash swap token!
+;
+defer defxx
 
 \ ' (set-relocation-bit) to set-relocation-bit
 
@@ -442,14 +445,13 @@ warning on
 1 constant #threads
 
 : vocabulary  \ name  ( -- )
-   create
+   header vocabulary-cf
    here body>    #user @                 ( my-acf user# )
    \ This is wasteful - should be /token * - but it keeps #user cell aligned
    #threads cells   ,unum                ( my-acf user# )
    up@ +                                 ( my-acf ua-adr )
-   #threads 0  do  origin over token!  ta1+  loop  drop   ( my-acf )
+   #threads 0  do  dup !null-token  ta1+  loop  drop   ( my-acf )
    voc-link link@ link,  voc-link link!
-   does>  body> context token!
 ;
 
 \ The also/only vocabulary search order scheme
@@ -465,7 +467,7 @@ vocabulary root  root definitions
 ;
 : only  ( -- )
    #vocs 0  do
-      origin  context i ta+  token!
+      context i ta+  !null-token
    loop
    ['] root  context #vocs 1- ta+  token!
    root
@@ -477,7 +479,7 @@ vocabulary root  root definitions
 ;
 : previous  ( -- )
    context dup ta1+ swap #vocs 2- /token * cmove
-   context #vocs 2- /token * +  origin swap token!
+   context #vocs 2- /token * +  !null-token
 ;
 
 : forth  ( -- )  forth  ;

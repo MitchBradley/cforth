@@ -1,44 +1,13 @@
-defer tx
-#256 constant /chunk
-/chunk buffer: reply-buf
-0 value reply-len
-: flush-reply  ( -- )
-   reply-len  if
-      '*' sys-emit
-      reply-buf reply-len tx
-      0 to reply-len
-   then
-;
-: reply  ( c )
-   reply-len /chunk =  if  flush-reply  then  ( c )
-   reply-buf reply-len + c!                   ( )
-   reply-len 1+ to reply-len                  ( )
-;
-: reply+emit  ( c -- )  dup sys-emit  reply  ;
-: reply+cr  ( -- )  #13 reply  #10 reply+emit  ;
-: reply-on  ( -- )
-   ['] reply+emit to (emit
-   ['] reply+cr   to cr
-;
-: reply-off  ( -- )
-   ['] sys-emit to (emit
-   ['] sys-cr   to cr
-;
-: reply{  ( -- )  0 to reply-len  reply-on  ;
-: }reply  ( -- )  flush-reply   reply-off  ;
+fl url.fth
+fl redirect.fth
 
 #80 value port   0 value server  0 value client
 : tcp-transmit  ( adr len -- )
-reply-off
    begin       ( adr len )
-      2dup client 
-.s cr
-send  
-.s cr
-case      ( adr len )
-         0 of  2drop 
-reply-on  exit  endof  ( adr len )
-        -7 of  'W' sys-emit #400 ms 'w' sys-emit       endof  ( adr len )  \ retry after a delay
+      2dup client send  
+      case      ( adr len )
+         0 of  2drop  exit  endof  ( adr len )
+        -7 of  'W' sys-emit #400 ms 'w' sys-emit  endof  ( adr len )  \ retry after a delay
         ( default )  ." TCP error " .d cr  2drop exit
       endcase
    again
@@ -70,41 +39,9 @@ alias t tcp-transmit
 : hello  " Hello from ESP8266" tcp-transmit  ;
 defer homepage   ' hello to homepage
 defer server-init  ' noop to server-init
-: collapse$  ( adr len n -- adr len-n )
-   >r  r@ -            ( adr len-n  r: n )
-   over dup r> +       ( adr len-n  adr adr+n )
-   swap 2 pick  move   ( adr len-n )
-;
-: url%  ( $ -- $' )
-   dup 3 <  if  exit  then          ( adr len )
-   over 1+ 2                        ( adr len  number$ )
-   push-hex $number pop-base  if    ( adr len n )
-      1 /string                     ( adr' len' )
-   else                             ( adr len n )
-      2 pick c!                     ( adr len )
-      1 /string                     ( adr' len' )
-      2 collapse$                   ( adr' len' )
-   then                             ( adr len )
-;
 
-: urldecode$  ( $ -- $' )
-   over swap             ( adr adr len )
-   begin  ?dup  while    ( adr rem-adr  len )
-      over c@ '%' =  if  ( adr rem-adr  len )
-	 url%            ( adr rem-adr' len' )
-      else               ( adr rem-adr  len )
-	 1 /string       ( adr rem-adr' len' )
-      then               ( adr rem-adr' len' )
-   repeat                ( adr rem-adr )
-   over -                ( adr len )
-;
-0 value args-adr
-0 value args-len
-: parse-args  ( url$ -- filename$ )
-   '?' left-parse-string            ( arg$ filename$ )
-   2swap  to args-len  to args-adr  ( filename$ )
-;
-: $=  ( $1 $2 -- )  compare 0=  ;
+\needs $=  : $=  ( $1 $2 -- )  compare 0=  ;
+
 : find-cmd  ( -- false | val$ true )
    args-adr args-len urldecode$ ( $ )
    2dup tcp-transmit  tcr       ( $ )
@@ -163,7 +100,7 @@ defer server-init  ' noop to server-init
    \ Schedule the work for later so we do not have
    \ nested callbacks if the reply takes a long
    \ time and must do "ms" to avoid watchdogs.
-   ['] handle-rcv 2 alarm
+   ['] handle-rcv 2 set-alarm
 ;
 
 \ : ds ." Disconn " .espconn ;  : cn ." Conn " .espconn ;  : tx ." Sent " .espconn ;

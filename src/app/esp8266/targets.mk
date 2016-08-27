@@ -86,7 +86,6 @@ nodemcu-fw: app.o
 	(cd $(NODEMCU) && ./makeit)
 
 download: nodemcu-fw
-	/c/Program\ Files/AutoHotKey/AutoHotKey ~/Desktop/disconn_teraterm.ahk COM27
-	(cd $(NODEMCU) && ./loadit)
-	/c/Program\ Files/AutoHotKey/AutoHotKey ~/Desktop/connect_teraterm.ahk COM27
-
+	/c/Program\ Files/AutoHotKey/AutoHotKey ~/Desktop/disconn_teraterm.ahk COM36
+	(cd $(NODEMCU) && ./loadit COM36)
+	/c/Program\ Files/AutoHotKey/AutoHotKey ~/Desktop/connect_teraterm.ahk COM36

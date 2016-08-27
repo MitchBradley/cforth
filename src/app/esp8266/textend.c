@@ -8,14 +8,6 @@
 
 #include "platform.h"
 
-cell tcp_write_sw();
-void tcp_accept1();
-void tcp_connect1();
-void tcp_sent1();
-void tcp_recv1();
-void tcp_poll1();
-void tcp_err1();
-
 cell deep_sleep(cell us, cell type)
 {
   // XXX need to save the state in the user area
@@ -325,12 +317,24 @@ struct tcp_pcb *tcp_new(void);
 void tcp_arg(struct tcp_pcb *pcb, void* arg);
 struct tcp_pcb *tcp_listen_with_backlog(struct tcp_pcb *pcb, uint8_t backlog);
 err_t tcp_bind(struct tcp_pcb *pcb, struct ip_addr *ipaddr, uint16_t port);
-void tcp_accepted(struct tcp_pcb *pcb);
+void tcp_accepted1(struct tcp_pcb *pcb);
 uint16_t tcp_sndbuf1(struct tcp_pcb *pcb);
 err_t tcp_output(struct tcp_pcb *pcb);
 void tcp_recved(struct tcp_pcb *pcb, uint16_t len);
 err_t tcp_close(struct tcp_pcb *pcb);
 void tcp_abort(struct tcp_pcb *pcb);
+// uint8_t pbuf_free(struct pbuf *p);
+uint8_t pbuf_free(void *p);
+void tcp_sent_continues(struct tcp_pcb *pcb);
+
+// From lwip.c.  We punt on the argument templates to avoid too many include files
+cell tcp_write_sw();
+void tcp_accept1();
+void tcp_connect1();
+void tcp_sent1();
+void tcp_recv1();
+void tcp_poll1();
+void tcp_err1();
 
 cell i2c_send(cell byte)
 {
@@ -687,7 +691,7 @@ cell ((* const ccalls[])()) = {
   //  X(system_print_meminfo)   //x .meminfo     { -- }
   C(system_get_free_heap_size) //c heap-size { -- i.size }
   //  X(system_get_os_print)    //x system_get_os_print { -- i.on/off }
-  //  X(system_set_os_print)    //x system_set_os_print { i.on/off -- }
+  C(system_set_os_print)    //c set-printf  { i.on/off -- }
   C(system_mktime)          //c mktime       { i.sec i.min i.hr i.day i.mon i.yr -- i.time }
   C(system_get_chip_id)     //c chip-id@    { -- i.id }
   C(system_rtc_clock_cali_proc) //c rtc-clock-cal  { -- i.val }
@@ -799,7 +803,7 @@ cell ((* const ccalls[])()) = {
   C(start_ms)               //c start-ms    { i.ms -- }
   C(ets_delay_us)           //c us          { i.usecs -- }
 
-  C(alarm)                  //c alarm       { i.xt i.ms -- }
+  C(alarm)                  //c set-alarm   { i.xt i.ms -- }
 
   C(spi_flash_get_id)       //c flash-id    { -- i.id }
   C(spi_flash_erase_sector) //c flash-erase { i.sector -- i.result }
@@ -810,21 +814,22 @@ cell ((* const ccalls[])()) = {
   C(xthal_get_ccount)       //c xthal_get_ccount  { -- i.count }
   C(node_restore)           //c node-restore { -- }
 
-  C(espconn_tcp_listen)          //c tcp-listen  { i.reconn_xt i.disconn_xt i.conn_xt i.tx_xt i.rx_xt $.domain i.port i.timeout -- a.handle }
-  C(udp_listen)             //c udp-listen  { i.tx_xt i.rx_xt $.domain i.port -- a.handle }
-  C(unlisten)               //c unlisten    { a.handle -- }
-  C(my_tcp_connect)         //c api-tcp-connect { i.reconn_xt i.disconn_xt i.conn_xt i.tx_xt i.rx_xt $.domain i.port -- a.handle }
-  C(my_udp_connect)         //c udp-connect { i.tx_xt i.rx_xt $.domain i.port -- a.handle }
-  C(my_tcp_disconnect)      //c tcp-disconnect  { a.handle -- }
-  C(espconn_tcp_set_buf_count) //c tcp-bufcnt!  { i.num a.handle -- }
-  C(send)                   //c send  { a.buf i.len a.handle -- i.stat }
-  C(tcp_write_sw)           //c tcp-write  { a.pcb -- i.stat }
+//  C(espconn_tcp_listen)          //x tcp-listen  { i.reconn_xt i.disconn_xt i.conn_xt i.tx_xt i.rx_xt $.domain i.port i.timeout -- a.handle }
+//  C(udp_listen)             //x udp-listen  { i.tx_xt i.rx_xt $.domain i.port -- a.handle }
+//  C(unlisten)               //x my-unlisten    { a.handle -- }
+//  C(my_tcp_connect)         //x api-tcp-connect { i.reconn_xt i.disconn_xt i.conn_xt i.tx_xt i.rx_xt $.domain i.port -- a.handle }
+//  C(my_udp_connect)         //x udp-connect { i.tx_xt i.rx_xt $.domain i.port -- a.handle }
+//  C(my_tcp_disconnect)      //x tcp-disconnect  { a.handle -- }
+//  C(espconn_tcp_set_buf_count) //x tcp-bufcnt!  { i.num a.handle -- }
+//  C(send)                   //x send  { a.buf i.len a.handle -- i.stat }
 
+  C(tcp_write_sw)           //c tcp-write  { a.adr i.len a.pcb -- i.stat }
   C(tcp_new)                //c tcp-new  { -- a.pcb }
   C(tcp_arg)                //c tcp-arg  { a.arg a.pcb -- }
   C(tcp_bind)               //c tcp-bind  { i.port a.ipaddr a.pcb -- i.stat }
   C(tcp_listen_with_backlog)//c tcp-listen-backlog  { i.backlog a.pcb1 -- a.pcb2 }
   C(tcp_accept1)            //c tcp-accept  { i.xt a.pcb -- }
+  C(tcp_accepted1)          //c tcp-accepted  { a.pcb -- }
   C(tcp_connect1)           //c tcp-connect  { i.xt i.port a.ipaddr a.pcb -- i.stat }
   C(tcp_sent1)              //c tcp-sent  { i.xt a.pcb -- }
   C(tcp_recv1)              //c tcp-recv  { i.xt a.pcb -- }
@@ -835,6 +840,8 @@ cell ((* const ccalls[])()) = {
   C(tcp_recved)             //c tcp-recved  { i.len a.pcb -- }
   C(tcp_close)              //c tcp-close   { a.pcb -- i.stat }
   C(tcp_abort)              //c tcp-abort   { a.pcb -- }
+  C(pbuf_free)              //c pbuf-free   { a.pbuf -- i.#freed }
+  C(tcp_sent_continues)     //c tcp-sent-continues  { a.pcb -- }
 };
 
 #if 0

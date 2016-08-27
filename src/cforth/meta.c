@@ -312,7 +312,7 @@ init_dictionary(cell *up)
     tokstore(CT_FROM_XT((xt_t)V(DP), up), (xt_t)&V(CURRENT));
     tokstore(CT_FROM_XT((xt_t)V(DP), up), (xt_t)&V(VOC_LINK));
 
-    compile((token_t)DOVOC);  // Code field
+    place_cf((token_t)DOVOC, up);  // Code field
 
 #ifdef RELOCATE
     set_relocation_bit(V(DP));

@@ -23,11 +23,6 @@
 #define pop              tos; loadtos
 #define comma            ncomma(tos);   loadtos
 
-// When not inside inner_interpreter(), ip is on the return stack,
-// tos is on the data stack, and sp and rp are in the user area
-#define SAVE_STATE  *--sp = tos; V(XSP) = (cell)sp;  *--rp = ip;  V(XRP) = (cell)rp;
-#define RESTORE_STATE  rp = (token_t **)V(XRP);  ip = *rp++;  sp = (cell *)V(XSP);  tos = *sp++;
-
 extern void floatop(int op, cell *up);
 extern cell *fintop(int op, cell *sp, cell *up);
 extern token_t *fparenlit(token_t *ip);
@@ -82,7 +77,15 @@ inner_interpreter(up)
     token_t **rp;
     cell tos;
     token_t *ip;
-    RESTORE_STATE
+
+    rp = (token_t **)V(XRP);  ip = *rp++;  sp = (cell *)V(XSP);  tos = *sp++;
+#ifdef FLOATING
+    {
+    extern double *fsp, ftos;
+    fsp = (double *)V(XFP);
+    ftos = *fsp++;
+    }
+#endif
 
     token_t token;
     cell scr;
@@ -409,8 +412,7 @@ execute:
     if (scr == -2) {
         // Save interpreter state, return, and expect reentry
         // to inner_interpreter() upon a later callback
-        SAVE_STATE
-        return 2;
+	scr = 2;  goto out;
     }
     push(scr);
     next;
@@ -420,8 +422,7 @@ execute:
     if (scr == -2) {
         // Save interpreter state, return, and expect reentry
         // to inner_interpreter() upon a later callback
-        SAVE_STATE
-        return 2;
+        scr = 2;  goto out;
     }
     push(scr);
     next;
@@ -435,12 +436,6 @@ execute:
     loadtos;
     if ((cell)V(DP) > V(LIMIT))
         FTHERROR( "Out of dictionary space\n");
-    next;
-
-/*$p vfind */    case VFIND:
-    scr = *(u_char *)(*sp);
-    tos = canon_search_wid(((char *)(*sp))+1, scr,
-                           (vocabulary_t *)tos, (xt_t *)sp, up);
     next;
 
 /*$p $find */    case ALFIND:
@@ -463,6 +458,14 @@ execute:
         ++sp;    /* No xt if word not found */
     next;
 
+/*$p (search-wordlist) */    case PAREN_SEARCH_WORDLIST:
+    scr = *sp++;
+    tos = search_wid((char *)(*sp), scr,
+        (vocabulary_t *)tos, (xt_t *)sp, up);
+    if (!tos)
+        ++sp;    /* No xt if word not found */
+    next;
+
 /*$p $canonical */      case CANONICAL:
     ip_canonical ((char *)(*sp), tos, up);
     next;
@@ -474,8 +477,7 @@ execute:
     if (scr == -2) {
         // Save interpreter state, return, and expect reentry
         // to inner_interpreter() upon a later callback
-        SAVE_STATE
-        return 2;
+        scr = 2;  goto out;
     }
     push(scr);
     next;
@@ -528,27 +530,44 @@ execute:
 
 /*$p finished */ case FINISHED:
     /*
-     * Restore the local copies of the virtual machine
+     * Save the local copies of the virtual machine
      * registers to the external copies and exit to the
      * outer interpreter.
      */
-     *--sp = tos;    V(XSP) = (cell)sp;    V(XRP) = (cell)rp;
-     return(0);
+    // Discard the current IP value since we do not want the ctbuf[]
+    // "definition" to stay on the return stack
+    ip = *rp++;
+    scr = 0;     // Return value from inner_interpreter()
+    goto out;
 
 /*$p rest */ case REST:
      // rest is for returning to the enclosing system, so
      // Forth execution can be resumed where it left off
      // by calling inner_interpreter() without changing
      // the stacks.  The call to inner_interpreter() can
-     // be scheduled on a timer or an event callback.
+     // be scheduled on a timer or an event 
+     scr = 3;   // Return value from inner_interpreter
+     goto out;
+
+/*$p continuation */ case CONTINUATION:
+    /*
+     * Restore the local copies of the virtual machine
+     * registers to the external copies and exit, returning
+     * the top of the stack.  This is useful for returning
+     * from callbacks so that a further callback can pick up
+     * where we left off.
+     */
+    scr = pop;
+
+    out:
 #ifdef FLOATING
     {
     extern double *fsp, ftos;
     *--fsp = ftos;  V(XFP) = (cell)fsp;
     }
 #endif
-    *--sp = tos;    V(XSP) = (cell)sp;    *--rp = ip;  V(XRP) = (cell)rp;
-    return(3);
+    *--sp = tos; V(XSP) = (cell)sp;  *--rp = ip;  V(XRP) = (cell)rp;
+    return(scr);
 
 /*$p 0 */       case ZERO:      push(0);                 next;
 /*$p here */    case HERE:      push(V(DP));             next;
@@ -589,19 +608,23 @@ execute:
                         ncomma(V(NUM_USER)); V(NUM_USER) += sizeof(cell);
                         next;
 /*$p create */      case CREATE:   create_word (DOCREATE, up);               next;
+/*$p $create */     case STR_CREATE:
+    ascr = (u_char *)*sp++;
+    header((char *)ascr, tos, up);
+    place_cf((token_t)DOCREATE, up);
+    loadtos;
+    next;
 
 /*$p $header */     case HEADER:   header((char *)*sp++, tos, up);    loadtos;   next;
 
-/*$p colon-cf    */ case COLONCF:    align(up); compile(DOCOLON);          next;
-/*$p constant-cf */ case CONSTANTCF: align(up); compile(DOCON);            next;
-/*$p nnvariable  */ case NNVARIABLE: align(up); compile(DOVAR); ncomma(0); next;
-/*$p create-cf   */ case CREATECF:   align(up); compile(DOCREATE);         next;
-
-/*$p $create */     case STR_CREATE:
-    ascr = (u_char *)*sp++;
-    str_create ((char *)ascr, tos, (token_t)DOCREATE, up);
-    loadtos;
-    next;
+/*$p colon-cf      */ case COLONCF:      place_cf(DOCOLON, up);          next;
+/*$p defer-cf      */ case DEFERCF:      place_cf(DODEFER, up);          next;
+/*$p user-cf       */ case USERCF:       place_cf(DOUSER, up);           next;
+/*$p value-cf      */ case VALUECF:      place_cf(DOVALUE, up);          next;
+/*$p constant-cf   */ case CONSTANTCF:   place_cf(DOCON, up);            next;
+/*$p nnvariable    */ case NNVARIABLE:   place_cf(DOVAR, up); ncomma(0); next;
+/*$p create-cf     */ case CREATECF:     place_cf(DOCREATE, up);         next;
+/*$p vocabulary-cf */ case VOCABULARYCF: place_cf(DOVOC, up);            next;
 
 /*$p user-size */   case USER_SIZE:   push(MAXUSER);     next;
 /*$p immediate */   case IMMEDIATE:   makeimmediate(up);  next;
@@ -1307,10 +1330,9 @@ void spush(cell n, cell *up)
     *(cell *)V(XSP) = n;
 }
 
+token_t ctbuf[2];
 int execute_xt(xt_t xt, cell *up)
 {
-    token_t ctbuf[2];
-
     ctbuf[0] = CT_FROM_XT(xt, up);
     ctbuf[1] = FINISHED;
 

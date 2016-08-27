@@ -25,8 +25,8 @@ alias ls dir
 ;
 alias rf xmodem-to-file:
 
-: cat  ( "filename" -- )
-   safe-parse-word open-fid
+: $cat  ( filename$ -- )
+   open-fid
    begin  pad #100 read-line-fid  while   ( len )
       pad over type         ( len )
       \ If the buffer is full the end-of-line has not yet been read
@@ -34,3 +34,6 @@ alias rf xmodem-to-file:
    repeat                   ( 0 )
    close-fid
 ;
+: cat  ( "filename" -- )  safe-parse-word  $cat  ;
+
+: rm  ( "filename" -- )  safe-parse-word delete-file  ;

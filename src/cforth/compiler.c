@@ -63,6 +63,12 @@ init_compiler(const u_char *origin, u_char *ramorigin, token_t topct, u_char *he
     V(LIMIT) = (cell)xlimit;
 }
 
+void xt_align(cell *up)
+{
+    align(up);
+    tokstore(CT_FROM_XT((xt_t)V(DP), up), (token_t *)&V(LASTP));
+}
+
 void
 place_name(char *adr, cell len, token_t previous, cell *up)
 {
@@ -90,8 +96,6 @@ place_name(char *adr, cell len, token_t previous, cell *up)
     V(DP) = (cell)rdp;
 
     linkcomma(previous);
-
-    tokstore(CT_FROM_XT((xt_t)V(DP), up), (token_t *)&V(LASTP));
 }
 
 static void
@@ -124,9 +128,9 @@ header(char *adr, cell len, cell *up)
 }
 
 void
-str_create(char *adr, cell len, token_t cf, cell *up)
+place_cf(token_t cf, cell *up)
 {
-    header(adr, len, up);
+    xt_align(up);
     compile(cf);
 }
 
@@ -137,7 +141,8 @@ create_word(token_t cf, cell *up)
     cell len;
 
     len = parse_word((u_char **)&adr, up);
-    str_create(adr, len, cf, up);
+    header(adr, len, up);
+    place_cf(cf,up);
 }
 
 void

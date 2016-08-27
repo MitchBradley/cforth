@@ -29,7 +29,7 @@ extern int isstandalone(void);
 extern int moreinput(void);
 extern void makeimmediate(cell *up);
 extern void header(char *adr, cell len, cell *up);
-extern void str_create(char *adr, cell len, token_t cf, cell *up);
+extern void place_cf(token_t cf, cell *up);
 extern void init_compiler(const u_char *origin, u_char *ramorigin, token_t topct, u_char *here, u_char *xlimit, cell *up);
 extern char *altocstr(char *adr, u_cell len, char *cstrbuf, int maxlen);
 extern void spush(cell n, cell *up);

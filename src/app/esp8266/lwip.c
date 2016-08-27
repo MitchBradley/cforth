@@ -32,8 +32,7 @@ err_t accept_cb(void *arg, struct tcp_pcb *newpcb, err_t err)
   spush((cell)newpcb, up);
   spush(arg, up);
   
-  execute_xt(accept_forth_cb, up);
-  return 0;
+  return execute_xt(accept_forth_cb, up);
 }
 void tcp_accept1(struct tcp_pcb *pcb, xt_t callback)
 {
@@ -41,6 +40,10 @@ void tcp_accept1(struct tcp_pcb *pcb, xt_t callback)
   tcp_accept(pcb, accept_cb);
 }
 
+void tcp_accepted1(struct tcp_pcb *pcb)
+{
+  tcp_accepted(pcb);  // tcp_accepted() is a macro
+}
 
 xt_t connect_forth_cb;
 err_t connect_cb(void *arg, struct tcp_pcb *newpcb, err_t err)
@@ -73,14 +76,33 @@ err_t sent_cb(void *arg, struct tcp_pcb *tpcb, u16_t len)
   spush((cell)tpcb, up);
   spush(arg, up);
   
-  execute_xt(sent_forth_cb, up);
-  return 0;
+  return execute_xt(sent_forth_cb, up);
 }
+
 void tcp_sent1(struct tcp_pcb *pcb, xt_t callback)
 {
   sent_forth_cb = callback;
   tcp_sent(pcb, sent_cb);
 }
+
+err_t continuation_cb(void *arg, struct tcp_pcb *tpcb, u16_t len)
+{
+  cell *up = callback_up;
+  if (!sent_forth_cb) {
+    return 0;
+  }
+  spush((cell)len, up);
+  spush((cell)tpcb, up);
+  spush(arg, up);
+  
+  return inner_interpreter(up);
+}
+
+void tcp_sent_continues(struct tcp_pcb *pcb)
+{
+  tcp_sent(pcb, continuation_cb);
+}
+
 
 xt_t recv_forth_cb;
 err_t recv_cb(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t err)
@@ -97,6 +119,7 @@ err_t recv_cb(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t err)
   execute_xt(recv_forth_cb, up);
   return 0;
 }
+
 void tcp_recv1(struct tcp_pcb *pcb, xt_t callback)
 {
   recv_forth_cb = callback;
@@ -125,6 +148,7 @@ void tcp_poll1(struct tcp_pcb *pcb, xt_t callback, u8_t interval)
 xt_t err_forth_cb;
 void err_cb(void *arg, err_t err)
 {
+	ets_printf("Error callback %p\n", err_forth_cb);
   cell *up = callback_up;
   if (!err_forth_cb) {
     return;
