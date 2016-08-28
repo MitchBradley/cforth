@@ -79,13 +79,8 @@ inner_interpreter(up)
     token_t *ip;
 
     rp = (token_t **)V(XRP);  ip = *rp++;  sp = (cell *)V(XSP);  tos = *sp++;
-#ifdef FLOATING
-    {
-    extern double *fsp, ftos;
-    fsp = (double *)V(XFP);
-    ftos = *fsp++;
-    }
-#endif
+    // No need to restore the floating point stack pointer, if any,
+    // because it is never manipulated outside of floatops.c
 
     token_t token;
     cell scr;
@@ -560,12 +555,8 @@ execute:
     scr = pop;
 
     out:
-#ifdef FLOATING
-    {
-    extern double *fsp, ftos;
-    *--fsp = ftos;  V(XFP) = (cell)fsp;
-    }
-#endif
+    // No need to save the floating point stack pointer, if any,
+    // because it is never manipulated outside of floatops.c
     *--sp = tos; V(XSP) = (cell)sp;  *--rp = ip;  V(XRP) = (cell)rp;
     return(scr);
 
@@ -1371,7 +1362,7 @@ execute_word(char *s, cell *up)
 /*$u delimiter  e DELIMITER:    */
 /*$u 'sp        e XSP:          */
 /*$u 'rp        e XRP:          */
-/*$u 'fp        e XFP:          */
+/*$u 'fp        e XFP:          */  /* locals frame pointer, not floating stack pointer */
 /*$u 'origin    e TORIGIN:      */
 /*$u dp         e DP:           */
 /*$u 'limit     e LIMIT:        */
