@@ -104,12 +104,12 @@ fl car.fth
 alias id: \
 
 \ Open Firmware stuff; omit if you don't need it
-fl ../../lib/objsup.fth
-fl ../../lib/objects.fth
-fl ../../lib/linklist.fth
-fl ../../lib/parses1.fth
-fl ../../lib/cirstack.fth
-fl ../../lib/ofw-dt.fth
+fl ../../ofw/objsup.fth
+fl ../../ofw/objects.fth
+fl ../../ofw/linklist.fth
+fl ../../ofw/parses1.fth
+fl ../../ofw/cirstack.fth
+fl ../../ofw/ofw-dt.fth
 
 \ " ../objs/tester" $chdir drop
 
