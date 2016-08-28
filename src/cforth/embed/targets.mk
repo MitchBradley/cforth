@@ -23,8 +23,7 @@ else
 endif
 
 # Objects specific to the target environment
-EMBED_IO_OBJS=startapp.o tconsio.o mallocembed.o
-EMBEDOBJS=$(EMBED_IO_OBJS)
+EMBEDOBJS=startapp.o tconsio.o
 
 HELPERS += makebi forthbi
 ARTIFACTS += $(TBASEOBJS) $(EMBEDOBJS) $(DICTOBJ)

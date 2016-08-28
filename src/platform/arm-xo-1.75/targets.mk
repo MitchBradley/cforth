@@ -21,7 +21,7 @@ INCS += -I$(SRC)/platform/arm-xo-1.75
 
 # Platform-specific object files for low-level startup and platform I/O
 
-PLAT_OBJS = tstart.o
+PLAT_OBJS = tstart.o mallocembed.o
 
 # Object files for the Forth system and application-specific extensions
 

@@ -16,7 +16,7 @@ INCS += -I$(SRC)/platform/pc
 
 # Platform-specific object files for low-level startup and platform I/O
 
-PLAT_OBJS = tstart.o ttmain.o tconsoleio.o
+PLAT_OBJS = tstart.o ttmain.o tconsoleio.o mallocembed.o
 
 
 # Object files for the Forth system and application-specific extensions

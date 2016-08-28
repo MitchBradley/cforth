@@ -117,3 +117,19 @@ void output_redirect(const char *str) {
 }
 
 void lua_gpio_unref(unsigned pin) { }
+
+#include <mem.h>
+
+char *getmem(u_cell nbytes, cell *up)
+{
+    return (char *)os_malloc(nbytes);
+}
+
+void memfree(char *ptr, cell *up)
+{
+    os_free(ptr);
+}
+char * memresize(char *ptr, u_cell nbytes, cell *up)
+{
+    return (char *)os_realloc(ptr, nbytes);
+}

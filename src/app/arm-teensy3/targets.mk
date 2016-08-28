@@ -47,7 +47,7 @@ INCS += -I$(SRC)/app/arm-teensy3
 
 # Platform-specific object files for low-level startup and platform I/O
 
-PLAT_OBJS =  ttmain.o tconsoleio.o
+PLAT_OBJS =  ttmain.o tconsoleio.o mallocembed.o
 PLAT_OBJS += ti2c-bitbang.o
 PLAT_OBJS += tonewire.o
 

@@ -26,7 +26,8 @@ INCS += -I$(SRC)/platform/arm-lpc2148
 
 # Platform-specific object files for low-level startup and platform I/O
 
-PLAT_OBJS =  ttmain.o tconsoleio.o
+PLAT_OBJS =  ttmain.o tconsoleio.c mallocembed.o
+
 
 # Object files for the Forth system and application-specific extensions
 
