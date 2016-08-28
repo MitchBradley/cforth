@@ -3,3 +3,4 @@ makeccalls
 gcalls.fth
 glops.h
 makegcalls
+*.d
