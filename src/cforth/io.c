@@ -293,8 +293,8 @@ void cprint(const char *str, cell *up)
 
 void alerror(char *str, int len, cell *up)
 {
-    (void)fwrite(str, 1, len, stderr);
-    (void)fflush(stderr);
+    (void)fwrite(str, 1, len, stdout);
+    (void)fflush(stdout);
     // Sequences of calls to error() eventually end with a newline
     V(NUM_OUT) = 0;
 }
