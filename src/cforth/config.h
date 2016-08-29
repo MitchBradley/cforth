@@ -134,7 +134,7 @@ typedef token_t *xt_t;
     #define MAXDICT (0x40000L)
   #else
     #ifdef BITS32
-      #define MAXDICT (0x20000L)
+      #define MAXDICT (0x40000L)
     #else
       #define MAXDICT (45000)
     #endif

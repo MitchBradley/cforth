@@ -117,7 +117,6 @@ fl ../../ofw/linklist.fth
 fl ../../ofw/parses1.fth
 fl ../../ofw/cirstack.fth
 fl ../../ofw/ofw-dt.fth
-
-\ " ../objs/tester" $chdir drop
+fl ../../ofw/deblock.fth
 
 " app.dic" save
