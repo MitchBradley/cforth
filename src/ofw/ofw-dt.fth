@@ -253,9 +253,9 @@ defer diag-key?    ( -- flag )  \ Used by dlbin.
 \ Typically implemented by a driver for a counter/timer device
 
 d# 10 value ms/tick
-defer get-msecs  ( -- n )  ' 0 is get-msecs
-defer ms  ( n -- )   ' drop is ms
-defer us  ( n -- )   ' drop is us
+\needs get-msecs  defer get-msecs  ( -- n )  ' 0 is get-msecs
+\needs ms  defer ms  ( n -- )   ' drop is ms
+\needs us  defer us  ( n -- )   ' drop is us
 
 
 \ Enabling/disabling interrupts
