@@ -6,8 +6,15 @@ fl ../../lib/random.fth
 fl ../../lib/ilog2.fth
 fl ../../lib/tek.fth
 
-warning @ warning off  : bye restart ;  warning !
+warning @ warning off
+: bye standalone?  if  restart  then  bye  ;
+warning !
 : ms  ( msecs -- )  start-ms rest  ;
+
+\ Long-running words like "words" can cause watchdog resets unless
+\ we return to the OS periodically.
+: paused-exit?  ( -- flag )  standalone?  if  1 ms  then  key?  ;
+' paused-exit? to exit?
 
 \ m-emit is defined in textend.c
 alias m-key  key
