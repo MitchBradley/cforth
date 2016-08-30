@@ -2,6 +2,7 @@
 // See "ccalls" below.
 
 #include "forth.h"
+#include "esp_stdint.h"
 #include "user_interface.h"
 
 // Prototypes
@@ -23,13 +24,6 @@ cell deep_sleep(cell us, cell type)
 
 #include "driver/i2c_master.h"
 #include "driver/onewire.h"
-
-void node_restore(void)
-{
-  flash_init_data_default();
-  flash_init_data_blank();
-  system_restore();
-}
 
 #include "espconn.h"
 
@@ -520,6 +514,27 @@ void arm_timer(timer_t *tp, uint32_t repeat, uint32_t isms, uint32_t interval)
 
 xt_t gpio_callback_xt[NUM_GPIO];
 
+#include "pin_map.h"
+
+static void platform_gpio_intr_dispatcher(void *arg) {
+  void (*cb)(unsigned, unsigned) = arg;
+  uint32 gpio_status = GPIO_REG_READ(GPIO_STATUS_ADDRESS);
+  uint8_t i, level;
+  for (i = 0; i < GPIO_PIN_NUM; i++) {
+    if (pin_int_type[i] && (gpio_status & BIT(pin_num[i])) ) {
+      //disable interrupt
+      gpio_pin_intr_state_set(GPIO_ID_PIN(pin_num[i]), GPIO_PIN_INTR_DISABLE);
+      //clear interrupt status
+      GPIO_REG_WRITE(GPIO_STATUS_W1TC_ADDRESS, gpio_status & BIT(pin_num[i]));
+      level = 0x1 & GPIO_INPUT_GET(GPIO_ID_PIN(pin_num[i]));
+      if(cb){
+        cb(i, level);
+      }
+      gpio_pin_intr_state_set(GPIO_ID_PIN(pin_num[i]), pin_int_type[i]);
+    }
+  }
+}
+
 void gpio_callback(unsigned pin, unsigned level)
 {
   if (!gpio_callback_xt[pin])
@@ -534,7 +549,7 @@ void gpio_set_callback(unsigned pin, xt_t cb_xt)
   if (pin >= NUM_GPIO)
     return;
   gpio_callback_xt[pin] = cb_xt;
-  platform_gpio_init(gpio_callback);
+  ETS_GPIO_INTR_ATTACH(platform_gpio_intr_dispatcher, (void *)gpio_callback);
 }
 
 void disarm_timer(timer_t *tp)
@@ -547,57 +562,18 @@ void i2c_setup(cell sda, cell scl)
   platform_i2c_setup(0, sda, scl, 100000);
 }
 
-#include "spiffs.h"
-extern spiffs fs;
 
-void rename_file(char *new, char *old)
-{
-  myspiffs_rename(old, new);
-}
-cell fs_avail(void)
-{
-  uint32_t total, used;
-  SPIFFS_info(&fs, &total, &used);
-  return (cell)(total - used);
-}
+// Defined in fileio.c
+void myspiffs_format(void);
+void rename_file(char *new, char *old);
+cell fs_avail(void);
+void delete_file(char *path);
+void *next_file(void);
+void *first_file(void);
+cell dirent_size(void *);
+cell dirent_name(void *);
 
-void delete_file(char *path)
-{
-  SPIFFS_remove(&fs, path);
-}
-
-static struct spiffs_dirent dirent;
-static spiffs_DIR dir;
-static struct spiffs_dirent *next_file(void)
-{
-  struct spiffs_dirent *dp = &dirent;
-  while ((dp = SPIFFS_readdir(&dir, dp)) != NULL) {
-    if (dp->type == SPIFFS_TYPE_FILE) {
-      return dp;
-    }
-  }
-  return 0;
-}
-static struct spiffs_dirent *first_file(void)
-{
-  if (SPIFFS_opendir(&fs, "", &dir))
-    return next_file();
-  return 0;
-}
-
-static cell dirent_size(struct spiffs_dirent *d)
-{
-  return d->size;
-}
-
-static cell dirent_name(struct spiffs_dirent *d)
-{
-  return (cell)(d->name);
-}
-
-int myspiffs_format(void);
-
-extern void SPIRead(void);
+// extern void SPIRead(void);
 extern void raw_putchar(unsigned char c);
 
 uint8_t owpin;
@@ -812,7 +788,6 @@ cell ((* const ccalls[])()) = {
 
   C(rtc_get_reset_reason)   //c reset-reason { -- i.reason }
   C(xthal_get_ccount)       //c xthal_get_ccount  { -- i.count }
-  C(node_restore)           //c node-restore { -- }
 
 //  C(espconn_tcp_listen)          //x tcp-listen  { i.reconn_xt i.disconn_xt i.conn_xt i.tx_xt i.rx_xt $.domain i.port i.timeout -- a.handle }
 //  C(udp_listen)             //x udp-listen  { i.tx_xt i.rx_xt $.domain i.port -- a.handle }

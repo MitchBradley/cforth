@@ -29,6 +29,11 @@ VPATH += $(SRC)/lib
 VPATH += $(SRC)/app/esp8266
 INCS += -I$(SRC)/app/esp8266
 
+# Include files from the SDK
+SDK_VER:=1.5.4.1
+SDK_DIR:=$(NODEMCU)/sdk/esp_iot_sdk_v$(SDK_VER)
+INCS += -I$(TOP_DIR)/sdk-overrides/include -I$(SDK_DIR)/include
+
 include $(SRC)/common.mk
 include $(SRC)/cforth/targets.mk
 
@@ -51,6 +56,7 @@ tconsoleio.o: vars.h
 PLAT_OBJS +=  tconsoleio.o
 PLAT_OBJS +=  ttmain.o
 PLAT_OBJS +=  tlwip.o
+PLAT_OBJS +=  tfileio.o
 
 # Object files for the Forth system and application-specific extensions
 
