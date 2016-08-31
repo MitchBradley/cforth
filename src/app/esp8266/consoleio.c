@@ -1,7 +1,8 @@
 // Character I/O
 #include "forth.h"
 
-extern uart_tx_one_char(unsigned char, unsigned char);
+#include "esp_stdint.h"
+#include "driver/uart.h"
 
 void raw_putchar(unsigned char c)
 {
@@ -71,6 +72,12 @@ int caccept(char *addr, cell count, cell *up)
     return -2;
 }
 
+// Defines the resolution of c_puts for nodemcu-firmware
+void output_redirect(const char *str) {
+    uart0_sendStr(str);
+}
+
+// Defines input handler for nodemcu-firmware
 void lua_handle_input(int force)
 {
     cell *up = last_up;
@@ -111,12 +118,6 @@ void alerror(char *str, int len, cell *up)
 
 // moreinput() returns 0 when the console input stream has been closed for good
 int moreinput() {  return (1);  }
-
-void output_redirect(const char *str) {
-    uart0_sendStr(str);
-}
-
-void lua_gpio_unref(unsigned pin) { }
 
 #include <mem.h>
 

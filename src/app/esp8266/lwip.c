@@ -1,20 +1,10 @@
+// Forth interface to LWIP raw API
+
 #include "config.h"
 extern cell *callback_up;
 
-#include "lwip/netif.h"
-#include "lwip/inet.h"
-#include "netif/etharp.h"
+#include "esp_stdint.h"
 #include "lwip/tcp.h"
-#include "lwip/ip.h"
-#include "lwip/init.h"
-#include "ets_sys.h"
-#include "os_type.h"
-//#include "os.h"
-#include "lwip/mem.h"
-
-#include "lwip/app/espconn_tcp.h"
-#include "lwip/app/espconn_udp.h"
-#include "lwip/app/espconn.h"
 
 cell tcp_write_sw(struct tcp_pcb *pcb, size_t len, uint8_t *adr)
 {
@@ -103,7 +93,6 @@ void tcp_sent_continues(struct tcp_pcb *pcb)
   tcp_sent(pcb, continuation_cb);
 }
 
-
 xt_t recv_forth_cb;
 err_t recv_cb(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t err)
 {
@@ -148,7 +137,6 @@ void tcp_poll1(struct tcp_pcb *pcb, xt_t callback, u8_t interval)
 xt_t err_forth_cb;
 void err_cb(void *arg, err_t err)
 {
-	ets_printf("Error callback %p\n", err_forth_cb);
   cell *up = callback_up;
   if (!err_forth_cb) {
     return;

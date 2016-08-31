@@ -4,6 +4,7 @@
 
 cell *callback_up;
 
+// Defines startup routine for nodemcu-firmware
 void lua_main()
 {
     init_io(0, (char **)0, (cell *)callback_up);   // Perform platform-specific initialization

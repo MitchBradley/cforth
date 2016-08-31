@@ -9,19 +9,11 @@ CFLAGS += -m32
 
 CC := gcc
 
-# GCCPATH := /Volumes/case-sensitive/esp-open-sdk/
+# Change these to reflect the locations of external stuff on your system
 GCCPATH := C:/
 CROSS ?= $(GCCPATH)xtensa-lx106-elf/bin/xtensa-lx106-elf-
-#BASE = /Users/wmb/
-NODEMCUBASE = $(TOPDIR)/..
-
-NODEMCU ?= $(NODEMCUBASE)/nodemcu-firmware
-INCS += -I$(NODEMCU)/app/include
-INCS += -I$(NODEMCU)/app/platform
-INCS += -I$(NODEMCU)/app/spiffs
-INCS += -I$(NODEMCU)/app/libc
-
-ESPSDK ?= $(NODEMCU)/sdk
-INCS += -I$(ESPSDK)/esp_iot_sdk_v1.4.0/include
+NODEMCU_PATH = $(TOPDIR)/../nodemcu-firmware
+SDK_VER:=1.5.4.1
+COMPORT:=COM36
 
 include $(TOPDIR)/src/app/esp8266/targets.mk

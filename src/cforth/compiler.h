@@ -77,4 +77,3 @@ static inline token_t CT_FROM_XT(xt_t adr, cell *up)
 }
 
 #define LAST         ((u_char *)XT_FROM_CT(T(LASTP), up))
-

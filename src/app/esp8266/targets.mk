@@ -14,6 +14,15 @@ default: nodemcu-fw
 
 # Makefile fragment for the final target application
 
+# Include files from the SDK
+SDK_DIR:=$(NODEMCU_PATH)/sdk/esp_iot_sdk_v$(SDK_VER)
+INCS += -I$(TOP_DIR)/sdk-overrides/include -I$(SDK_DIR)/include
+
+INCS += -I$(NODEMCU_PATH)/app/include
+INCS += -I$(NODEMCU_PATH)/app/platform
+INCS += -I$(NODEMCU_PATH)/app/spiffs
+INCS += -I$(NODEMCU_PATH)/app/libc
+
 SRC=$(TOPDIR)/src
 
 # Target compiler definitions
@@ -28,11 +37,6 @@ LIBDIRS=-L$(dir $(shell $(TCC) $(TCFLAGS) -print-libgcc-file-name))
 VPATH += $(SRC)/lib
 VPATH += $(SRC)/app/esp8266
 INCS += -I$(SRC)/app/esp8266
-
-# Include files from the SDK
-SDK_VER:=1.5.4.1
-SDK_DIR:=$(NODEMCU)/sdk/esp_iot_sdk_v$(SDK_VER)
-INCS += -I$(TOP_DIR)/sdk-overrides/include -I$(SDK_DIR)/include
 
 include $(SRC)/common.mk
 include $(SRC)/cforth/targets.mk
@@ -89,9 +93,9 @@ include $(SRC)/cforth/embed/targets.mk
 .PHONY: nodemcu-fw
 
 nodemcu-fw: app.o
-	(cd $(NODEMCU) && ./makeit)
+	(cd $(NODEMCU_PATH) && ./makeit)
 
 download: nodemcu-fw
-	/c/Program\ Files/AutoHotKey/AutoHotKey ~/Desktop/disconn_teraterm.ahk COM36
-	(cd $(NODEMCU) && ./loadit COM36)
-	/c/Program\ Files/AutoHotKey/AutoHotKey ~/Desktop/connect_teraterm.ahk COM36
+	/c/Program\ Files/AutoHotKey/AutoHotKey ~/Desktop/disconn_teraterm.ahk $(COMPORT)
+	(cd $(NODEMCU_PATH) && ./loadit COM36)
+	/c/Program\ Files/AutoHotKey/AutoHotKey ~/Desktop/connect_teraterm.ahk $(COMPORT)

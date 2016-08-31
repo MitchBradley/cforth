@@ -1,12 +1,11 @@
-// Edit this file to include C routines that can be called as Forth words.
+// Forth interfaces to platform-specific C routines
 // See "ccalls" below.
 
 #include "forth.h"
+
+extern cell *callback_up;
+
 #include "esp_stdint.h"
-#include "user_interface.h"
-
-// Prototypes
-
 #include "platform.h"
 
 cell deep_sleep(cell us, cell type)
@@ -16,296 +15,11 @@ cell deep_sleep(cell us, cell type)
   system_deep_sleep((uint32_t)us);
 }
 
-#include "flash_api.h"
-
 // For rtc_get_reset_reason()
 // Also has SHA, MD5, base65, cycle counter
 #include "rom.h"
 
-#include "driver/i2c_master.h"
-#include "driver/onewire.h"
-
-#include "espconn.h"
-
-extern sint8 espconn_tcp_set_buf_count(struct espconn *espconn, uint8 num);
-
-typedef struct callbacks
-{
-  xt_t connected;
-  xt_t reconnected;
-  xt_t disconnected;
-  xt_t received;
-  xt_t sent;
-  xt_t dns_found;
-} callbacks_t;
-
-// callback dispatchers
-
-// XXX set me!
-extern cell *callback_up;
-
-static void connected(void *arg)
-{
-  callbacks_t *cb = ((struct espconn *)arg)->reverse;
-
-  if(!cb->connected)
-    return;
-
-  cell *up = callback_up;
-  spush(arg, up);
-  execute_xt((xt_t)cb->connected, up);
-}
-
-static void disconnected(void *arg)
-{
-  callbacks_t *cb = ((struct espconn *)arg)->reverse;
-
-  if(!cb->disconnected)
-    return;
-
-  cell *up = callback_up;
-  spush(arg, up);
-  execute_xt((xt_t)cb->disconnected, up);
-}
-
-static void reconnected(void *arg, sint8 err)
-{
-  callbacks_t *cb = ((struct espconn *)arg)->reverse;
-
-  if(!cb->reconnected)
-    return;
-
-  cell *up = callback_up;
-  spush(arg, up);
-  execute_xt((xt_t)cb->reconnected, up);
-}
-
-static void received(void *arg, char *pdata, unsigned short len)
-{
-  callbacks_t *cb = ((struct espconn *)arg)->reverse;
-
-  if (!cb->received)
-    return;
-
-  cell *up = callback_up;
-  spush(pdata, up);
-  spush(len, up);
-  spush(arg, up);
-  execute_xt((xt_t)cb->received, up);
-}
-
-static void sent(void *arg)
-{
-  callbacks_t *cb = ((struct espconn *)arg)->reverse;
-
-  if (!cb->sent)
-    return;
-
-  cell *up = callback_up;
-  spush(arg, up);
-  execute_xt((xt_t)cb->sent, up);
-}
-
-static void dns_found(const char *name, ip_addr_t *ipaddr, void *arg)
-{
-  callbacks_t *cb = ((struct espconn *)arg)->reverse;
-
-  if (!cb->dns_found)
-    return;
-
-  cell *up = callback_up;
-  spush(ipaddr, up);
-  spush(arg, up);
-  execute_xt((xt_t)cb->dns_found, up);
-}
-
-// end of callback dispatchers
-
-static struct espconn *new_conn(int type, xt_t rx_xt, xt_t tx_xt)
-{
-  struct espconn *pesp_conn = (struct espconn *)pvPortZalloc(sizeof(struct espconn), "", 0);
-  pesp_conn->proto.tcp = (esp_tcp *)pvPortZalloc(sizeof(esp_tcp), "", 0);  // Size is 32
-  pesp_conn->type = type;
-  pesp_conn->state = ESPCONN_NONE;
-
-  callbacks_t *cb = (callbacks_t *)pvPortZalloc(sizeof(callbacks_t), "", 0);
-  pesp_conn->reverse = cb;
-  cb->sent = tx_xt;
-  cb->received = rx_xt;
-  espconn_regist_recvcb(pesp_conn, received);
-  espconn_regist_sentcb(pesp_conn, sent);
-
-  return pesp_conn;
-}
-
-static struct espconn *listen_start(unsigned type, const char *domain, unsigned port,
-                             xt_t rx_xt, xt_t tx_xt)
-{
-  //  ets_delay_us(10*1000);
-  struct espconn *pesp_conn = new_conn(type, rx_xt, tx_xt);
-  pesp_conn->proto.tcp->local_port = port;
-
-  ip_addr_t ipaddr;
-  ipaddr.addr = ipaddr_addr(domain ? domain : "0.0.0.0");
-  ets_memcpy(pesp_conn->proto.tcp->local_ip, &ipaddr.addr, 4);
-  return pesp_conn;
-}
-
-static void register_tcp_callbacks(struct espconn *pesp_conn,
-                                   xt_t conn_xt, xt_t disconn_xt, xt_t reconn_xt)
-{
-  callbacks_t *cb = (callbacks_t *)pesp_conn->reverse;
-  cb->connected = conn_xt;
-  cb->disconnected = disconn_xt;
-  cb->reconnected = reconn_xt;
-
-  espconn_regist_connectcb(pesp_conn, connected);
-  espconn_regist_disconcb(pesp_conn, disconnected);
-  espconn_regist_reconcb(pesp_conn, reconnected);
-}
-
-struct espconn *espconn_tcp_listen(int timeout,
-                           unsigned port, const char *domain,
-                           xt_t rx_xt, xt_t tx_xt,
-                           xt_t conn_xt, xt_t disconn_xt, xt_t reconn_xt)
-{
-  struct espconn *pesp_conn = listen_start(ESPCONN_TCP, domain, port, rx_xt, tx_xt);
-
-  register_tcp_callbacks(pesp_conn, conn_xt, disconn_xt, reconn_xt);
-
-  espconn_accept(pesp_conn);
-  espconn_regist_time(pesp_conn, timeout, 0);
-  return pesp_conn;
-}
-
-struct espconn *udp_listen(unsigned port, const char *domain,
-                           xt_t rx_xt, xt_t tx_xt)
-{
-  struct espconn *pesp_conn = listen_start(ESPCONN_UDP, domain, port, rx_xt, tx_xt);
-
-  espconn_create(pesp_conn);  // Setup a new UDP listener
-  return pesp_conn;
-}
-
-static void free_espconn(struct espconn *pesp_conn)
-{
-  if (pesp_conn->reverse)
-    vPortFree(pesp_conn->reverse, "", 0);
-
-  if (pesp_conn->proto.tcp)
-    vPortFree(pesp_conn->proto.tcp, "", 0);
-
-  vPortFree(pesp_conn, "", 0);
-}
-
-void unlisten(struct espconn *pesp_conn)
-{
-  if (!pesp_conn)
-    return;
-  espconn_delete(pesp_conn);
-  free_espconn(pesp_conn);
-}
-
-static ip_addr_t host_ip; // for dns
-
-static dns_reconn_count = 0;
-static void socket_connect(struct espconn *pesp_conn)
-{
-  if( pesp_conn->type == ESPCONN_TCP )  {
-    espconn_connect(pesp_conn);
-  } else if (pesp_conn->type == ESPCONN_UDP)   {
-    espconn_create(pesp_conn);
-  }
-}
-
-static void socket_dns_found(const char *name, ip_addr_t *ipaddr, void *arg)
-{
-  struct espconn *pesp_conn = (struct espconn *)arg;
-  if(ipaddr == NULL) {
-    dns_reconn_count++;
-    if( dns_reconn_count >= 5 ){
-      return;
-    }
-    host_ip.addr = 0;
-    espconn_gethostbyname(pesp_conn, name, &host_ip, socket_dns_found);
-    return;
-  }
-
-  if(ipaddr->addr != IPADDR_NONE)  {
-    dns_reconn_count = 0;
-    ets_memcpy(pesp_conn->proto.tcp->remote_ip, &(ipaddr->addr), 4);
-    socket_connect(pesp_conn);
-  }
-}
-
-static struct espconn *connect_start(unsigned type, const char *domain, unsigned port,
-                                     xt_t rx_xt, xt_t tx_xt)
-{
-
-  struct espconn *pesp_conn = new_conn(type, rx_xt, tx_xt);
-  pesp_conn->proto.tcp->remote_port = port;
-  pesp_conn->proto.tcp->local_port = espconn_port();
-
-  *((uint32_t *)pesp_conn->proto.tcp->remote_ip) = ipaddr_addr(domain ? domain : "127.0.0.1");
-
-  return pesp_conn;
-}
-
-static void connect_end(struct espconn *pesp_conn, const char *domain)
-{
-  if (*(uint32_t *)(pesp_conn->proto.tcp->remote_ip) == IPADDR_NONE &&
-     (!domain || (ets_memcmp(domain,"255.255.255.255",16) != 0))) {
-    host_ip.addr = 0;
-    dns_reconn_count = 0;
-    if(ESPCONN_OK == espconn_gethostbyname(pesp_conn, domain, &host_ip, socket_dns_found)){
-      socket_dns_found(domain, &host_ip, pesp_conn);  // ip is returned in host_ip.
-    }
-  } else {
-    socket_connect(pesp_conn);
-  }
-}
-
-struct espconn *my_tcp_connect(unsigned port, const char *domain, xt_t rx_xt, xt_t tx_xt,
-                            xt_t conn_xt, xt_t disconn_xt, xt_t reconn_xt)
-{
-  struct espconn *pesp_conn = connect_start(ESPCONN_TCP, domain, port, rx_xt, tx_xt);
-
-  register_tcp_callbacks(pesp_conn, conn_xt, disconn_xt, reconn_xt);
-
-  if (pesp_conn->proto.tcp->remote_port || pesp_conn->proto.tcp->local_port) {
-    espconn_disconnect(pesp_conn);
-  }
-
-  connect_end(pesp_conn, domain);
-  return pesp_conn;
-}
-
-struct espconn *my_udp_connect(unsigned port, const char *domain, xt_t rx_xt, xt_t tx_xt)
-{
-  struct espconn *pesp_conn = connect_start(ESPCONN_UDP, domain, port, rx_xt, tx_xt);
-
-  if(pesp_conn->proto.udp->remote_port || pesp_conn->proto.udp->local_port)
-    espconn_delete(pesp_conn);
-
-  connect_end(pesp_conn, domain);
-  return pesp_conn;
-}
-
-void my_tcp_disconnect(struct espconn *pesp_conn)
-{
-  if (!pesp_conn)
-    return;
-  espconn_disconnect(pesp_conn);
-  //  free_espconn(pesp_conn);
-}
-
-cell send(struct espconn *pesp_conn, uint16 len, uint8 *adr)
-{
-  // XXX this doesn't work for the UDP server case; for that
-  // we need to look up the remote IP and port number as in net.c
-  return espconn_send(pesp_conn, adr, len);
-}
-
+#include "lwip/err.h"
 
 struct tcp_pcb *tcp_new(void);
 void tcp_arg(struct tcp_pcb *pcb, void* arg);
@@ -317,8 +31,7 @@ err_t tcp_output(struct tcp_pcb *pcb);
 void tcp_recved(struct tcp_pcb *pcb, uint16_t len);
 err_t tcp_close(struct tcp_pcb *pcb);
 void tcp_abort(struct tcp_pcb *pcb);
-// uint8_t pbuf_free(struct pbuf *p);
-uint8_t pbuf_free(void *p);
+uint8_t pbuf_free(void *p);  // void* is really struct pbuf*
 void tcp_sent_continues(struct tcp_pcb *pcb);
 
 // From lwip.c.  We punt on the argument templates to avoid too many include files
@@ -330,6 +43,7 @@ void tcp_recv1();
 void tcp_poll1();
 void tcp_err1();
 
+#include "driver/i2c_master.h"
 cell i2c_send(cell byte)
 {
   i2c_master_writeByte((uint8_t)byte);
@@ -576,6 +290,8 @@ cell dirent_name(void *);
 // extern void SPIRead(void);
 extern void raw_putchar(unsigned char c);
 
+#include "driver/onewire.h"
+
 uint8_t owpin;
 uint8_t owpower;
 void ow_init(uint8_t pin, int power) { owpin = pin; owpower = power; onewire_init(owpin); };
@@ -789,15 +505,6 @@ cell ((* const ccalls[])()) = {
   C(rtc_get_reset_reason)   //c reset-reason { -- i.reason }
   C(xthal_get_ccount)       //c xthal_get_ccount  { -- i.count }
 
-//  C(espconn_tcp_listen)          //x tcp-listen  { i.reconn_xt i.disconn_xt i.conn_xt i.tx_xt i.rx_xt $.domain i.port i.timeout -- a.handle }
-//  C(udp_listen)             //x udp-listen  { i.tx_xt i.rx_xt $.domain i.port -- a.handle }
-//  C(unlisten)               //x my-unlisten    { a.handle -- }
-//  C(my_tcp_connect)         //x api-tcp-connect { i.reconn_xt i.disconn_xt i.conn_xt i.tx_xt i.rx_xt $.domain i.port -- a.handle }
-//  C(my_udp_connect)         //x udp-connect { i.tx_xt i.rx_xt $.domain i.port -- a.handle }
-//  C(my_tcp_disconnect)      //x tcp-disconnect  { a.handle -- }
-//  C(espconn_tcp_set_buf_count) //x tcp-bufcnt!  { i.num a.handle -- }
-//  C(send)                   //x send  { a.buf i.len a.handle -- i.stat }
-
   C(tcp_write_sw)           //c tcp-write  { a.adr i.len a.pcb -- i.stat }
   C(tcp_new)                //c tcp-new  { -- a.pcb }
   C(tcp_arg)                //c tcp-arg  { a.arg a.pcb -- }
@@ -818,179 +525,3 @@ cell ((* const ccalls[])()) = {
   C(pbuf_free)              //c pbuf-free   { a.pbuf -- i.#freed }
   C(tcp_sent_continues)     //c tcp-sent-continues  { a.pcb -- }
 };
-
-#if 0
-struct station_config {
-    uint8 ssid[32];
-    uint8 password[64];
-    uint8 bssid_set;	// Note: If bssid_set is 1, station will just connect to the router
-                        // with both ssid[] and bssid[] matched. Please check about this.
-    uint8 bssid[6];
-};
-
-
-struct scan_config {
-    uint8 *ssid;	// Note: ssid == NULL, don't filter ssid.
-    uint8 *bssid;	// Note: bssid == NULL, don't filter bssid.
-    uint8 channel;	// Note: channel == 0, scan all channels, otherwise scan set channel.
-    uint8 show_hidden;	// Note: show_hidden == 1, can get hidden ssid routers' info.
-};
-
-struct softap_config {
-    uint8 ssid[32];
-    uint8 password[64];
-    uint8 ssid_len;	// Note: Recommend to set it according to your ssid
-    uint8 channel;	// Note: support 1 ~ 13
-    AUTH_MODE authmode;	// Note: Don't support AUTH_WEP in softAP mode.
-    uint8 ssid_hidden;	// Note: default 0
-    uint8 max_connection;	// Note: default 4, max 4
-    uint16 beacon_interval;	// Note: support 100 ~ 60000 ms, default 100
-};
-
-struct station_info {
-	STAILQ_ENTRY(station_info)	next;
-
-	uint8 bssid[6];
-	struct ip_addr ip;
-};
-
-struct dhcps_lease {
-	bool enable;
-	struct ip_addr start_ip;
-	struct ip_addr end_ip;
-};
-
-enum dhcps_offer_option{
-	OFFER_START = 0x00,
-	OFFER_ROUTER = 0x01,
-	OFFER_END
-};
-
-#define STATION_IF      0x00
-#define SOFTAP_IF       0x01
-
-/** Get the absolute difference between 2 u32_t values (correcting overflows)
- * 'a' is expected to be 'higher' (without overflow) than 'b'. */
-#define ESP_U32_DIFF(a, b) (((a) >= (b)) ? ((a) - (b)) : (((a) + ((b) ^ 0xFFFFFFFF) + 1)))
-
-typedef void (* wifi_promiscuous_cb_t)(uint8 *buf, uint16 len);
-
-enum phy_mode {
-	PHY_MODE_11B	= 1,
-	PHY_MODE_11G	= 2,
-	PHY_MODE_11N    = 3
-};
-
-enum sleep_type {
-	NONE_SLEEP_T	= 0,
-	LIGHT_SLEEP_T,
-	MODEM_SLEEP_T
-};
-
-enum {
-    EVENT_STAMODE_CONNECTED = 0,
-    EVENT_STAMODE_DISCONNECTED,
-    EVENT_STAMODE_AUTHMODE_CHANGE,
-    EVENT_STAMODE_GOT_IP,
-    EVENT_STAMODE_DHCP_TIMEOUT,
-    EVENT_SOFTAPMODE_STACONNECTED,
-    EVENT_SOFTAPMODE_STADISCONNECTED,
-    EVENT_SOFTAPMODE_PROBEREQRECVED,
-    EVENT_MAX
-};
-
-enum {
-	REASON_UNSPECIFIED              = 1,
-	REASON_AUTH_EXPIRE              = 2,
-	REASON_AUTH_LEAVE               = 3,
-	REASON_ASSOC_EXPIRE             = 4,
-	REASON_ASSOC_TOOMANY            = 5,
-	REASON_NOT_AUTHED               = 6,
-	REASON_NOT_ASSOCED              = 7,
-	REASON_ASSOC_LEAVE              = 8,
-	REASON_ASSOC_NOT_AUTHED         = 9,
-	REASON_DISASSOC_PWRCAP_BAD      = 10,  /* 11h */
-	REASON_DISASSOC_SUPCHAN_BAD     = 11,  /* 11h */
-	REASON_IE_INVALID               = 13,  /* 11i */
-	REASON_MIC_FAILURE              = 14,  /* 11i */
-	REASON_4WAY_HANDSHAKE_TIMEOUT   = 15,  /* 11i */
-	REASON_GROUP_KEY_UPDATE_TIMEOUT = 16,  /* 11i */
-	REASON_IE_IN_4WAY_DIFFERS       = 17,  /* 11i */
-	REASON_GROUP_CIPHER_INVALID     = 18,  /* 11i */
-	REASON_PAIRWISE_CIPHER_INVALID  = 19,  /* 11i */
-	REASON_AKMP_INVALID             = 20,  /* 11i */
-	REASON_UNSUPP_RSN_IE_VERSION    = 21,  /* 11i */
-	REASON_INVALID_RSN_IE_CAP       = 22,  /* 11i */
-	REASON_802_1X_AUTH_FAILED       = 23,  /* 11i */
-	REASON_CIPHER_SUITE_REJECTED    = 24,  /* 11i */
-
-	REASON_BEACON_TIMEOUT           = 200,
-	REASON_NO_AP_FOUND              = 201,
-	REASON_AUTH_FAIL				= 202,
-	REASON_ASSOC_FAIL				= 203,
-	REASON_HANDSHAKE_TIMEOUT		= 204,
-};
-
-typedef struct {
-	uint8 ssid[32];
-	uint8 ssid_len;
-	uint8 bssid[6];
-	uint8 channel;
-} Event_StaMode_Connected_t;
-
-typedef struct {
-	uint8 ssid[32];
-	uint8 ssid_len;
-	uint8 bssid[6];
-	uint8 reason;
-} Event_StaMode_Disconnected_t;
-
-typedef struct {
-	uint8 old_mode;
-	uint8 new_mode;
-} Event_StaMode_AuthMode_Change_t;
-
-typedef struct {
-	struct ip_addr ip;
-	struct ip_addr mask;
-	struct ip_addr gw;
-} Event_StaMode_Got_IP_t;
-
-typedef struct {
-	uint8 mac[6];
-	uint8 aid;
-} Event_SoftAPMode_StaConnected_t;
-
-typedef struct {
-	uint8 mac[6];
-	uint8 aid;
-} Event_SoftAPMode_StaDisconnected_t;
-
-typedef struct {
-	int rssi;
-	uint8 mac[6];
-} Event_SoftAPMode_ProbeReqRecved_t;
-
-typedef union {
-	Event_StaMode_Connected_t			connected;
-	Event_StaMode_Disconnected_t		disconnected;
-	Event_StaMode_AuthMode_Change_t		auth_change;
-	Event_StaMode_Got_IP_t				got_ip;
-	Event_SoftAPMode_StaConnected_t		sta_connected;
-	Event_SoftAPMode_StaDisconnected_t	sta_disconnected;
-	Event_SoftAPMode_ProbeReqRecved_t   ap_probereqrecved;
-} Event_Info_u;
-
-typedef struct _esp_event {
-    uint32 event;
-    Event_Info_u event_info;
-} System_Event_t;
-
-typedef void (* wifi_event_handler_cb_t)(System_Event_t *event);
-
-struct ip_info {
-    struct ip_addr ip;
-    struct ip_addr netmask;
-    struct ip_addr gw;
-};
-#endif

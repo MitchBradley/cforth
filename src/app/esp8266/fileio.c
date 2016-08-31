@@ -1,11 +1,13 @@
 // Forth interfaces to SPIFFS FLASH filesystem
 
-#include "arch/cc.h"
-#define NODEMCU_SPIFFS_NO_INCLUDE  // Prevents stdint type collisions
-#include "spiffs.h"
 #include "forth.h"
 #include "compiler.h"
 #include "stdio.h"
+
+#include "esp_stdint.h"
+#include "arch/cc.h"
+#define NODEMCU_SPIFFS_NO_INCLUDE  // Prevents stdint type collisions
+#include "spiffs.h"
 
 void read_dictionary(char *name, cell *up) {  FTHERROR("No file I/O\n");  }
 
