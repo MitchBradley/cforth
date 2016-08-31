@@ -93,9 +93,9 @@ include $(SRC)/cforth/embed/targets.mk
 .PHONY: nodemcu-fw
 
 nodemcu-fw: app.o
-	(cd $(NODEMCU_PATH) && ./makeit)
+	(cd $(NODEMCU_PATH) && sh makeit)
 
 download: nodemcu-fw
 	/c/Program\ Files/AutoHotKey/AutoHotKey ~/Desktop/disconn_teraterm.ahk $(COMPORT)
-	(cd $(NODEMCU_PATH) && ./loadit COM36)
+	(cd $(NODEMCU_PATH) && sh loadit COM36)
 	/c/Program\ Files/AutoHotKey/AutoHotKey ~/Desktop/connect_teraterm.ahk $(COMPORT)
