@@ -579,9 +579,8 @@ execute:
     next;
 
 /*$p :noname */ case COLON_NONAME:
-    align(up);
-    push(V(DP));
-    compile(DOCOLON);
+    place_cf(DOCOLON, up);
+    push(XT_FROM_CT(*(token_t *)&V(LASTP), up));
     V(STATE) = COMPILING;
     V(NUMINS) = 0;
     next;
@@ -607,6 +606,8 @@ execute:
     next;
 
 /*$p $header */     case HEADER:   header((char *)*sp++, tos, up);    loadtos;   next;
+
+/*$p acf-align     */ case ACFALIGN:     xt_align(up);  next;
 
 /*$p colon-cf      */ case COLONCF:      place_cf(DOCOLON, up);          next;
 /*$p defer-cf      */ case DEFERCF:      place_cf(DODEFER, up);          next;

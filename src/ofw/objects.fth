@@ -100,8 +100,10 @@ headers
    then
 ;
 
+warning @ warning off
 1 action-name to
 2 action-name addr
+warning !
 
 \ Add these words to the decompiler case tables so that the
 \ debugger will display their arguments and so that the decompiler
@@ -152,8 +154,10 @@ also hidden
 [then]
 previous
 
+warning @ warning off
 \ action-compiler: to
 action-compiler: addr
+warning !
 
 
 \ Makes "is" and "to" synonymous.  "is" first checks to see if the
@@ -162,9 +166,11 @@ action-compiler: addr
 \ If the object is not of one of the kernel object types, "is" calls
 \ "to-hook" to handle the object as a multiple-code field type object.
 
+warning @ warning off
 : (to)  ( [data] acf -- )  +level  compile to  compile, -level  ;
 ' (to) is to-hook
 alias to is
+warning !
 
 \ 3 actions
 \ action:  @  ;

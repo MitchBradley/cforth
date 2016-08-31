@@ -35,9 +35,10 @@
    repeat                ( adr rem-adr )
    over -                ( adr len )
 ;
-0 value args-adr
-0 value args-len
+0 value url-args-adr
+0 value url-args-len
+: url-args$  ( adr len -- )  url-args-adr url-args-len  ;
 : parse-args  ( url$ -- filename$ )
    '?' left-parse-string            ( arg$ filename$ )
-   2swap  to args-len  to args-adr  ( filename$ )
+   2swap  to url-args-len  to url-args-adr  ( filename$ )
 ;

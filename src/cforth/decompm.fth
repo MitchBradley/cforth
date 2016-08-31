@@ -78,7 +78,9 @@ variable isvariable
 
 : in-dictionary?  ( adr -- flag )  origin here within  ;
 : loop-end?  drop false  ;
-: indirect-call?  drop false  ;
+defer indirect-call?
+: no-icall  drop false  ;
+' no-icall to indirect-call?
 
 alias rslist 2drop
 : unbug 0 <ip !  ;

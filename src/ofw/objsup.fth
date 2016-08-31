@@ -2,7 +2,6 @@
    dup 0=  if  drop  .not-found  ( -13 ) abort  then
 ;
 : used  ( xt -- )  lastacf token!  ;
-: acf-align  ( -- )  align here last token!  ;
 
 \ Code field for an object action.
 : doaction  ( -- )  acf-align  colon-cf  ;

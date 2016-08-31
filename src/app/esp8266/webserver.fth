@@ -2,7 +2,7 @@
 \needs $=  : $=  ( $1 $2 -- )  compare 0=  ;
 
 : find-cmd  ( -- false | val$ true )
-   args-adr args-len urldecode$ ( $ )
+   url-args$ urldecode$         ( $ )
    2dup reply{ type cr }reply   ( $ )
    begin  dup  while            ( $ )
       '&' left-parse-string     ( $'  head$ )

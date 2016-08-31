@@ -1,4 +1,8 @@
+: nowarn(  ( -- warning )  warning @  warning off  ;
+: )nowarn  ( warning -- )  warning !  ;
+nowarn(
 : stand-init  ;
+)nowarn
 : $save  ( adr1 len1 adr2 -- adr2 len1 )  pack count  ;
 : lcc  ( char -- char' )  $20 or  ;
 : lower  ( adr len -- )  bounds  ?do i dup c@ lcc swap c!  loop  ;
@@ -81,7 +85,6 @@ alias resident noop
 alias headerless? false
 alias ascii [char]
 alias partial-headers noop
-alias acf-align taligned
 create cforth
 \needs standalone?  false value standalone?
 alias eval evaluate
@@ -141,7 +144,7 @@ alias be-n, be-l,
 alias n>link >link
 alias null origin
 
-defer indirect-call?
+\needs indirect-call?  defer indirect-call?
 : (indirect-call?)  ( xt -- flag )  ['] catch =  ;
 ' (indirect-call?) is indirect-call?
 
@@ -207,9 +210,9 @@ defer check-message  ( adr len -- adr len )  ' noop to check-message
 only forth also hidden also forth definitions
 : stand-init-header  ( -- )
    headerless? 0=  dup >r  if  headerless  then
-   warning @  warning off
+   nowarn(
    " stand-init" $header acf-align
-   warning !
+   )nowarn
    r>  if  headers  then
 ;
 
@@ -412,6 +415,7 @@ defer interpret-string  ( adr len -- )  ' evaluate is interpret-string
    2r> free-mem           ( ? )
 ;
 : execute-buffer  ( adr len -- )  true abort" Unrecognized program format"  ;
+nowarn(
 : execute-buffer    ( adr len -- )              \ Try Forth
    " \ "         2over substring?  if  safe-include-buffer exit  then   ( adr len )
    " purpose: "  2over substring?  if  safe-include-buffer exit  then   ( adr len )
@@ -419,6 +423,7 @@ defer interpret-string  ( adr len -- )  ' evaluate is interpret-string
 
    execute-buffer
 ;
+)nowarn
 : 'execute-buffer  ( -- xt )
    " execute-buffer" ['] forth  search-wordlist  drop
 ;
@@ -966,9 +971,11 @@ d# 700 /n* constant /buffer-area
 ;
 
 headers
+nowarn(
 : value  \ name  ( initial-value -- )
    header noop   \  Will patch with (value)
 ;
+)nowarn
 headerless
 3 actions
 action:  >instance-data @  ;
@@ -995,9 +1002,11 @@ transient
 resident
 
 headerless
+nowarn(
 : 2value  \ name  ( d.initial-value -- )
    header noop   \  Will patch with (2value)
 ;
+)nowarn
 
 3 actions
 action:  >instance-data 2@  ;
@@ -1010,9 +1019,11 @@ action:  >instance-data     ;
 
 
 headers
+nowarn(
 : buffer:  \ name  ( size -- )
    header noop  \ Will patch with (buffer:)
 ;
+)nowarn
 
 3 actions
 action:  >instance-data    ;
@@ -1020,6 +1031,7 @@ action:  >instance-data !  ;
 action:  >instance-data    ;
 
 headerless
+nowarn(
 : (buffer:)  ( #bytes -- )
    instance?  if
       create-cf
@@ -1030,11 +1042,14 @@ headerless
       (buffer:)
    then
 ; patch (buffer:) noop buffer:
+)nowarn
 
 headers
+nowarn(
 : variable  \ name  ( -- )
    header  noop \ Will patch with (variable)
 ;
+)nowarn
 
 3 actions
 action:  >instance-data    ;
@@ -1042,17 +1057,21 @@ action:  >instance-data !  ;
 action:  >instance-data    ;
 
 headerless
+nowarn(
 : (variable)  ( -- )
    instance?  if
       create-cf use-actions  0 /n value#,  else  user-cf  0 /n  user#,
    then
    !
 ; patch (variable) noop variable
+)nowarn
 
 headers
+nowarn(
 : defer  \ name  ( -- )
    header noop \ Will patch with (defer)
 ;
+)nowarn
 
 3 actions
 action:  >instance-data token@ execute  ;
@@ -1064,6 +1083,7 @@ headerless
    create-cf  ['] crash /token  ( value data-size )
    use-actions  value#,
 ;
+nowarn(
 : (defer)  ( -- )
    instance?  if
       instance-defer
@@ -1073,6 +1093,7 @@ headerless
    then                            ( value adr )
    token!
 ; patch (defer) noop defer
+)nowarn
 
 \ Extend debugger to handle instance defers
 : (resolve-instance-defers)  ( xt -- xt' )
@@ -1167,6 +1188,7 @@ action:  >initial-value    ;
    create-cf use-actions  /n value#,  !
 ;
 
+nowarn(
 : (value)  ( initial-value -- )
    instance?  if
       instance-value
@@ -1175,6 +1197,7 @@ action:  >initial-value    ;
    then
 ;
 patch (value) noop value
+)nowarn
 
 3 actions
 action:  >initial-value 2@  ;
@@ -1275,7 +1298,7 @@ headers
 headerless
 
 : allot-package-data  ( -- )
-   acf-align here dup 'values token!  '#values @ dup allot  erase
+   align here dup 'values token!  '#values @ dup allot  erase
 ;
 : finish-package-data  ( -- )
    \ Copy the initialized data into the dictionary and set up the
@@ -1310,6 +1333,7 @@ headerless
 ;
 
 \ Creates an unnamed vocabulary
+nowarn(
 : (vocabulary)  ( -- )
    ['] acf-align is header
    vocabulary
@@ -1317,6 +1341,8 @@ headerless
 
    erase-voc-link
 ;
+)nowarn
+
 
 : allocate-node-record  ( -- )
    \ Allocate user (RAM) space for  properties, "last" field, children, peers
@@ -1587,10 +1613,12 @@ action:  drop  ;
       >link current-properties  remove-word
    then
 ;
+nowarn(
 : forget  \ name  ( -- )
    current token@  device-node?  abort" Can't forget device methods"
    forget
 ;
+)nowarn
 
 partial-headers
 : get-unit  ( -- true | adr len false )  " reg" get-property  ;
@@ -3242,11 +3270,13 @@ nuser temp-char
 : console-emit  ( char -- )  temp-char c!  temp-char 1 console-type  ;
 
 \ close the device if it is not the stdout device.
+nowarn(
 : ?close  ( ihandle|0 -- )
    ?dup  if
       stdout @  over  <>  if  close-dev  else  drop  then
    then
 ;
+)nowarn
 : has-method?  ( method-adr,len phandle -- flag )
    find-method  dup  if  nip  then  ( flag )
 ;
@@ -3876,6 +3906,7 @@ partial-headers
 defer more-memory  ( request-size -- adr actual-size false | error-code true )
 
 headerless
+nowarn(
 : allocate-memory  ( size -- adr false  |  error-code true )
    dup allocate-memory  if	      ( size error-code )
       \ No more memory in the heap; try to get some more from the system
@@ -3891,6 +3922,7 @@ headerless
       nip false                       ( adr false )
    then                               ( adr false  |  error-code true )
 ;
+)nowarn
 
 : adjust-piece  ( size 'dbuf -- actual-size )
    dup dbuf-size@ 2 pick -          ( size 'dbuf left-over )
@@ -4089,11 +4121,13 @@ headers
 
 headerless
 
+nowarn(
 : stand-init
    stand-init
    msg-buf /msg-buf erase
    0 to msg-buf-next
 ;
+)nowarn
 
 headers
 
@@ -4575,7 +4609,9 @@ caps @ caps off
 
 : milliseconds ( -- )  get-msecs   ;
 
+nowarn(
 : execute-buffer ( adr len -- )  'execute-buffer execute  ;
+)nowarn
 caps !
 
 also forth definitions
@@ -4911,12 +4947,14 @@ headers
 ;
 
 [ifdef] call
+nowarn(
 : execute-buffer  ( adr len -- )                \ Try machine code
    2dup  4 min  " CODE"  $=  if             ( adr len )
       drop 4 +  0 swap  call  2drop exit
    then                                     ( adr len )
    execute-buffer
 ;
+)nowarn
 [then]
 
 headerless

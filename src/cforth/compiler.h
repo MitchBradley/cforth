@@ -16,6 +16,7 @@ extern void makeimmed(cell *up);
 extern int alfind(char *adr, cell len, xt_t *xtp, cell *up);
 extern token_t * aligned(u_char *addr);
 extern void align(cell *);
+extern void xt_align(cell *);
 extern u_char *aln_alloc(cell nbytes, cell *up);
 extern int find_local(char *adr, int plen, xt_t *xtp, cell *up);
 extern int search_wid(char *adr, cell len, vocabulary_t *wid, xt_t *xtp, cell *up);
