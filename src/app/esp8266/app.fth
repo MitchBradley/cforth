@@ -104,9 +104,19 @@ fl car.fth
 
 : init-i2c  ( -- )  3 4 i2c-setup  ;
 
+: .commit  ( -- )  'version cscount type  ;
+
+: .built  ( -- )  'build-date cscount type  ;
+
+: banner  ( -- )
+   cr ." CForth built " .built
+   ."  from " .commit
+   cr
+;
+
 \ Replace 'quit' to make CForth auto-run some application code
 \ instead of just going interactive.
-: app  ." CForth" cr hex init-i2c  quit  ;
+: app  banner  hex init-i2c  quit  ;
 
 alias id: \
 

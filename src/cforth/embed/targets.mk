@@ -46,7 +46,8 @@ TLFLAGS = -static
 # putchar/getchar, and simple string routines like strcpy().
 
 tembed.o: $(TBASEOBJS) $(EMBEDOBJS) $(DICTOBJ)
-	$(TLD) -r -o $@ $(TBASEOBJS) $(EMBEDOBJS) $(DICTOBJ)
+	@echo TLD $<
+	@$(TLD) -r -o $@ $(TBASEOBJS) $(EMBEDOBJS) $(DICTOBJ)
 
 # tkernel.o is like tembed.o but it omits the dictionary so
 # that can be compiled separately
