@@ -20,6 +20,7 @@ cell deep_sleep(cell us, cell type)
 #include "rom.h"
 
 #include "lwip/err.h"
+#include "lwip/pbuf.h"
 
 struct tcp_pcb *tcp_new(void);
 void tcp_arg(struct tcp_pcb *pcb, void* arg);
@@ -31,7 +32,7 @@ err_t tcp_output(struct tcp_pcb *pcb);
 void tcp_recved(struct tcp_pcb *pcb, uint16_t len);
 err_t tcp_close(struct tcp_pcb *pcb);
 void tcp_abort(struct tcp_pcb *pcb);
-uint8_t pbuf_free(void *p);  // void* is really struct pbuf*
+uint8_t pbuf_free(struct pbuf *p);
 void tcp_sent_continues(struct tcp_pcb *pcb);
 
 // From lwip.c.  We punt on the argument templates to avoid too many include files
