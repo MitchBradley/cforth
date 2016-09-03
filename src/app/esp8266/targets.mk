@@ -71,20 +71,20 @@ FORTH_OBJS = tembed.o textend.o
 DICTIONARY=ROM
 DICTSIZE=0x4000
 
-app.o: $(PLAT_OBJS) $(FORTH_OBJS)
+app.o: date.o
 	@echo Linking $@ ... 
-	$(TLD)  -o $@  -r  $(PLAT_OBJS) $(FORTH_OBJS)
+	@$(TLD)  -o $@  -r  $(PLAT_OBJS) $(FORTH_OBJS) date.o
 
 # This rule builds a date stamp object that you can include in the image
 # if you wish.
 
-.PHONY: date.o
-
-date.o:
-	echo 'const char version[] = "'`cat version`'" ;' >date.c
-	echo 'const char build_date[] = "'`date  --iso-8601=minutes`'" ;' >>date.c
-	echo "const unsigned char sw_version[] = {" `cut -d . --output-delimiter=, -f 1,2 version` "};" >>date.c
-	$(TCC) -c date.c -o $@
+date.o: $(PLAT_OBJS) $(FORTH_OBJS)
+	@(echo "`git rev-parse --verify --short HEAD``if git diff-index --name-only HEAD >/dev/null; then echo '-dirty'; fi`" || echo UNKNOWN) >version
+	@echo 'const char version[] = "'`cat version`'";' >date.c
+	@echo 'const char build_date[] = "'`date --utc +%F\ %R`'";' >>date.c
+	@cat date.c
+	@echo TCC $@
+	@$(TCC) -c date.c -o $@
 
 EXTRA_CLEAN += *.elf *.dump *.nm *.img date.c $(FORTH_OBJS) $(PLAT_OBJS)
 

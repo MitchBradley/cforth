@@ -307,7 +307,21 @@ void ow_reset_search() { onewire_reset_search(owpin); };
 void ow_target_search(uint8_t family_code) { onewire_target_search(owpin, family_code); };
 uint8_t ow_search(uint8_t *newAddr) { onewire_search(owpin, newAddr); };
 
+cell version_adr(void)
+{
+    extern char version[];
+    return (cell)version;
+}
+
+cell build_date_adr(void)
+{
+    extern char build_date[];
+    return (cell)build_date;
+}
+
 cell ((* const ccalls[])()) = {
+  C(build_date_adr)   //c 'build-date     { -- a.value }
+  C(version_adr)      //c 'version        { -- a.value }
   C(raw_putchar)      //c m-emit  { i.char -- }
 
   C(myspiffs_format)  //c fs-format  { -- }
