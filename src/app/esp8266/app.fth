@@ -11,9 +11,11 @@ warning @ warning off
 warning !
 : ms  ( msecs -- )  start-ms rest  ;
 
+: relax  ( -- )  1 ms  ;  \ Give the system a chance to run
+
 \ Long-running words like "words" can cause watchdog resets unless
 \ we return to the OS periodically.
-: paused-exit?  ( -- flag )  standalone?  if  1 ms  then  key?  ;
+: paused-exit?  ( -- flag )  standalone?  if  relax  then  key?  ;
 ' paused-exit? to exit?
 
 \ m-emit is defined in textend.c
@@ -22,7 +24,7 @@ alias m-init noop
 
 : m-avail?  ( -- false | char true )
    key?  if  key true exit  then
-   1 ms
+   relax
    false
 ;
 alias get-ticks timer@
@@ -128,5 +130,17 @@ fl ../../ofw/parses1.fth
 fl ../../ofw/cirstack.fth
 fl ../../ofw/ofw-dt.fth
 fl ../../ofw/deblock.fth
+
+fl ../../lib/fb.fth
+fl ../../lib/font5x7.fth
+fl ../../lib/ssd1306.fth
+: init-wemos-oled  ( -- )
+   1 2 i2c-setup
+   ssd-init
+;
+: test-wemos-oled  ( -- )
+   init-wemos-oled
+   #20 0  do  i (u.)  fb-type "  Hello" fb-type  fb-cr  loop
+;
 
 " app.dic" save
