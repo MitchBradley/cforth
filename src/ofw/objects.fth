@@ -167,8 +167,8 @@ warning !
 \ "to-hook" to handle the object as a multiple-code field type object.
 
 warning @ warning off
-: (to)  ( [data] acf -- )  +level  compile to  compile, -level  ;
-' (to) is to-hook
+: (to-hook)  ( [data] acf -- )  +level  compile to  compile, -level  ;
+' (to-hook) is to-hook
 alias to is
 warning !
 

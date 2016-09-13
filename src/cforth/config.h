@@ -126,7 +126,7 @@ typedef token_t *xt_t;
 #define RSSIZE 100
 #define CBUFSIZE 64
 
-#define MAXVARS 0x200
+#define MAXVARS 0x300
 #define MAXUSER (MAXVARS * sizeof(cell))
 
 #ifndef MAXDICT

@@ -1,3 +1,93 @@
+: du*  ( d1 u -- d2 )  \ Double result
+   tuck um* drop >r  ( d1.lo u r: d2.hi )
+   um*  r> +         ( d2 )
+;
+
+\ The ESP8266 RTC is just a counter
+: now  ( -- s m h )  0 0 0  ;
+: today  ( -- d m y )  1 1 #2016  ;
+
+: umin  ( u1 u2 -- u3 )  2dup u<  if  drop  else  nip  then  ;
+
+: ($callback)  ( name$ -- err? )  2drop true  ;
+
+#260 buffer: string2
+
+: hold$  ( adr len -- )
+   dup  if
+      1- bounds swap  do  i c@ hold  -1 +loop
+   else
+      2drop
+   then
+;
+
+: bskip  ( adr len byte -- residue )
+   -rot 2dup + >r       ( byte adr len  r: endadr )
+   bounds ?do           ( byte )
+      dup i c@ <>  if   ( byte )
+         drop  i unloop r> swap -  exit  ( -- residue )
+      then              ( byte )
+   loop                 ( byte )
+   r> 2drop  0          ( residue )
+;
+: (.2)  (s u -- a len )  <# u# u# u#>   ;
+: (.4)  (s u -- a len )  <# u# u# u# u# u#>   ;
+
+4 constant /fd
+: ". count type  ;
+
+defer mac-address
+
+alias is-install drop
+alias is-remove drop
+alias is-selftest drop
+
+1 constant 1
+2 constant 2
+3 constant 3
+8 constant bs
+7 constant bell
+
+variable span
+: expect  ( adr len -- )  accept span !  ;
+
+: u/mod  ( u div -- req quot )  u>d um/mod  ;
+
+alias do-is (to)
+: cpeek  ( adr -- false | value true )  c@ true  ;
+: wpeek  ( adr -- false | value true )  w@ true  ;
+: lpeek  ( adr -- false | value true )  l@ true  ;
+
+: cpoke  ( b adr -- okay? )  c! true  ;
+: wpoke  ( w adr -- okay? )  w! true  ;
+: lpoke  ( l adr -- okay? )  l! true  ;
+
+: wbflip  ( w -- w )  wbsplit swap bwjoin  ;
+: lwflip  ( l -- l )  lwsplit swap wljoin  ;
+: lbflip  ( l -- l )  lbsplit swap 2swap swap bljoin  ;
+
+: lbflips  ( adr len -- )   bounds  ?do  i l@ lbflip i l!  /l +loop  ;
+: wbflips  ( adr len -- )   bounds  ?do  i w@ wbflip i w!  /w +loop  ;
+: lwflips  ( adr len -- )   bounds  ?do  i l@ lwflip i l!  /l +loop  ;
+
+#260 constant /stringbuf
+/stringbuf 2* buffer: stringbuf
+0 value "temp
+: switch-string  ( -- )
+   stringbuf  dup "temp =  if  /stringbuf +  then  is "temp
+;
+\ XXX need to init "temp to stringbuf
+
+alias config-flag value
+
+alias \tagvoc noop immediate
+alias \nottagvoc \ immediate
+alias #acf-align #align
+alias note-string noop  immediate
+
+alias start-module noop
+alias end-module noop
+
 : nowarn(  ( -- warning )  warning @  warning off  ;
 : )nowarn  ( warning -- )  warning !  ;
 nowarn(
@@ -6,6 +96,8 @@ nowarn(
 : $save  ( adr1 len1 adr2 -- adr2 len1 )  pack count  ;
 : lcc  ( char -- char' )  $20 or  ;
 : lower  ( adr len -- )  bounds  ?do i dup c@ lcc swap c!  loop  ;
+: ucc  ( char -- char' )  $20 invert and  ;
+: upper  ( adr len -- )  bounds  ?do i dup c@ ucc swap c!  loop  ;
 
 : >voc  ( n -- adr )  context swap ta+  ;
 #vocs /token * constant /context
@@ -92,6 +184,9 @@ defer minimum-search-order
 #10 constant newline
 : 4drop 2drop 2drop ;
 : recursive reveal ; immediate
+: (align)  ( size granularity -- )
+   1-  begin  dup here and  while  0 c,  repeat  drop
+;
 : round-down  ( adr granularity -- adr' )  1- invert and  ;
 
 \ From openfirmare/forth/kernel/endian.fth
@@ -107,14 +202,13 @@ defer minimum-search-order
 \needs le-l,  : le-l,   ( l -- )     here /l allot le-l!  ;
 \needs be-l,  : be-l,   ( l -- )     here /l allot be-l!  ;
 
+alias unaligned-w! le-w!
+alias unaligned-l! le-l!
+
 8 constant /x
 
-: le-x@  ( adr -- d )  dup le-l@  swap la1+ le-l@  ;
 : be-x@  ( adr -- d )  dup la1+ be-l@  swap be-l@  ;
-: le-x!  ( d adr -- )  tuck la1+ le-l!  le-l!  ;
 : be-x!  ( d adr -- )  tuck be-l!  la1+ be-l!  ;
-
-: le-x,   ( x -- )  here /x allot le-x!  ;
 : be-x,   ( x -- )  here /x allot be-x!  ;
 
 alias be-n@ be-l@
@@ -354,12 +448,6 @@ defer idprom-valid?  ( -- flag )
 defer sub-release  ( -- adr len )   ' null$ is sub-release
 
 defer serial#  ( -- n )   ' 0 is serial#
-
-
-\ System-wide network address
-
-\ system-mac-address is typically defined in some sort of ID PROM
-defer system-mac-address  ( -- adr len )  ' null$ is system-mac-address
 
 
 \ Device to use for console output if the preferred device is unavailable

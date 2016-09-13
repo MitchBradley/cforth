@@ -320,6 +320,13 @@ cell build_date_adr(void)
     return (cell)build_date;
 }
 
+void spi_open();
+void spi_close();
+void spi_begin();
+void spi_end();
+void spi_transfer();
+void spi_bits_in();
+
 cell ((* const ccalls[])()) = {
   C(build_date_adr)   //c 'build-date     { -- a.value }
   C(version_adr)      //c 'version        { -- a.value }
@@ -380,12 +387,6 @@ cell ((* const ccalls[])()) = {
   C(platform_pwm_close)     //c pwm-close   { i.pin -- }
   C(platform_pwm_start)     //c pwm-start   { i.pin -- }
   C(platform_pwm_stop)      //c pwm-stop    { i.pin -- }
-
-  C(platform_spi_setup)     //c spi-setup  { i.div i.phase i.polarity i.mode i.id -- i.status }
-  C(platform_spi_send_recv) //c spi-send-recv  { a.data i.bitlen i.id -- i.status }
-  C(platform_spi_set_mosi)  //c spi-set-mosi   { a.data i.bitlen i.id -- i.status }
-  C(platform_spi_get_miso)  //c spi-get-miso   { a.bitlen i.offset i.id -- i.status }
-  C(platform_spi_transaction) //c spi-transaction   { i.misobits i.dummy i.mosibits a.adrdata i.adrbits a.cdata i.cbits i.id -- i.status }
 
   C(system_get_rst_info)    //c reset-info { -- a.rst_info }
   C(system_restore)         //c restore  { -- }
@@ -539,4 +540,11 @@ cell ((* const ccalls[])()) = {
   C(tcp_abort)              //c tcp-abort   { a.pcb -- }
   C(pbuf_free)              //c pbuf-free   { a.pbuf -- i.#freed }
   C(tcp_sent_continues)     //c tcp-sent-continues  { a.pcb -- }
+
+  C(spi_open)               //c spi-open  { i.csgpio i.datamode i.msb i.clock -- }
+  C(spi_close)              //c spi-close  { -- }
+  C(spi_begin)              //c spi{  { -- }
+  C(spi_end)                //c }spi  { -- }
+  C(spi_transfer)           //c spi-transfer { a.outp a.inp i.size -- }
+  C(spi_bits_in)            //c spi-bits@ { i.#bits -- i.bits }
 };

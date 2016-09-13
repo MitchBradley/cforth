@@ -103,7 +103,7 @@ makebi: makebi.c
 # application code
 
 app.dic: $(APPPATH)/$(APPLOADFILE) forth forth.dic $(APPSRCS) tccalls.fth
-	./forth forth.dic tccalls.fth $(APPPATH)/$(APPLOADFILE)
+	$(PREFIX) ./forth forth.dic tccalls.fth $(APPPATH)/$(APPLOADFILE)
 
 base_dict.h base_dicthdr.h base_userarea.h: forth.dic makebi
 	./makebi $<

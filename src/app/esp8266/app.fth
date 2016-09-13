@@ -123,17 +123,17 @@ fl car.fth
 alias id: \
 
 \ Open Firmware stuff; omit if you don't need it
-fl ../../ofw/objsup.fth
-fl ../../ofw/objects.fth
-fl ../../ofw/linklist.fth
-fl ../../ofw/parses1.fth
-fl ../../ofw/cirstack.fth
-fl ../../ofw/ofw-dt.fth
-fl ../../ofw/deblock.fth
+fl ${BP}/ofw/objsup.fth
+fl ${BP}/ofw/objects.fth
+fl ${BP}/ofw/linklist.fth
+fl ${BP}/ofw/parses1.fth
+fl ${BP}/ofw/cirstack.fth
+fl ${BP}/ofw/ofw-dt.fth
+fl ${BP}/ofw/core/deblock.fth
 
-fl ../../lib/fb.fth
-fl ../../lib/font5x7.fth
-fl ../../lib/ssd1306.fth
+fl ${BP}/lib/fb.fth
+fl ${BP}/lib/font5x7.fth
+fl ${BP}/lib/ssd1306.fth
 : init-wemos-oled  ( -- )
    1 2 i2c-setup
    ssd-init
@@ -142,5 +142,21 @@ fl ../../lib/ssd1306.fth
    init-wemos-oled
    #20 0  do  i (u.)  fb-type "  Hello" fb-type  fb-cr  loop
 ;
+
+fl ../../lib/stringar.fth
+fl ../../lib/lex.fth
+
+fl ${BP}/ofw/disklabel/gpttools.fth
+fl ofw-rootnode.fth
+
+fl sdspi.fth
+
+-1 value sd-spi-cs   \ -1 to use hardware CS mode, 8 to use pin8 with software
+: (spi-setup)  ( datamode msbfirst? frequency -- )
+   >r >r >r  sd-spi-cs  r> r> r> spi-open
+;
+' (spi-setup)  to spi-setup
+' spi-transfer to spi-out-in
+' spi-bits@    to spi-bits-in
 
 " app.dic" save

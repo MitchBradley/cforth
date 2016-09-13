@@ -61,6 +61,7 @@ PLAT_OBJS +=  tconsoleio.o
 PLAT_OBJS +=  ttmain.o
 PLAT_OBJS +=  tlwip.o
 PLAT_OBJS +=  tfileio.o
+PLAT_OBJS +=  tesp_spi.o
 
 # Object files for the Forth system and application-specific extensions
 
@@ -88,6 +89,8 @@ date.o: $(PLAT_OBJS) $(FORTH_OBJS)
 
 EXTRA_CLEAN += *.elf *.dump *.nm *.img date.c $(FORTH_OBJS) $(PLAT_OBJS)
 
+PREFIX:=BP=$(realpath $(TOPDIR)/src)
+
 include $(SRC)/cforth/embed/targets.mk
 
 .PHONY: nodemcu-fw
@@ -95,7 +98,9 @@ include $(SRC)/cforth/embed/targets.mk
 nodemcu-fw: app.o
 	(cd $(NODEMCU_PATH) && sh makeit)
 
+SCRIPTPATH=/c/Users/wmb/Desktop/
+AHKPATH=/c/Program\ Files/AutoHotKey/
 download: nodemcu-fw
-	/c/Program\ Files/AutoHotKey/AutoHotKey ~/Desktop/disconn_teraterm.ahk $(COMPORT)
-	(cd $(NODEMCU_PATH) && sh loadit COM36)
-	/c/Program\ Files/AutoHotKey/AutoHotKey ~/Desktop/connect_teraterm.ahk $(COMPORT)
+	$(AHKPATH)AutoHotKey $(SCRIPTPATH)disconn_teraterm.ahk $(COMPORT)
+	(cd $(NODEMCU_PATH) && sh loadit $(COMPORT))
+	$(AHKPATH)AutoHotKey $(SCRIPTPATH)connect_teraterm.ahk $(COMPORT)

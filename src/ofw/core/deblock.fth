@@ -8,9 +8,9 @@
 \
 \ Mandatory parent methods:
 \
-\   write-blocks  ( block# #blocks -- #blocks-written )
+\   write-blocks  ( adr block# #blocks -- #blocks-written )
 \       Write to underlying device
-\   read-blocks   ( block# #blocks -- #blocks-read )
+\   read-blocks   ( adr block# #blocks -- #blocks-read )
 \       Read from underlying device
 \
 \ Optional parent methods.  A default behavior or value is used if the method is not present.
