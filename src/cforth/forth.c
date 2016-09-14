@@ -300,7 +300,8 @@ token_fetch:
 
 /*$p token! */  case TOK_STORE:
     ascr = (u_char *)*sp++;
-    if ( ((ascr - (u_char *)V(TORIGIN)) < V(BOUNDARY)) && (*(token_t *)ascr < MAXPRIM) ) {
+    scr = ascr - (u_char *)V(TORIGIN);
+    if ( (scr >= 0)  &&  (scr < V(BOUNDARY)) && (*(token_t *)ascr < MAXPRIM) ) {
         *(token_t *)tos = *(token_t *)ascr;
     } else {
         *(token_t *)tos = CT_FROM_XT((xt_t)ascr, up);
