@@ -22,13 +22,25 @@ only forth also hidden definitions
    .
 ;
 only forth hidden also forth definitions
-: .calls ( cfa -- )
-  \ ['] forth   ( cfa origin)  \ There is some irrelevant stuff before forth
-  ['] context  \ Colon definitions begin after the primitives
-  begin ( cfa search-start )
-         2dup here  tsearch  ( cfa last [ found-at ] f )
+: (.calls)   ( xt start end -- )
+  >r
+  begin ( xt start  r: end )
+     2dup r@  tsearch  ( cfa last [ found-at ] f )
   while  dup  .caller cr    ( cfa last found-at)
          nip ta1+
-  repeat 2drop
+  repeat r> 3drop
+;
+: .calls ( xt -- )
+   ['] context  ( start )      \ Colon definitions begin after the primitives
+   here  'ramtokens @  >=  if       ( xt start )
+      \ If this is a RAM/ROM dictionary layout, first search the ROM portion
+      \ then set the start address to the RAM portion
+      over swap                     ( xt xt start )
+      origin 'ramct @ ta+ (.calls)  ( xt )
+      'ramtokens @                  ( xt start' )
+   then                             ( xt start )
+
+   \ Finish by searching up to here
+   here (.calls)
 ;
 only forth also definitions
