@@ -51,8 +51,8 @@ headerless
 forth definitions
 : $sift  ( adr len -- )
    voc-link  begin  another-link?  while  ( adr len voc-xt )
-      ['] .vocab is .voc                          ( adr len )
-      >r 2dup r@ vsift?  if  r> 3drop exit  then  ( adr len )
+      ['] .vocab is .voc                          ( adr len voc-xt )
+      >r r@ vsift?  if  r> 3drop exit  then       ( adr len r: voc-xt )
       r> >voc-link                                ( adr len )
    repeat                                         ( adr len )
    2drop                                          ( )
