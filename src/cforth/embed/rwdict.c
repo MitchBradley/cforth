@@ -22,6 +22,8 @@ prepare_builtin_dictionary(int dictmax)
     u_char *here;
     here = dictionary + builtin_hdr.dsize;
     *(token_t *)origin = 0;
-    init_compiler(dictionary, dictionary+MAXDICT, 0xfffe, here, dictionary + MAXDICT, (cell *)variables);
+    init_compiler(dictionary, dictionary+MAXDICT,
+		  (token_t)(sizeof(dictionary) / sizeof(token_t)),
+		  here, dictionary + MAXDICT, (cell *)variables);
     return (cell *)variables;
 }

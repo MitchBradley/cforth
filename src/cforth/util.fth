@@ -92,6 +92,7 @@ hex
    dup c@ 3f and  ( len_byte_adr len )
    tuck - swap    ( adr len )
 ;
+: >header  ( acf -- adr )  >name$ drop  ;
 : lastacf  ( -- acf )  last token@  ;
 : body>  ( apf -- acf )  /token -  ;
 decimal
@@ -508,14 +509,22 @@ variable largest
 only forth also definitions
 vocabulary hidden
 : dp!  ( adr -- )  here - allot  ;
-nuser fence
+
+\ If the dictionary is split into ROM and RAM segments, the RAM could
+\ be above the ROM, so comparing xts directly will not work.
+
+\ Instead, we compare compilation tokens, which always increase as new
+\ words are added.
+
 : trim  ( fadr voc-adr -- )
    #threads 0  do          ( fadr thread-adr )
       2dup  begin          ( fadr thread-adr  fadr link-adr )
-         link@  2dup u<=   ( fadr thread-adr  fadr word-adr flag )
+         link@             ( fadr thread-adr  fadr word-adr )
+         over xt>ct        ( fadr thread-adr  fadr word-adr  fadr-ct )
+         over xt>ct  u<=   ( fadr thread-adr  fadr word-adr  flag )
       while                ( fadr thread-adr  fadr word-adr )
          >link             ( fadr thread-adr  fadr link-adr )
-      repeat               ( fadr thread-adr   fadr link' )
+      repeat               ( fadr thread-adr  fadr link' )
       nip over link!       ( fadr thread-adr )
       /link +              ( fadr thread-adr' )
    loop                    ( fadr thread-adr' )
@@ -523,13 +532,13 @@ nuser fence
 ;
 \ It is a bad idea to do a forget that will result in the forgetting of
 \ vocabularies that are presently in the search order.
+
 : (forget   ( acf -- )
-   >link
-   dup fence link@ u< abort" below fence"  ( adr )
+   >header
    \ first forget any vocabularies defined since the word to forget
 
    dup voc-link
-   begin   link@ 2dup  u>=  until      ( adr voc-link-adr )
+   begin   link@  over xt>ct  over xt>ct u>=  until   ( adr voc-link-adr )
    dup voc-link link! nip              ( adr voc-link-adr )
 
    \ now, for all remaining vocabularies, forget words defined

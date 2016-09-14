@@ -298,6 +298,16 @@ token_fetch:
     loadtos;
     next;
 
+/*$p xt>ct */   case XT_TO_CT:
+    ascr = (u_char *)tos;
+    scr = ascr - (u_char *)V(TORIGIN);
+    if ( (scr >= 0)  &&  (scr < V(BOUNDARY)) && (*(token_t *)ascr < MAXPRIM) ) {
+	tos = (cell)*(token_t *)ascr;
+    } else {
+        tos = (cell)CT_FROM_XT((xt_t)ascr, up);
+    }
+    next;
+
 /*$p token! */  case TOK_STORE:
     ascr = (u_char *)*sp++;
     scr = ascr - (u_char *)V(TORIGIN);
