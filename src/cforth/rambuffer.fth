@@ -49,6 +49,9 @@ nuser buffer-link
       >buffer-link                     ( prev-buffer:-acf )
    repeat                              ( )
 ;
+warning @  warning off
+: save  ( adr len -- )  clear-buffer:s save  ;
+warning !
 
 : .buffers ( -- )
    buffer-link                         ( next-buffer-word )
