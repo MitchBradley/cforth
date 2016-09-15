@@ -94,6 +94,14 @@ nowarn(
 : stand-init  ;
 )nowarn
 : $save  ( adr1 len1 adr2 -- adr2 len1 )  pack count  ;
+: $cat  ( adr len  pstr -- )  \ Append adr len to the end of pstr
+   >r  r@ count +   ( adr len end-adr )  ( r: pstr )
+   swap dup >r      ( adr endadr len )  ( r: pstr len )
+   cmove  r> r>     ( len pstr )
+   dup c@ rot + over c!  ( pstr )
+   count +  0 swap c!     \ Always keep a null terminator at the end
+;
+
 : lcc  ( char -- char' )  $20 or  ;
 : lower  ( adr len -- )  bounds  ?do i dup c@ lcc swap c!  loop  ;
 : ucc  ( char -- char' )  $20 invert and  ;
@@ -2412,15 +2420,16 @@ headers
 headerless
 : "open"  " open"  ;
 
-headers
-: $call-self  ( adr len -- )
+: (call-self)  ( adr len -- throw-code )
    my-self  if
-      my-voc  fm-hook phandle>voc $find-word  if  execute  exit  then
+      my-voc  fm-hook phandle>voc $find-word  if  execute false exit  then
    then
    my-self to error-instance
    error-instance  if  my-voc  to error-package  then
-   error-method 2! no-proc throw
+   error-method 2! no-proc
 ;
+headers
+: $call-self  ( adr len -- )  (call-self) throw  ;
 
 [ifndef] package(
 : package(  ( ihandle -- )  r> my-self >r >r  is my-self  ;
@@ -2428,7 +2437,7 @@ headers
 [then]
 
 : call-package  ( ??? acf ihandle -- ??? )      package( execute    )package  ;
-: $call-method  ( ??? adr len ihandle -- ??? )  package( $call-self )package  ;
+: $call-method  ( ??? adr len ihandle -- ??? )  package( (call-self) )package throw  ;
 : $call-parent  ( adr len -- )  my-parent $call-method  ;
 : ihandle>phandle  ( ihandle -- phandle )       package( my-voc     )package  ;
 

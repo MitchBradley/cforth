@@ -110,7 +110,8 @@ false instance value write-clipped?   \ true if too few blocks were written
 
 : fillbuf  ( d.byte# -- )
    align-byte# to dstart         ( )  \ Aligns position to a buffer boundary
-   bufsize clipped-#blocks drop  ( adr block# #blocks' )
+   buffer                        ( adr )
+   bufsize clipped-#blocks       ( adr block# #blocks' )
    " read-blocks" $call-parent   ( actual-#blocks )
    blocksize *  to btop          ( #bytes-read )
    bufsize to bend
@@ -240,7 +241,8 @@ headers
 : size  ( -- size.low size.high )
    sync
    btop bufpos>                                     ( d.buffered )
-   " current-#blocks" ['] $call-parent catch  if    ( d.buffered )
+   " current-#blocks" ['] $call-parent catch  if    ( d.buffered x x )
+      2drop                                         ( d.buffered )
       #blocks  if  #blocks blocksize um*  else  -1 maxint  then  ( d.buffered d.stored )
    else                                             ( d.buffered #blocks-stored )
       blocksize um*                                 ( d.buffered d.stored )
@@ -277,6 +279,7 @@ headers
 
    \ Seeking past end of file actually goes to the end of the file
    btop umin   to bcurrent
+   false   
 ;
 
 : read  ( adr len -- #read )
@@ -287,7 +290,7 @@ headers
       \ If, after the seek, the buffer is empty, no more bytes can be read
       bcurrent btop u>=  if  nip swap -  exit  then
    repeat                      ( len  adr remlen )
-   nip swap -                  ( #read )
+   nip -                       ( #read )
 ;
 : write  ( adr len -- #written )
    tuck                           ( len  adr remlen )
@@ -302,7 +305,7 @@ headers
          +  nip swap -  exit      ( -- #written )
       then                        ( len  adr remlen )
    repeat                         ( len  adr remlen )
-   nip  swap -                    ( #written )
+   nip -                          ( #written )
 ;
 : close  ( -- )
    buffer  if                     ( )

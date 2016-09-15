@@ -2,8 +2,10 @@
    create  , ,  does>  dup cell+ @  swap @
 ;
 : 2literal  ( d -- )  swap  postpone literal  postpone literal  ; immediate
-: 2variable  ( "name" d -- )
-   create  0 , 0 ,
+: 2variable  ( "name" -- )
+   create  2 /n* ualloc ,
+   does> >user
+;
 ;
 : d0<  nip 0<  ;
 : d<  ( d1 d2 -- )  rot  swap  2dup <>  if  2swap  then  2drop <  ;

@@ -230,7 +230,7 @@ void spi_setFrequency(uint32_t freq) {
 
 static int spi_csGPIO;
 
-void spi_open(uint32_t clock, uint8_t msbfirst, uint8_t dataMode, int csGPIO)
+void spi_open(int csGPIO, uint32_t clock, uint8_t msbfirst, uint8_t dataMode)
 {
     spi_csGPIO = csGPIO;
 

@@ -151,12 +151,11 @@ fl ofw-rootnode.fth
 
 fl sdspi.fth
 
--1 value sd-spi-cs   \ -1 to use hardware CS mode, 8 to use pin8 with software
-: (spi-setup)  ( datamode msbfirst? frequency -- )
-   >r >r >r  sd-spi-cs  r> r> r> spi-open
-;
-' (spi-setup)  to spi-setup
+-1 value hspi-cs   \ -1 to use hardware CS mode, 8 to use pin8 with software
+
 ' spi-transfer to spi-out-in
 ' spi-bits@    to spi-bits-in
+
+: sd-init  ( -- )  0 true #100000 hspi-cs spi-open  sd-card-init  ;
 
 " app.dic" save

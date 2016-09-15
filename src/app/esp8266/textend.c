@@ -541,7 +541,7 @@ cell ((* const ccalls[])()) = {
   C(pbuf_free)              //c pbuf-free   { a.pbuf -- i.#freed }
   C(tcp_sent_continues)     //c tcp-sent-continues  { a.pcb -- }
 
-  C(spi_open)               //c spi-open  { i.csgpio i.datamode i.msb i.clock -- }
+  C(spi_open)               //c spi-open  { i.datamode i.msb i.clock i.csgpio -- }
   C(spi_close)              //c spi-close  { -- }
   C(spi_begin)              //c spi{  { -- }
   C(spi_end)                //c }spi  { -- }

@@ -1,6 +1,5 @@
 \ 
 
-defer spi-setup     ( datamode msbfirst? frequency -- )
 defer spi-bits-in   ( #bits -- n )
 defer spi-out-in    ( outbuf inbuf #bytes -- )
 
@@ -197,8 +196,8 @@ false value check-crc?
       read1 $ff =  if  unloop exit  then
    loop
 ;
-: sd-init  ( -- )
-   0 true #100000 spi-setup
+
+: sd-card-init  ( -- )
    sd-consume
    sd-reset
    $1aa send-if-cond $1aa <>  abort" send-if-cond failed"
