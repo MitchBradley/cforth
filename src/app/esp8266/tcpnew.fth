@@ -46,8 +46,8 @@ create inet-addr-none  $ffffffff l,
 defer handle-data  ( adr len -- )
 ' type to handle-data
 
-defer respond   ( -- err )
-' ERR_OK to respond
+defer respond   ( pcb -- )
+' drop to respond
 
 : .rs  ( -- )  rp0 @  rp@  ?do  i l@ .x  /l +loop cr  ;
 
@@ -55,13 +55,13 @@ defer closeit  ( pcb -- )
 ' close-connection to closeit
 
 0 value rx-pcb
-: receiver  ( err pbuf pcb arg -- err )
+: receiver  ( err pbuf pcb arg -- )
    3 roll  ?dup  if  ." Rx error " . cr   3drop ERR_VAL exit  then  ( pbuf pcb arg )
    drop   to rx-pcb             ( pbuf )
    ?dup 0=  if                  ( pbuf )
       ." Connection closed" cr cr
       rx-pcb close-connection   ( )
-      ERR_OK exit               ( -- err )
+      exit                      ( )
    then                         ( pbuf )
    dup pbuf>len                 ( pbuf totlen  adr len )
    handle-data                  ( pbuf totlen )
@@ -70,7 +70,6 @@ defer closeit  ( pcb -- )
    rx-pcb tcp-sent-continues    ( )
    rx-pcb respond               ( )
    rx-pcb closeit               ( )
-   ERR_OK                       ( err )
 ;
 
 : sent-handler  ( len pcb arg -- err )
@@ -86,7 +85,7 @@ defer closeit  ( pcb -- )
    ?dup  if          ( err r: new-pcb )
       r> drop        ( err )
       ." Accept error " .d cr  ( )
-      ERR_VAL exit
+      exit
    then
    listen-pcb tcp-accepted  \ was r@ tcp-accepted
 \   #5553 r@ tcp-arg
@@ -95,7 +94,6 @@ defer closeit  ( pcb -- )
    ['] error-handler r@ tcp-err
    ['] sent-handler r@ tcp-sent
    r> drop
-   ERR_OK
 ;
 : unlisten  ( -- )
    listen-pcb  ?dup  if  tcp-close drop  0 to listen-pcb  then
@@ -129,7 +127,8 @@ defer closeit  ( pcb -- )
 
 ' tcp-write-wait to reply-send
 
-: ct  ( -- err )
+: ct  ( pcb -- )
+   drop
    reply{
    ." Hello" cr
    ." Goodbye" cr
@@ -147,7 +146,8 @@ defer closeit  ( pcb -- )
 ;
 ' ct to respond
 
-: continuation-test  ( -- err )
+: continuation-test  ( pcb -- )
+   drop
    " Hello"r"n" tcp-write-wait
    " Goodbye"r"n" tcp-write-wait
    " You say yes"r"n" tcp-write-wait
