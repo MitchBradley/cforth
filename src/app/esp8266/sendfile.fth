@@ -32,7 +32,8 @@ defer send-file-not-found  ( -- )
 ' noop is send-file-not-found
 
 : send-file  ( filename$ -- )
-   ['] open-fid catch  if   ( )
+   ['] open-fid catch  if   ( x x )
+      2drop                 ( )
       send-file-not-found   ( )
    else                     ( )
       send-file-data        ( )
