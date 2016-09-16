@@ -546,6 +546,18 @@ execute:
     scr = 0;     // Return value from inner_interpreter()
     goto out;
 
+/*$p finished-pop */ case FINISHED_POP:
+    /*
+     * Save the local copies of the virtual machine
+     * registers to the external copies and exit to the
+     * outer interpreter.
+     */
+    // Discard the current IP value since we do not want the ctbuf[]
+    // "definition" to stay on the return stack
+    ip = *rp++;
+    scr = pop;     // Return value from inner_interpreter()
+    goto out;
+
 /*$p rest */ case REST:
      // rest is for returning to the enclosing system, so
      // Forth execution can be resumed where it left off
@@ -1338,6 +1350,17 @@ int execute_xt(xt_t xt, cell *up)
 {
     ctbuf[0] = CT_FROM_XT(xt, up);
     ctbuf[1] = FINISHED;
+
+    V(XRP) -= sizeof(token_t *);
+    *(xt_t *)V(XRP) = ctbuf;
+
+    return inner_interpreter(up);
+}
+
+int execute_xt_pop(xt_t xt, cell *up)
+{
+    ctbuf[0] = CT_FROM_XT(xt, up);
+    ctbuf[1] = FINISHED_POP;
 
     V(XRP) -= sizeof(token_t *);
     *(xt_t *)V(XRP) = ctbuf;

@@ -34,7 +34,7 @@
 : hello  reply{ ." Hello from ESP8266" cr }reply   ;
 defer homepage   ' hello to homepage
 
-: handle-url  ( -- )
+: handle-url  ( -- close? )
    \ client .espconn   
    url-buf url-len                      ( url$ )
    http-get?  if                        ( url$ )
@@ -58,5 +58,6 @@ defer homepage   ' hello to homepage
       2drop
 \      type
    then
+   true
 ;
 ' handle-url to respond

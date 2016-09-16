@@ -33,7 +33,11 @@ create inet-addr-none  $ffffffff l,
    0 over tcp-err   ( pcb )
    0 over tcp-recv  ( pcb )
    0 over tcp-sent  ( pcb )
-   tcp-close drop   ( )
+   tcp-close        ( err )
+   \ err could be ERR_MEM if there was insufficient memory to do the
+   \ close, in which case we are supposed to retry later via either a
+   \ poll callback or a sent callback.  For now we ignore that case.
+   drop             ( )
 ;
 
 : pbuf>len  ( pbuf -- totlen adr thislen )
@@ -46,30 +50,56 @@ create inet-addr-none  $ffffffff l,
 defer handle-data  ( adr len -- )
 ' type to handle-data
 
-defer respond   ( pcb -- )
-' drop to respond
+defer respond   ( pcb -- close? )
+: null-respond  ( pcb -- close?)  drop true  ;
+' null-respond to respond
 
-: .rs  ( -- )  rp0 @  rp@  ?do  i l@ .x  /l +loop cr  ;
-
-defer closeit  ( pcb -- )
-' close-connection to closeit
+\ : .rs  ( -- )  rp0 @  rp@  ?do  i l@ .x  /l +loop cr  ;
 
 0 value rx-pcb
-: receiver  ( err pbuf pcb arg -- )
-   3 roll  ?dup  if  ." Rx error " . cr   3drop ERR_VAL exit  then  ( pbuf pcb arg )
-   drop   to rx-pcb             ( pbuf )
+\ The LWIP stack treats the receiver callback return value as:
+\   ERR_OK:   Everything is okay
+\   ERR_ABRT: Something is confused so prematurely abort
+\             the TCP connection by sending a RST segment
+\   else:     The callback is temporarily unable to accept
+\             the incoming data, so the LWIP stack should
+\             hold onto it and invoke the receiver callback
+\             later.
+
+: receiver  ( err pbuf pcb arg -- err )
+   \ There is no point to looking at the err argument because
+   \ the LWIP code always sets it to ERR_OK. The LWIP documentation
+   \ gives no indication what other values might mean.  I assume that
+   \ the err argument is present only for consistency with other callbacks.
+   drop  to rx-pcb  nip         ( pbuf )
    ?dup 0=  if                  ( pbuf )
       ." Connection closed" cr cr
       rx-pcb close-connection   ( )
-      exit                      ( )
+      exit                      ( -- err )
    then                         ( pbuf )
+
+   \ Set up the continuation mechanism so that, when tcp-write-wait
+   \ returns to the OS via continuation, a subsequent tcp-sent callback
+   \ will resume execution of Forth with the PCB on the stack, along
+   \ with a couple of other values from the sent callback.
+   rx-pcb tcp-sent-continues    ( pbuf )
+
    dup pbuf>len                 ( pbuf totlen  adr len )
+
+   \ Give the data to the application code
    handle-data                  ( pbuf totlen )
+
+   \ Release the data buffer
    rx-pcb tcp-recved            ( pbuf )
    pbuf-free drop               ( )
-   rx-pcb tcp-sent-continues    ( )
-   rx-pcb respond               ( )
-   rx-pcb closeit               ( )
+
+   \ Call the application code to respond to the data
+   \ respond returns true if the connection should be closed
+   \ or false if more data is expected.
+   respond  if                  ( )
+      rx-pcb close-connection   ( )
+   then
+   ERR_OK
 ;
 
 : sent-handler  ( len pcb arg -- err )
@@ -80,12 +110,12 @@ defer closeit  ( pcb -- )
    ." Error " swap .d " with arg " .d cr
 ;
 0 value listen-pcb
-: accepter  ( err new-pcb arg -- )
+: accepter  ( err new-pcb arg -- err )
    drop >r           ( err r: new-pcb )
    ?dup  if          ( err r: new-pcb )
       r> drop        ( err )
       ." Accept error " .d cr  ( )
-      exit
+      ERR_VAL exit
    then
    listen-pcb tcp-accepted  \ was r@ tcp-accepted
 \   #5553 r@ tcp-arg
@@ -94,6 +124,7 @@ defer closeit  ( pcb -- )
    ['] error-handler r@ tcp-err
    ['] sent-handler r@ tcp-sent
    r> drop
+   ERR_OK
 ;
 : unlisten  ( -- )
    listen-pcb  ?dup  if  tcp-close drop  0 to listen-pcb  then
@@ -127,8 +158,7 @@ defer closeit  ( pcb -- )
 
 ' tcp-write-wait to reply-send
 
-: ct  ( pcb -- )
-   drop
+: ct  ( -- close? )
    reply{
    ." Hello" cr
    ." Goodbye" cr
@@ -143,11 +173,11 @@ defer closeit  ( pcb -- )
    ." Some of us are incredibly smelly beasts that can only be mitigated with acid" cr
    ." Some of us are incredibly smelly beasts that can only be mitigated with acid" cr
    }reply
+   true
 ;
 ' ct to respond
 
-: continuation-test  ( pcb -- )
-   drop
+: continuation-test  ( -- close? )
    " Hello"r"n" tcp-write-wait
    " Goodbye"r"n" tcp-write-wait
    " You say yes"r"n" tcp-write-wait
@@ -155,6 +185,7 @@ defer closeit  ( pcb -- )
    " You say goodbye"r"n" tcp-write-wait
    " And I say hello"r"n" tcp-write-wait
    " I don't know why you say goodbye I say hello"r"n" tcp-write-wait
+   true
 ;
 
 \ ' continuation-test to respond

@@ -22,7 +22,7 @@ err_t accept_cb(void *arg, struct tcp_pcb *newpcb, err_t err)
   spush((cell)newpcb, up);
   spush(arg, up);
   
-  return execute_xt(accept_forth_cb, up);
+  return execute_xt_pop(accept_forth_cb, up);
 }
 void tcp_accept1(struct tcp_pcb *pcb, xt_t callback)
 {
@@ -46,8 +46,7 @@ err_t connect_cb(void *arg, struct tcp_pcb *newpcb, err_t err)
   spush((cell)newpcb, up);
   spush(arg, up);
   
-  execute_xt(connect_forth_cb, up);
-  return 0;
+  return execute_xt_pop(connect_forth_cb, up);
 }
 void tcp_connect1(struct tcp_pcb *pcb, struct ip_addr *ipaddr, u16_t port, xt_t callback)
 {
@@ -66,7 +65,7 @@ err_t sent_cb(void *arg, struct tcp_pcb *tpcb, u16_t len)
   spush((cell)tpcb, up);
   spush(arg, up);
   
-  return execute_xt(sent_forth_cb, up);
+  return execute_xt_pop(sent_forth_cb, up);
 }
 
 void tcp_sent1(struct tcp_pcb *pcb, xt_t callback)
@@ -105,8 +104,7 @@ err_t recv_cb(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t err)
   spush((cell)tpcb, up);
   spush(arg, up);
   
-  execute_xt(recv_forth_cb, up);
-  return 0;
+  return execute_xt_pop(recv_forth_cb, up);
 }
 
 void tcp_recv1(struct tcp_pcb *pcb, xt_t callback)
@@ -125,8 +123,7 @@ err_t poll_cb(void *arg, struct tcp_pcb *tpcb)
   spush((cell)tpcb, up);
   spush(arg, up);
   
-  execute_xt(poll_forth_cb, up);
-  return 0;
+  return execute_xt_pop(poll_forth_cb, up);
 }
 void tcp_poll1(struct tcp_pcb *pcb, xt_t callback, u8_t interval)
 {
