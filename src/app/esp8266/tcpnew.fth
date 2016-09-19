@@ -75,6 +75,7 @@ defer respond   ( pcb -- close? )
    ?dup 0=  if                  ( pbuf )
       ." Connection closed" cr cr
       rx-pcb close-connection   ( )
+      ERR_ABRT
       exit                      ( -- err )
    then                         ( pbuf )
 
@@ -89,8 +90,10 @@ defer respond   ( pcb -- close? )
    \ Give the data to the application code
    handle-data                  ( pbuf totlen )
 
-   \ Release the data buffer
+   \ Open the window
    rx-pcb tcp-recved            ( pbuf )
+
+   \ Release the data buffer
    pbuf-free drop               ( )
 
    \ Call the application code to respond to the data
