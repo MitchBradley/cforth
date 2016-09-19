@@ -40,11 +40,11 @@ create inet-addr-none  $ffffffff l,
    drop             ( )
 ;
 
-: pbuf>len  ( pbuf -- totlen adr thislen )
+: pbuf>len  ( pbuf -- adr thislen totlen )
    >r                (             r: pbuf )
-   r@ 2 la+ w@       ( totlen      r: pbuf )
-   r@ la1+ l@        ( totlen adr  r: pbuf )
-   r> 2 la+ wa1+ w@  ( totlen adr thislen )
+   r@ la1+ l@        ( adr         r: pbuf )
+   r@ 2 la+ wa1+ w@  ( adr thislen r: pbuf )
+   r> 2 la+ w@       ( adr thislen totlen )
 ;
 
 defer handle-data  ( adr len -- )
@@ -93,11 +93,11 @@ defer respond   ( pcb -- close? )
    \ the PCB in which it was received.  Doing this now might speed
    \ things up by overlapping TCP ACK network activity with our
    \ data processing.
-   rx-pcb tcp-recved            ( pbuf )
+   dup pbuf>len                 ( pbuf adr len totlen )
+   rx-pcb tcp-recved            ( pbuf adr len )
 
    \ Give the data to the application code
-   dup pbuf>len                 ( pbuf totlen  adr len )
-   handle-data                  ( pbuf totlen )
+   handle-data                  ( pbuf )
 
    \ Release the data buffer
    pbuf-free drop               ( )
