@@ -46,6 +46,7 @@ alias m-emit rem-emit
 " Error"  panel-msg: giveup-msg   \ Err
 " Loading diags    " panel-msg: upld-msg    \ UPLd
 " OF"   panel-msg: of-msg         \ OF
+" Cancel" panel-msg: can-msg
 
 : bogus-char  ( c -- )  ." Bogus: " .x  ;
 : ignore-char  ( c -- )  ." Ignoring: " .x  ;

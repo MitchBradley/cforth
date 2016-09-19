@@ -1,5 +1,4 @@
 purpose: X/YMODEM protocol for serial uploads and downloads
-copyright: Copyright 2003  AgileTV Corporation  All Rights Reserved
 
 \ Xmodem protocol file transfer to and from memory
 \ Commands:
@@ -15,19 +14,21 @@ copyright: Copyright 2003  AgileTV Corporation  All Rights Reserved
 \ m-emit        char --
 \       Puts the character out on the serial line.
 
-variable buf-start
-variable buf-end
-variable mem-start
-variable mem-end
-
-: putc  ( char -- )  buf-start @ c!  1 buf-start +!  ;
-
 : end-delay  ( -- )  d# 200 ms  ;
 
 
 vocabulary modem
 only forth also modem also   modem definitions
 base @ decimal
+
+\ Files sent with XMODEM are padded at the end with ^Z
+\ Ideally they would be removed by xmodem-to-file:
+: remove-eofs  ( adr len -- adr len' )
+   begin  dup  while
+      2dup + 1- c@ $1a <>  if  exit  then
+      1-
+   repeat
+;
 
 \ Common to both sending and receiving
 0 value crc?   0 value big?   \ 0 value streaming?
@@ -72,8 +73,10 @@ variable done?
 
 \ Receiving
 
+
+variable got-sector#
 : receive-setup  ( adr maxlen -- )
-   1 sector# !   #naks off   #control-z's off
+   0 got-sector# !   #naks off   #control-z's off
 ;
 : receive-error ( -- ) \ eat rest of packet and send a nak
    gobble
@@ -94,12 +97,14 @@ variable done?
       h# ff and  timed-in throw  <>            ( error? )
    then                                        ( error? )
 ;
-variable got-sector#
-: try-receive  ( adr maxlen -- adr maxlen actual-len )
+variable base-adr
+variable end-adr
+: try-receive  ( -- )
    ( packet OK return:  none )
    ( retry return: throws -1 )
    ( done  return: throws 1 )
    ( abort return: throws 2 )
+   ( memory overflow return: throws 3 )
    timed-in  throw
    case
       soh of  false to big?     r0-msg       endof  \ expected...
@@ -109,55 +114,69 @@ variable got-sector#
       can of  can-msg 2 throw                endof
       eot of  done-msg ack m-emit  1 throw   endof
       ( default) bogus-char -1 throw
-   endcase                        ( adr maxlen )
+   endcase                           ( )
 
-   /sector <  if  2 throw  then      ( adr )
-   timed-in                throw     ( adr sec# )
-   timed-in                throw     ( adr sec# ~sec# )
-   h# ff xor over <>       throw     ( adr sec# )
-   got-sector# !                     ( adr )
+   timed-in                throw     ( sec# )
+   timed-in                throw     ( sec# ~sec# )
+   h# ff xor over <>       throw     ( sec# )
+   dup got-sector# !                 ( sec# )
+   1- /sector *  base-adr @ +        ( adr )
+   dup end-adr @ u>=  if             ( adr )
+      can m-emit 3 throw
+   then                              ( adr )
    /sector  receive-data   throw     ( )
 
    ack m-emit
-   sector# @ panel-d.
-   1 sector# +!   \ Expected sector#
+   got-sector# @ panel-d.
 
    #naks off
-   /sector                           ( actual )
 ;
-: !receive-packet  ( adr maxlen -- adr maxlen actual-len )
+: !receive-packet  ( -- )
    r2-msg
-   begin        ( adr maxlen )
-      2dup ['] try-receive catch  case   ( adr maxlen [ actual 0 | x x n ] )
+   begin        ( )
+      ['] try-receive catch  case   ( [ 0 | n ] )
          \ The usual case: successful packet reception
-         0  of  ( adr maxlen actual-len ) exit  endof
+         0  of  ( ) exit  endof
 
          ?interrupt
 
          \ Retryable error
-         -1 of  ( adr maxlen x x ) 2drop receive-error             endof
+         -1 of  ( ) receive-error  endof
 
          \ Handle termination conditions at a higher level
-         ( default: adr maxlen x x n ) throw
-      endcase   ( adr maxlen )
+         ( default: n ) throw
+      endcase   ( )
    again
 ;
 : (receive)  ( adr0 maxlen -- adr0 len )
-   receive-setup                      ( adr0 maxlen )
-   gobble  nak m-emit                 ( adr0 maxlen )
-   2dup                               ( adr0 maxlen adr0 maxlen )
-   begin  dup 0>  while               ( adr0 maxlen adr remlen )
-      ['] !receive-packet catch  case
-         0 of         ( adr0 maxlen adr remlen actual-len )   \ Packet ok
-            /string   ( adr0 maxlen adr' remlen' )
+   over base-adr !                    ( adr maxlen )
+   + end-adr !                        ( )
+   init-state                         ( )
+   receive-setup                      ( )
+   gobble  nak m-emit                 ( )
+   begin
+      r2-msg
+      ['] try-receive catch  case
+         0 of   endof   \ Packet ok
+
+         ?interrupt
+
+        -1 of  receive-error  endof
+
+         1 of           \ Normal end of transmission
+            base-adr @  got-sector# @  /sector *  ( adr len )
+            remove-eofs  exit                     ( -- adr len )
          endof
-         1 of         ( adr0 maxlen adr remlen )   \ Normal end of transmission
-            nip - exit   ( adr0 len )
+         2 of           \ Canceled
+            can-msg end-delay   2 throw
+         endof
+
+         3 of            \ Overflow
+            of-msg end-delay   3 throw
          endof
          ( default ) can m-emit abrt-msg   throw
       endcase
-   repeat                              ( adr0 maxlen adr remlen )
-   can m-emit  of-msg  end-delay 
+   again
 ;
 
 \ Sending
@@ -188,12 +207,13 @@ modem definitions
          endof
 
          \ If we get a C, restart
-         [char] C  of  sector# @ 1 <>  if  [char] C bogus-char  then  endof
+         [char] C  of  got-sector# @ 0<>  if  [char] C bogus-char  then  endof
 
          ( default) dup bogus-char
       endcase
    again
 ;
+variable sector#
 : start-receiver  ( -- )  \ wait for nak
    gobble
    upld-msg
