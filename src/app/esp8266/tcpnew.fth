@@ -75,7 +75,10 @@ defer respond   ( pcb -- close? )
    ?dup 0=  if                  ( pbuf )
       ." Connection closed" cr cr
       rx-pcb close-connection   ( )
-      exit                      ( -- err )
+      \ This is a normal termination, not a premature abort
+      \ As I understand it, ERR_ABRT is for cases where something
+      \ has gone wrong.
+      ERR_OK exit               ( -- err )
    then                         ( pbuf )
 
    \ Set up the continuation mechanism so that, when tcp-write-wait
@@ -84,13 +87,19 @@ defer respond   ( pcb -- close? )
    \ with a couple of other values from the sent callback.
    rx-pcb tcp-sent-continues    ( pbuf )
 
-   dup pbuf>len                 ( pbuf totlen  adr len )
+   \ Say that the data has been received, thus allowing the TCP
+   \ stack to open the receive window.  The data is still safe
+   \ in the pbuf, which the stack has already disconnected from
+   \ the PCB in which it was received.  Doing this now might speed
+   \ things up by overlapping TCP ACK network activity with our
+   \ data processing.
+   rx-pcb tcp-recved            ( pbuf )
 
    \ Give the data to the application code
+   dup pbuf>len                 ( pbuf totlen  adr len )
    handle-data                  ( pbuf totlen )
 
    \ Release the data buffer
-   rx-pcb tcp-recved            ( pbuf )
    pbuf-free drop               ( )
 
    \ Call the application code to respond to the data
