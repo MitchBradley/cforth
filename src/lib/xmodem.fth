@@ -151,7 +151,6 @@ variable end-adr
 : (receive)  ( adr0 maxlen -- adr0 len )
    over base-adr !                    ( adr maxlen )
    + end-adr !                        ( )
-   init-state                         ( )
    receive-setup                      ( )
    gobble  nak m-emit                 ( )
    begin
