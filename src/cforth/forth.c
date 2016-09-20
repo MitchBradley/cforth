@@ -1204,7 +1204,7 @@ execute:
 
 // File operations
 
-/*$p save */        case SAVE:
+/*$p save */        case SAVE:  /* adr len -- */
     write_dictionary((char *)*sp++, tos, (char *)V(TORIGIN), V(DP)-V(TORIGIN),
                      (cell *)up, V(NUM_USER));
     loadtos;
@@ -1215,22 +1215,22 @@ execute:
     next;
 
 /*$p r/o */         case R_O:  push(0);  next;
-/*$p open-file */   case OPEN_FILE:
+/*$p open-file */   case OPEN_FILE:  /* adr len mode -- fid ior */
     scr = pop;   // mode
     tos = pfopen((char *)*sp, tos, scr, up);
     *sp = tos;
     tos = tos ? 0 : OPENFAIL;
     next;
 
-/*$p close-file */  case CLOSE_FILE:
+/*$p close-file */  case CLOSE_FILE:  /* fid -- ior */
     tos = pfclose(tos, up);     /* EOF on error */
     next;
 
-/*$p flush-file */  case FLUSH_FILE:
+/*$p flush-file */  case FLUSH_FILE:  /* fid -- ior */
     tos = pfflush(tos, up);     /* EOF on error */
     next;
 
-/*$p file-size */  case FILE_SIZE:
+/*$p file-size */  case FILE_SIZE:  /* fid -- size */
     tos = pfsize(tos, up);
     next;
 
