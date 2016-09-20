@@ -1230,7 +1230,7 @@ execute:
     tos = pfflush(tos, up);     /* EOF on error */
     next;
 
-/*$p file-size */  case FILE_SIZE:
+/*$p file-size */  case FILE_SIZE:      /* fid -- size */
     tos = pfsize(tos, up);
     next;
 
