@@ -1,42 +1,14 @@
 \ See license at end of file
-purpose: Load file for multi-format disk-label support package
+purpose: Ext2/3 partition map decoding support
 
-fload ${BP}/ofw/disklabel/common.fth
-fload ${BP}/ofw/fs/fatfs/partition.fth
-
-[ifdef] cdfs-support
-fload ${BP}/ofw/fs/cdfs/partition.fth
-[else]
-alias iso-9660? false
-[then]
-
-[ifdef] ufs-support
-fload ${BP}/ofw/fs/ufs/partition.fth
-[then]
-
-[ifdef] ext2fs-support
-fload ${BP}/ofw/fs/ext2fs/partition.fth
-[else]
-alias ext2? false
-[then]
-
-[ifdef] ntfs-support
-fload ${BP}/ofw/fs/ntfs/partition.fth
-[else]
-alias ntfs? false
-[then]
-
-[ifdef] hfs-support
-fload ${BP}/ofw/fs/macfs/partition.fth
-[then]
-
-fload ${BP}/ofw/disklabel/gpt.fth
-
-[then]
-fload ${BP}/ofw/disklabel/methods.fth
+\ Returns true if the sector buffer contains an ext2/3 super block
+: ext2?  ( -- flag )
+   sector-buf h# 38 +  w@              ( magic )
+   dup h# ef53 =  swap h# 53ef =  or   ( ext2? )
+;
 
 \ LICENSE_BEGIN
-\ Copyright (c) 2006 FirmWorks
+\ Copyright (c) 2007 FirmWorks
 \ 
 \ Permission is hereby granted, free of charge, to any person obtaining
 \ a copy of this software and associated documentation files (the

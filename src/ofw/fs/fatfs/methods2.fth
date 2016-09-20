@@ -8,19 +8,18 @@ private
 : free-device  ( -- )  current-device @ /device free-mem  ;
 
 0 instance value deblocker
-: >byte#  ( block# -- byte# )  /cluster *  ;
 
 public
 
-: block-size  ( -- n )  /cluster  ;
+: block-size  ( -- n )  1  ;   \ Variable-length so granularity is 1
 : max-transfer  ( -- n )  /cluster  ;
-: read-blocks  ( adr block# #blocks -- #blocks-read )
-   swap >byte# my-fh dos-seek           ( adr #blocks )
-   >byte# my-fh dos-read  if  0  then   ( #blocks-read )
+: read-blocks  ( adr byte# #bytes -- #bytes-read )
+   swap my-fh dos-seek  if  2drop 0 exit  then   ( adr #bytes )
+   my-fh dos-read  if  0  then   ( #bytes-read )
 ;
-: write-blocks  ( adr block# #blocks -- #blocks-written )
-   swap >byte# my-fh dos-seek            ( adr #blocks )
-   >byte# my-fh dos-write  if  0  then   ( #blocks-read )
+: write-blocks  ( adr byte# #bytes -- #bytes-written )
+   swap my-fh dos-seek  if  2drop 0 exit  then   ( adr #bytes )
+   my-fh dos-write  if  0  then   ( #bytes-read )
 ;
 
 : seek  ( d.offset -- okay? )

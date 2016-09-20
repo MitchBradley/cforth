@@ -1,11 +1,11 @@
-: du*  ( d1 u -- d2 )  \ Double result
-   tuck um* drop >r  ( d1.lo u r: d2.hi )
-   um*  r> +         ( d2 )
-;
+: 8*  ( n1 -- n2 )  3 lshift  ;
+: third  ( a b c -- a b c a )  2 pick  ;
+: cstrlen  ( adr -- len )  cscount drop  ;
 
 \ The ESP8266 RTC is just a counter
 : now  ( -- s m h )  0 0 0  ;
 : today  ( -- d m y )  1 1 #2016  ;
+: time&date  ( -- sec min hr dy mth yr )  today now  ;
 
 : umin  ( u1 u2 -- u3 )  2dup u<  if  drop  else  nip  then  ;
 
@@ -102,9 +102,9 @@ nowarn(
    count +  0 swap c!     \ Always keep a null terminator at the end
 ;
 
-: lcc  ( char -- char' )  $20 or  ;
+: lcc  ( char -- char' )  dup 'A' 'Z' between  if  $20 or  then  ;
 : lower  ( adr len -- )  bounds  ?do i dup c@ lcc swap c!  loop  ;
-: ucc  ( char -- char' )  $20 invert and  ;
+: ucc  ( char -- char' )  dup 'a' 'z' between  if  $20 invert and  then ;
 : upper  ( adr len -- )  bounds  ?do i dup c@ ucc swap c!  loop  ;
 
 : >voc  ( n -- adr )  context swap ta+  ;

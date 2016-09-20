@@ -355,6 +355,7 @@ nuser csp
    create hide  'i  reveal  setalias
 ;
 
+64\ #64 constant bits/cell
 64\ : 64-bit ; immediate
 64\ : 32-bit 1 abort" Not a 32 bit forth" ; immediate
 64\ : 16-bit 1 abort" Not a 16 bit forth" ; immediate
@@ -364,6 +365,7 @@ nuser csp
 64\ : l->n  ( l -- n )  #32 << #32 >>a  ;
 64\ : n->l  ( n -- w )  $ffffffff and ;
 
+32\ #32 constant bits/cell
 32\ : 64-bit 1 abort" Not a 64 bit forth" ; immediate
 32\ : 32-bit ; immediate
 32\ : 16-bit 1 abort" Not a 16 bit forth" ; immediate
@@ -373,6 +375,7 @@ nuser csp
 32\ : l->n ; immediate ( l -- n )
 32\ : n->l ; immediate ( n -- l )
 
+16\ #16 constant bits/cell
 16\ : 16-bit ; immediate
 16\ : 32-bit 1 abort" Not a 32 bit forth" ; immediate
 16\ : l, , ,  ;
@@ -404,6 +407,7 @@ nuser hld
 : mu/mod  (s d# n1 -- rem d#quot )
    >r  0  r@  um/mod  r>  swap  >r  um/mod  r>
 ;
+: u*  ( u1 u2 -- u3 )  um* drop  ;
 : #  ( n1 d# -- n1 d# )
    base @ mu/mod           ( n1 nrem d# )
    rot                     ( n1 d# nrem )

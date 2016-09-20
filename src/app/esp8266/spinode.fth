@@ -13,7 +13,11 @@ my-address my-space  $100 reg
 0 instance value cs-pin
 
 : open  ( -- okay? )  true  ;
-: close  ( -- )  spi-close  ;
+: close  ( -- )
+\ It's better not to close the SPI because that makes the lines float,
+\ which can confuse the card
+\    spi-close
+;
 
 : set-address  ( pin# -- )
    dup hw-cs-pin =  if  drop -1  then

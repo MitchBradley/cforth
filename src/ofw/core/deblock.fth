@@ -98,8 +98,8 @@ false instance value write-clipped?   \ true if too few blocks were written
    then
 ;
 
-\ Aligns a number to a block boundary.
-: align-byte#  ( d.byte# -- d.aln-byte# )  blocksize um/mod nip  blocksize um*  ;
+\ Aligns a number to a buffer boundary.
+: align-byte#  ( d.byte# -- d.aln-byte# )  bufsize um/mod nip  bufsize um*  ;
 : byte#-aligned?  ( d.byte# -- flag )  2dup align-byte#  d=  ;
 
 
@@ -279,7 +279,7 @@ headers
 
    \ Seeking past end of file actually goes to the end of the file
    btop umin   to bcurrent
-   false   
+   false
 ;
 
 : read  ( adr len -- #read )
@@ -288,7 +288,7 @@ headers
    begin  copyout dup  while   ( len  adr' remlen )
       bcurrent shortseek       ( len  adr remlen )
       \ If, after the seek, the buffer is empty, no more bytes can be read
-      bcurrent btop u>=  if  nip swap -  exit  then
+      bcurrent btop u>=  if  nip -  exit  then
    repeat                      ( len  adr remlen )
    nip -                       ( #read )
 ;

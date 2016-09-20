@@ -3,13 +3,19 @@
 defer spi-bits-in   ( #bits -- n )
 defer spi-out-in    ( outbuf inbuf #bytes -- )
 
+0 value high-capacity?
+
 \ XXX needs a timeout
 \ We must poll the first bit a bit at a time because
 \ some microSD cards - notable SanDisk 4G - do not
 \ align the R1 start bit to a byte boundary.
 : r1  ( -- b )
-   begin  1 spi-bits@ 0=  until
-   7 spi-bits@
+   #32 0  do  \ Typically takes no more than 11 tries
+      1 spi-bits-in 0=  if
+         7 spi-bits-in
+	 unloop exit
+      then
+   loop
 ;
 
 \ Used after cmd has already read the R1 byte
@@ -47,14 +53,16 @@ create crc7table  init-crc7
 ;
 
 
-: ?sd-error  ( r1 -- )
-   $7e and  ?dup 0=  if  exit  then  ( error-bits )
+: .sd-error  ( r1 -- )
    dup $40 and  if  ." ParameterError  "  then
    dup $20 and  if  ." AddressError  "  then
    dup $10 and  if  ." EraseSequenceError  "  then
    dup $08 and  if  ." CommandCRCError  "  then
    dup $04 and  if  ." IllegalCommand  "  then
        $02 and  if  ." EraseReset"  then
+;
+: ?sd-error  ( r1 -- )
+   $7e and  ?dup  if  .sd-error  then
 ;
 
 \ XXX needs a timeout
@@ -71,36 +79,44 @@ create crc7table  init-crc7
 \ for the transfer.  We send an initial ff byte, containing
 \ no start bit, to ensure that the card sees the start bit
 \ in the right place - some cards otherwise get out of sync
-\ with the bit stream.  We also send a trailing ff byte,
-\ which appears to be necessary to start clocking out the
-\ R1 response byte.
+\ with the bit stream.
 : cmd  ( arg cmd# -- r1 )
    $ff cmdbuf c!
    $40 or cmdbuf 1+  c!  ( arg )
    cmdbuf 2+ be-l!   ( )
    cmdbuf 1+ 5 crc7  2*  1 or  cmdbuf 6 + c!
-   $ff cmdbuf 7 + c!
-   cmdbuf 0 8 spi-out-in  r1
+   cmdbuf 0 7 spi-out-in  r1
 ;
 : cmde  ( arg cmd# -- )  cmd ?sd-error  ;
    
-: .get-data-error  ( n -- )
+: .data-error  ( n -- )
    dup 8 and  if  ." Out of Range  "  then
    dup 4 and  if  ." ECC Failed  "  then
    dup 2 and  if  ." CC Error  "  then
-       1 and  if  ." Error"  then
+       1 and  if  ." Unknown Data Error"  then
+   cr
 ;
-: (wait-data)  ( -- )
+: wait-data  ( -- error-code )
    begin  read1 dup  $ff =  while  drop  repeat  ( token )
-   dup $fe <>  if      ( token )
-      .get-data-error  ( )
-   else                ( token )
-      drop             ( )
-   then                ( )
+   case
+      $fe of  0 exit  endof  ( -- 0 )
+        1 of  1 exit  endof  ( -- 1 )
+      ( default )  dup .data-error  dup
+   endcase                   ( error-code )
 ; 
 false value check-crc?
 : get-block  ( adr len -- )
-   (wait-data)                ( adr len )
+   wait-data  ?dup  if        ( adr len error )
+      1 =  if                 ( adr len )
+         \ For Unknown Data Error, we fill the buffer with ff's
+         \ Some cards seem to return that value for unwritten blocks
+         $ff fill
+      else                    ( adr len )
+         2drop                ( )
+      then                    ( )
+      exit                    ( -- )
+   then                       ( adr len )
+
    2dup  0 -rot  spi-out-in   ( adr len )
    read2 -rot                 ( crc adr len )
    check-crc?  if             ( crc adr len )
@@ -145,20 +161,25 @@ false value check-crc?
 : send-cid  ( -- )  0 #10 cmde  'cid #16 get-block  ;  \ CMD10
 : stop-transmission  ( -- )  0 #12 cmde  wait-not-busy  ;  \ CMD12
 : set-blocklen  ( length -- )  #16 cmde  ;  \ CMD16
-: read-single  ( adr len block# -- )  #17 cmde  get-block  ;
+: fix-block#  ( block# -- block#|byte# )  high-capacity?  0=  if  /sd-block *  then  ;
+: read-single  ( adr len block# -- )
+   fix-block#  #17 cmde  get-block  relax
+;
 : read-multiple  ( adr len block# -- )
-   #18 cmde                      ( adr len )
+   fix-block#  #18 cmde          ( adr len )
    begin  dup 0>  while          ( adr len )
       over /sd-block get-block   ( adr len )
+      relax                      ( adr len )
       /sd-block /string          ( adr len )
    repeat                        ( adr len )
-   2drop  stop-transmission     ( )
+   2drop  stop-transmission      ( )
 ;
-: write-single  ( adr len block# -- )  #24 cmde  $fe put-block  ;
+: write-single  ( adr len block# -- )  fix-block#  #24 cmde  $fe put-block  relax  ;
 : write-multiple  ( adr len block# -- )
-   #25 cmde                         ( adr len )
+   fix-block#  #25 cmde             ( adr len )
    begin  dup 0>  while             ( adr len )
       over /sd-block $fc put-block  ( adr len )
+      relax                         ( adr len )
       /sd-block /string             ( adr len )
    repeat                           ( adr len )
    2drop  $fd send1                 ( )
@@ -190,7 +211,6 @@ false value check-crc?
 : set-clr-card-detect  ( set? -- )  app-cmd  0<> 1 and  #42 cmde  ;
 : send-scr  ( -- )  app-cmd  0 #51 cmde  ;
 
-0 value high-capacity?
 : sd-consume  ( -- )
    #16 0  do
       read1 $ff =  if  unloop exit  then
@@ -205,4 +225,11 @@ false value check-crc?
    \ Wait for power-up to complete then check the high-capacity bit
    begin  read-ocr dup $80000000 and 0= while  drop  repeat  ( ocr )
    $40000000 and 0<> to high-capacity?
+   high-capacity?  if
+      #512
+   else
+      send-csd
+      1  'csd 5 + c@ $f and  lshift
+   then
+   to /sd-block
 ;

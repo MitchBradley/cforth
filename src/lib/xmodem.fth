@@ -35,7 +35,6 @@ base @ decimal
 variable #control-z's
 d# 128 constant 128by
 d# 1024 constant 1k
-variable sector#
 variable checksum
 variable #errors    4 constant max#errors  variable #naks
 : /sector  ( -- n )  big?  if  1k  else  128by  then  ;

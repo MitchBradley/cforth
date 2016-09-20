@@ -123,6 +123,10 @@ fl car.fth
 alias id: \
 
 \ Open Firmware stuff; omit if you don't need it
+create ext2fs-support
+create nfts-support
+fl ../../lib/crc32.fth
+
 fl ${BP}/ofw/objsup.fth
 fl ${BP}/ofw/objects.fth
 fl ${BP}/ofw/linklist.fth
@@ -156,6 +160,10 @@ fl sdspi.fth
 ' spi-transfer to spi-out-in
 ' spi-bits@    to spi-bits-in
 
-: sd-init  ( -- )  0 true #100000 hspi-cs spi-open  sd-card-init  ;
-
+: sd-init  ( -- )
+   0 true #100000 hspi-cs spi-open
+   ['] spi-transfer to spi-out-in
+   ['] spi-bits@    to spi-bits-in
+   sd-card-init
+;
 " app.dic" save

@@ -1,8 +1,6 @@
 \ purpose: Base-2 logarithm with fractional result
 \ copyright: Copyright 1999 FirmWorks  All Rights Reserved
 
-d# 32 constant bits/cell
-
 : ilog2  ( i -- log.fraction log.integer )
    dup log2 >r                ( i r: log.int )
 

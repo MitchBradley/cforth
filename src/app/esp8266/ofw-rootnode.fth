@@ -15,6 +15,32 @@ alias rl! l!
 fload ${BP}/ofw/fcode/loadfcod.fth	\ S Fcode interpreter
 fload ${BP}/ofw/fcode/regcodes.fth	\ Register access words
 
+[ifdef] ext2fs-support
+\needs unix-seconds>  fload ${BP}/ofw/fs/unixtime.fth	\ Unix time calculation
+\needs ($crc16)       fload ${BP}/ofw/fs/ext2fs/crc16.fth
+support-package: ext2-file-system
+   fload ${BP}/ofw/fs/ext2fs/ext2fs.fth	\ Linux file system
+end-support-package
+[then]
+
+[ifdef] ntfs-support
+support-package: nt-file-system
+   fload ${BP}/ofw/fs/ntfs/loadpkg.fth	\ NT file system reader
+end-support-package
+[then]
+
+[ifdef] ufs-support
+support-package: ufs-file-system
+   fload ${BP}/ofw/fs/ufs/loadpkg.fth	\ Unix file system
+end-support-package
+[then]
+
+[ifdef] zipfs-support
+support-package: zip-file-system
+   fload ${BP}/ofw/fs/zipfs.fth		\ Zip file system
+end-support-package
+[then]
+
 support-package: fat-file-system
    fload ${BP}/ofw/fs/fatfs/loadpkg.fth	\ FAT file system reader
 end-support-package
