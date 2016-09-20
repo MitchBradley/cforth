@@ -158,7 +158,7 @@ defer respond   ( pcb -- close? )
 : tcp-write-wait  ( adr len -- )
    rx-pcb tcp-write     ( stat )
    ?dup  if             ( stat )
-      " tcp-write returned " .d cr
+      ." tcp-write returned " .d cr
    then                 ( )
    ERR_OK continuation  ( len pcb arg )
    swap to rx-pcb       ( len arg )
