@@ -6,6 +6,28 @@ extern cell *callback_up;
 #include "esp_stdint.h"
 #include "lwip/tcp.h"
 
+xt_t gethostbyname_forth_cb;
+void gethostbyname_cb(char *name, struct ip_addr *ipaddr, void *arg)
+{
+  cell *up = callback_up;
+  if (!gethostbyname_forth_cb) {
+    return;
+  }
+  spush(arg, up);
+  spush((cell)ipaddr, up);
+  spush((cell)name, up);
+
+  execute_xt(gethostbyname_forth_cb, up);
+}
+
+extern err_t dns_gethostbyname(const char *hostname, struct ip_addr *addr, void *found, void *callback_arg);
+
+err_t dns_gethostbyname1(char *hostname, struct ip_addr *ipaddr, xt_t callback, void *arg)
+{
+  gethostbyname_forth_cb = callback;
+  return dns_gethostbyname(hostname, ipaddr, gethostbyname_cb, arg);
+}
+
 cell tcp_write_sw(struct tcp_pcb *pcb, size_t len, uint8_t *adr)
 {
   return tcp_write(pcb, adr, len, 0);

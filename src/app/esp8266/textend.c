@@ -22,6 +22,7 @@ cell deep_sleep(cell us, cell type)
 #include "lwip/err.h"
 #include "lwip/pbuf.h"
 
+err_t dns_gethostbyname1(char *hostname, struct ip_addr *ipaddr, xt_t callback, void *arg);
 struct tcp_pcb *tcp_new(void);
 void tcp_arg(struct tcp_pcb *pcb, void* arg);
 struct tcp_pcb *tcp_listen_with_backlog(struct tcp_pcb *pcb, uint8_t backlog);
@@ -520,6 +521,8 @@ cell ((* const ccalls[])()) = {
 
   C(rtc_get_reset_reason)   //c reset-reason { -- i.reason }
   C(xthal_get_ccount)       //c xthal_get_ccount  { -- i.count }
+
+  C(dns_gethostbyname1)     //c dns-gethostbyname { a.arg i.xt a.ipaddr a.hostname -- i.stat }
 
   C(tcp_write_sw)           //c tcp-write  { a.adr i.len a.pcb -- i.stat }
   C(tcp_new)                //c tcp-new  { -- a.pcb }
