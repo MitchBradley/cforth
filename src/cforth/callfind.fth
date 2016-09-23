@@ -1,10 +1,21 @@
 create trace-tools.f
 only forth also hidden definitions
+: rom-dict-limit  ( -- adr )  origin 'ramct @ ta+  ;
+: ram-dict-start  ( -- adr )  'ramtokens @  ;
+: ram-rom-dictionary?  ( -- flag )  here 'ramtokens @  >=  ;
 : reasonable-ip? ( ip -- flag)
-   dup  origin here between  ( ip flag)
-   if   dup aligned =     \ acf's are always aligned
-   else drop false
-   then
+   \ IP values are always aligned
+   dup  dup aligned <>  if  drop false exit  then  ( ip )
+
+   origin                           ( ip start )
+   ram-rom-dictionary?  if          ( ip start )
+      \ If this is a RAM/ROM dictionary layout, first check the ROM portion
+      \ then set the start address to the RAM portion
+      over swap                     ( ip  ip start )
+      rom-dict-limit within  if  drop true exit  then  ( ip )
+      ram-dict-start                ( ip start )
+   then                             ( ip start )
+   here within                      ( flag )
 ;
 : probably-cfa? ( cfa -- flag)
    reasonable-ip?
@@ -32,13 +43,13 @@ only forth hidden also forth definitions
 ;
 : .calls ( xt -- )
    ['] context  ( start )      \ Colon definitions begin after the primitives
-   here  'ramtokens @  >=  if       ( xt start )
+
+   ram-rom-dictionary?  if               ( xt start )
       \ If this is a RAM/ROM dictionary layout, first search the ROM portion
       \ then set the start address to the RAM portion
-      over swap                     ( xt xt start )
-      origin 'ramct @ ta+ (.calls)  ( xt )
-      'ramtokens @                  ( xt start' )
-   then                             ( xt start )
+      rom-dict-limit  2 pick  (.calls)   ( xt )
+      ram-dict-start                     ( xt start' )
+   then                                  ( xt start )
 
    \ Finish by searching up to here
    here (.calls)
