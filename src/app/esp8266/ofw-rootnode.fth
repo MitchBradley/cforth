@@ -4,7 +4,10 @@ $200 constant pagesize
 : ram-range  ( -- start end )  $3ffe8000  dup $14000 +  ;  \ All of RAM
 
 fload ${BP}/ofw/core/memops.fth		\ Call memory node methods
-\ fload ${BP}/ofw/confvar/loadcv.fth	\ Configuration option management
+
+create no-tools
+fload ${BP}/ofw/confvar/loadcv.fth	\ Configuration option management
+
 alias rb@ c@
 alias rb! c!
 alias rw@ w@

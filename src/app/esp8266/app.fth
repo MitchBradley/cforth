@@ -134,6 +134,7 @@ fl ${BP}/ofw/parses1.fth
 fl ${BP}/ofw/cirstack.fth
 fl ${BP}/ofw/ofw-dt.fth
 fl ${BP}/ofw/core/deblock.fth
+fl ${BP}/ofw/seechain.fth
 
 fl ${BP}/lib/fb.fth
 fl ${BP}/lib/font5x7.fth
@@ -152,6 +153,20 @@ fl ../../lib/lex.fth
 
 fl ${BP}/ofw/disklabel/gpttools.fth
 fl ofw-rootnode.fth
+fl ${BP}/ofw/filenv.fth
+
+: install-options  ( -- )
+   " /file-nvram" open-dev  to nvram-node
+   nvram-node 0=  if
+      ." The configuration EEPROM is not working" cr
+   then
+   config-valid?  if  exit  then
+   ['] init-config-vars catch drop
+;
+stand-init: Pseudo-NVRAM
+   install-options
+;
+
 
 fl sdspi.fth
 
@@ -166,4 +181,5 @@ fl sdspi.fth
    ['] spi-bits@    to spi-bits-in
    sd-card-init
 ;
+
 " app.dic" save

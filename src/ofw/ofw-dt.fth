@@ -1,3 +1,17 @@
+: 5drop  ( x x x x x -- )  2drop 3drop  ;
+
+: (confirmed?)  ( adr len -- char )
+   type  ."  [y/n]? "  key dup emit cr  upc
+;
+\ Default value is yes
+: confirmed?  ( adr len -- yes? )  (confirmed?) [char] N  <>  ;
+\ Default value is no
+: confirmedn?  ( adr len -- yes? )  (confirmed?) [char] Y  =  ;
+
+defer edit-file  ( adr maxlen -- actual-len )  : no-edit  true abort" edit-file is not implemented"  ;
+defer ?permitted
+defer deny-history?
+: beep  ( -- )   7 emit  ;
 : 8*  ( n1 -- n2 )  3 lshift  ;
 : third  ( a b c -- a b c a )  2 pick  ;
 : cstrlen  ( adr -- len )  cscount drop  ;
@@ -78,7 +92,7 @@ alias do-is (to)
 ;
 \ XXX need to init "temp to stringbuf
 
-alias config-flag value
+\ alias config-flag value
 
 alias \tagvoc noop immediate
 alias \nottagvoc \ immediate
@@ -90,9 +104,6 @@ alias end-module noop
 
 : nowarn(  ( -- warning )  warning @  warning off  ;
 : )nowarn  ( warning -- )  warning !  ;
-nowarn(
-: stand-init  ;
-)nowarn
 : $save  ( adr1 len1 adr2 -- adr2 len1 )  pack count  ;
 : $cat  ( adr len  pstr -- )  \ Append adr len to the end of pstr
    >r  r@ count +   ( adr len end-adr )  ( r: pstr )
@@ -212,6 +223,7 @@ defer minimum-search-order
 
 alias unaligned-w! le-w!
 alias unaligned-l! le-l!
+alias unaligned-! unaligned-l!
 
 8 constant /x
 
@@ -230,6 +242,7 @@ alias be-n, be-l,
 ;
 
 : strip-blanks  ( adr len -- adr' len' )  -leading  -trailing  ;
+: optional-arg$  ( -- adr len )  0 parse  strip-blanks  ;
 
 \ : relink-voc  ( voc -- )  drop  ;  \ CForth doesn't support transient so nothing to do
 
@@ -294,9 +307,6 @@ alias include-buffer evaluate
 \ 
 \ ========== Copyright Header End ============================================
 
-[ifdef] cforth
-: stand-init:  postpone \  " : stand-init " eval  ;
-[else]
 \ From standini.fth
 copyright: Copyright 2006 Sun Microsystems, Inc  All Rights Reserved
 copyright: Use is subject to license terms.
@@ -310,16 +320,22 @@ defer check-message  ( adr len -- adr len )  ' noop to check-message
 ;
 
 only forth also hidden also forth definitions
+[ifndef] cforth
 : stand-init-header  ( -- )
    headerless? 0=  dup >r  if  headerless  then
-   nowarn(
+   warning @ warning off
    " stand-init" $header acf-align
-   )nowarn
+   warning !
    r>  if  headers  then
 ;
+[then]
 
 : stand-init:  ( -- )  \ debug string
+[ifdef] stand-init-header
    ['] stand-init-header is header  :  ['] (header) is header
+[else]
+   nowarn( " : stand-init" evaluate )nowarn
+[then]
    " stand-init" $find  if  token,  else  2drop  then
    optional-arg$
 [ifdef] stand-init-debug?
@@ -333,14 +349,20 @@ headerless
 \needs standalone?  false value standalone?
 stand-init:  First stand-init:
    hex
+[ifndef] cforth
    0 to #args  0 to args
    0 to 'source-id
    true to suppress-transient?
    true to suppress-headerless?
-;
 [then]
+;
 only forth also definitions
+[ifdef] cforth
+\ CForth has standalone? as a primitive, not a value
+: stand-init-io  ( -- )   ;
+[else]
 : stand-init-io  ( -- )  true to standalone?  ;	\ First definition
+[then]
 headers
 
 \ From sysintf.fth
@@ -556,6 +578,9 @@ vocabulary options
 only forth also root also definitions
 : fw-search-order  ( -- )  root also options also  ;
 ' fw-search-order to minimum-search-order
+warning @ warning off
+: only  only minimum-search-order  ;
+warning !
 only forth hidden also forth also definitions
 
 \ end interpolation
