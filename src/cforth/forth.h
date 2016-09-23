@@ -47,9 +47,12 @@ extern const struct header builtin_hdr;
 #define RESIZEFAIL -19	/* XXX - out of the hat */
 #define STATFAIL  -20	/* XXX - out of the hat */
 #define CREATEFAIL -21	/* XXX - out of the hat */
+#define NOFILEIO   -22	/* XXX - out of the hat */
 
 cell pfread(cell *sp, cell len, void *fid, cell *up);
 cell pfwrite(void *adr, cell len, void *fid, cell *up);
+cell pfseek(void *fid, u_cell high, u_cell low, cell *up);
+cell pfposition(void *fid, u_cell *high, u_cell *low, cell *up);
 cell *init_forth(void);
 void init_io(int argc, char **argv, cell *up);
 int next_arg(cell *up);

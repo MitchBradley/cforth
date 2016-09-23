@@ -68,20 +68,33 @@ cell freadline(cell f, cell *sp, cell *up)        /* Returns IO result */
 {
     sp[0] = 0;
     sp[1] = 0;
-    return (READFAIL);
+    return (NOFILEIO);
 }
 
 cell
 pfread(cell *sp, cell len, void *fid, cell *up)  // Returns IO result, actual in *sp
 {
     sp[0] = 0;
-    return (READFAIL);
+    return (NOFILEIO);
 }
 
 cell
 pfwrite(void *adr, cell len, void *fid, cell *up)
 {
-    return (WRITEFAIL);
+    return (NOFILEIO);
+}
+
+cell
+pfseek(void *fid, u_cell high, u_cell low, cell *up)
+{
+    return (NOFILEIO);
+}
+
+cell
+pfposition(void *fid, u_cell *high, u_cell *low, cell *up)
+{
+    *high = *low = 0;
+    return (NOFILEIO);
 }
 
 void clear_log(cell *up) { }

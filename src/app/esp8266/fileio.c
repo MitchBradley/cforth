@@ -118,6 +118,21 @@ pfwrite(void *adr, cell len, void *fid, cell *up)
     return 0;
 }
 
+cell
+pfseek(void *fid, u_cell high, u_cell low, cell *up)
+{
+  (void)myspiffs_lseek((int)fid, low, 0);
+  return 0;
+}
+
+cell
+pfposition(void *fid, u_cell *high, u_cell *low, cell *up)
+{
+  *low = myspiffs_tell((int)fid);
+  *high = 0;
+  return 0;
+}
+
 void clear_log(cell *up) { }
 void start_logging(cell *up) { }
 void stop_logging(cell *up) { }

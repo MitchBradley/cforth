@@ -380,8 +380,16 @@ token_fetch:
     push(((cell *)rp)[0] + ((cell *)rp)[1]);
     next;
 
+/*$p ilimit */  case ILIMIT:
+    push(((cell *)rp)[1]);
+    next;
+
 /*$p j */       case J:
     push(((cell *)rp)[3] + ((cell *)rp)[4]);
+    next;
+
+/*$p jlimit */  case JLIMIT:
+    push(((cell *)rp)[4]);
     next;
 
 /*$p branch */  case PBRANCH:
@@ -1249,6 +1257,16 @@ execute:
     ascr = (void *)pop;    // fid
     scr = pop;             // len
     tos = pfwrite((void *)tos, scr, ascr, up);
+    next;
+
+/*$p reposition-file */  case REPOSITION_FILE:      /* ud fid -- ior */
+    tos = pfseek((void *)tos, sp[0], sp[1], up);
+    sp += 2;
+    next;
+
+/*$p file-position */  case FILE_POSITION:     /* fid -- ud ior */
+    sp -= 2;
+    tos = pfposition((void *)tos, &sp[0], &sp[1], up);
     next;
 
 /*$p w/o */         case W_O:  push(1);  next;

@@ -598,3 +598,15 @@ cell pfwrite(void *adr, cell len, void *fid, cell *up)  // Returns IO result, ac
     return (ret == 0) ? ferror((FILE *)fid) : 0;
 }
 
+cell pfseek(void *fid, u_cell high, u_cell low, cell *up)
+{
+  (void)fseek((FILE *)fid, low, 0);
+  return 0;
+}
+
+cell pfposition(void *fid, u_cell *high, u_cell *low, cell *up)
+{
+  *low = ftell((FILE *)fid);
+  *high = 0;
+  return 0;
+}
