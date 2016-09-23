@@ -235,6 +235,8 @@ decimal
 : (.not-found)  ( name$ -- )  cr  type ."  ?"  cr  where1  ;
 ' (.not-found) to .not-found
 
+: (.underflow)  ( -- )  ." Stack Underflow" cr  ;
+' (.underflow) to .underflow
 : (prompt)  ( -- )
    state @  if  ."  ] "  else  ." ok "  then
 ;

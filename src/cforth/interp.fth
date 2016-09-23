@@ -115,12 +115,13 @@ defer header
 
 : clear  ( ?? -- )  sp0 @ sp!  ;
 defer .error
+defer .underflow
 nuser 'exit-interact?
 : interact  ( -- )
    tib /tib 0 set-input
    [compile] [
    begin
-      depth 0<  if  -99 throw  then
+      depth 0<  if  .underflow  clear  then
       interactive?  if	\ Suppress prompt if input is redirected to a file
          status
 	 prompt
