@@ -20,7 +20,7 @@
 : find-first-ds18x20  ( -- )
    1 ds18x20-pin ow-init
    begin  1 ds18x20-addr ow-search  while
-      is-ds18x20?  if  exit  then
+      is-ds18x20?  if  drop exit  then
    repeat
    true abort" DS18B20 not found"
 ;
