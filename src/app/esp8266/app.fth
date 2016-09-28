@@ -122,31 +122,9 @@ fl car.fth
 
 alias id: \
 
-\ Open Firmware stuff; omit if you don't need it
-create ext2fs-support
-create nfts-support
-fl ../../lib/crc32.fth
-
-fl ${BP}/ofw/objsup.fth
-fl ${BP}/ofw/objects.fth
-fl ${BP}/ofw/linklist.fth
-fl ${BP}/ofw/parses1.fth
-fl ${BP}/ofw/cirstack.fth
-
-fl ${BP}/ofw/ofw-support.fth
-
-fl $(OFW)/forth/lib/fileed.fth
-fl $(OFW)/forth/lib/editcmd.fth
-fl $(OFW)/forth/lib/cmdcpl.fth
-fl $(OFW)/forth/lib/fcmdcpl.fth
-
-fl ${BP}/ofw/core/ofwcore.fth
-fl ${BP}/ofw/core/deblock.fth
-fl ${BP}/ofw/seechain.fth
-
-fl ${BP}/lib/fb.fth
-fl ${BP}/lib/font5x7.fth
-fl ${BP}/lib/ssd1306.fth
+fl ${CBP}/lib/fb.fth
+fl ${CBP}/lib/font5x7.fth
+fl ${CBP}/lib/ssd1306.fth
 : init-wemos-oled  ( -- )
    1 2 i2c-setup
    ssd-init
@@ -156,28 +134,9 @@ fl ${BP}/lib/ssd1306.fth
    #20 0  do  i (u.)  fb-type "  Hello" fb-type  fb-cr  loop
 ;
 
-fl ../../lib/stringar.fth
-fl ../../lib/lex.fth
-
-\ : fl parse-word 2dup type space included ;
-\ alias fload fl
-
-fl ${BP}/ofw/disklabel/gpttools.fth
-fl ofw-rootnode.fth
-fl ${BP}/ofw/filenv.fth
-
-: install-options  ( -- )
-   " /file-nvram" open-dev  to nvram-node
-   nvram-node 0=  if
-      ." The configuration EEPROM is not working" cr
-   then
-   config-valid?  if  exit  then
-   ['] init-config-vars catch drop
-;
-stand-init: Pseudo-NVRAM
-   install-options
-;
-
+\ Open Firmware stuff; omit if you don't need it
+fl ${CBP}/ofw/loadofw.fth      \ Mostly platform-independent
+fl ofw-rootnode.fth \ ESP8266-specific
 
 fl sdspi.fth
 

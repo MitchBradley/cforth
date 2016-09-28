@@ -13,7 +13,7 @@ fload ${BP}/ofw/fs/ext2fs/layout.fth
 fload ${BP}/ofw/fs/ext2fs/dir.fth
 fload ${BP}/ofw/fs/ext2fs/recovery.fth
 \ fload ${BP}/ofw/fs/ext2fs/methods.fth
-fload ${BP}/ofw/fs/ext2fs/methods2.fth
+fload ${CBP}/ofw/fs/ext2fs/methods2.fth
 
 \ LICENSE_BEGIN
 \ Copyright (c) 2006 FirmWorks

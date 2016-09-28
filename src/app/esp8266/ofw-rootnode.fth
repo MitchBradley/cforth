@@ -1,28 +1,21 @@
-create resident-packages
+\ Platform-specific Open Firmware driver
+
 $200 constant pagesize
 
 : ram-range  ( -- start end )  $3ffe8000  dup $14000 +  ;  \ All of RAM
 
 fload ${BP}/ofw/core/memops.fth		\ Call memory node methods
 
-\ create no-tools
-fload ${BP}/ofw/confvar/loadcv.fth	\ Configuration option management
-
-alias rb@ c@
-alias rb! c!
-alias rw@ w@
-alias rw! w!
-alias rl@ l@
-alias rl! l!
-
-fload ${BP}/ofw/fcode/loadfcod.fth	\ S Fcode interpreter
-fload ${BP}/ofw/fcode/regcodes.fth	\ Register access words
+\ The ESP8266 RTC is just a counter
+: now  ( -- s m h )  0 0 0  ;
+: today  ( -- d m y )  1 1 #2016  ;
+: time&date  ( -- sec min hr dy mth yr )  today now  ;
 
 [ifdef] ext2fs-support
 \needs unix-seconds>  fload ${BP}/ofw/fs/unixtime.fth	\ Unix time calculation
-\needs ($crc16)       fload ${BP}/ofw/fs/ext2fs/crc16.fth
+\needs ($crc16)       fload ${BP}/forth/lib/crc16.fth
 support-package: ext2-file-system
-   fload ${BP}/ofw/fs/ext2fs/ext2fs.fth	\ Linux file system
+   fload ${CBP}/ofw/fs/ext2fs/ext2fs.fth	\ Linux file system
 end-support-package
 [then]
 
@@ -45,11 +38,11 @@ end-support-package
 [then]
 
 support-package: fat-file-system
-   fload ${BP}/ofw/fs/fatfs/loadpkg.fth	\ FAT file system reader
+   fload ${CBP}/ofw/fs/fatfs/loadpkg.fth	\ FAT file system reader
 end-support-package
 
 support-package: disk-label
-   fload ${BP}/ofw/disklabel/loadpkg.fth	\ Disk label package
+   fload ${CBP}/ofw/disklabel/loadpkg.fth	\ Disk label package
 end-support-package
 
 fload ${BP}/ofw/fs/fatfs/fdisk2.fth	\ Partition map administration
@@ -174,9 +167,9 @@ finish-device
 device-end
 headerless
 
-fl ../../ofw/core/clntphy1.fth
-fl ../../ofw/core/allocph1.fth
-fl ../../ofw/core/availpm.fth
+fl ${BP}/ofw/core/clntphy1.fth
+fl ${BP}/ofw/core/allocph1.fth
+fl ${BP}/ofw/core/availpm.fth
 
 : (memory?)  ( padr -- flag )  ram-range within  ;
 ' (memory?) to memory?
@@ -210,6 +203,7 @@ fl ../../ofw/core/availpm.fth
 headers
 
 \ End of rootnode stuff
+
 support-package: dropin-file-system
    fload ${BP}/ofw/fs/dropinfs.fth	\ Dropin file system
 end-support-package
@@ -217,3 +211,17 @@ end-support-package
 " /openprom" find-device
    " MitchBradley,3.0" encode-string " model" property
 device-end
+
+fl ${CBP}/ofw/filenv.fth
+
+: install-options  ( -- )
+   " /file-nvram" open-dev  to nvram-node
+   nvram-node 0=  if
+      ." The configuration EEPROM is not working" cr
+   then
+   config-valid?  if  exit  then
+   ['] init-config-vars catch drop
+;
+stand-init: Pseudo-NVRAM
+   install-options
+;

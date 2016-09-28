@@ -17,10 +17,12 @@ fload ${BP}/ofw/fs/fatfs/read.fth        \ Opening & seeking for read
 fload ${BP}/ofw/fs/fatfs/write.fth       \ Extend-file, dos-write, dos-close
 fload ${BP}/ofw/fs/fatfs/create.fth      \ Creating directory entries & new files
 fload ${BP}/ofw/fs/fatfs/makefs.fth      \
+\ fload ${BP}/ofw/fs/fatfs/command.fth   \ Various user interface commands
 
+\ fload ${BP}/ofw/fs/fatfs/sysdos.fth      \ Forth stream file interface
 fload ${BP}/ofw/fs/fatfs/enumdir.fth     \ Enumerate directory entries
 
-fload ${BP}/ofw/fs/fatfs/methods2.fth     \ External interface methods
+fload ${CBP}/ofw/fs/fatfs/methods2.fth     \ External interface methods
 \ LICENSE_BEGIN
 \ Copyright (c) 2006 FirmWorks
 \ 

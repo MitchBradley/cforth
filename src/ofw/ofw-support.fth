@@ -1,4 +1,4 @@
-\ 
+\ Mostly-trivial definitions for compatibility with the OFW Forth system
 : init ;
 : 5drop  ( x x x x x -- )  2drop 3drop  ;
 
@@ -17,11 +17,6 @@ defer deny-history?
 : 8*  ( n1 -- n2 )  3 lshift  ;
 : third  ( a b c -- a b c a )  2 pick  ;
 : cstrlen  ( adr -- len )  cscount drop  ;
-
-\ The ESP8266 RTC is just a counter
-: now  ( -- s m h )  0 0 0  ;
-: today  ( -- d m y )  1 1 #2016  ;
-: time&date  ( -- sec min hr dy mth yr )  today now  ;
 
 : umin  ( u1 u2 -- u3 )  2dup u<  if  drop  else  nip  then  ;
 
@@ -53,10 +48,6 @@ defer deny-history?
 : ". count type  ;
 
 defer mac-address
-
-alias is-install drop
-alias is-remove drop
-alias is-selftest drop
 
 1 constant 1
 2 constant 2
