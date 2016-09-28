@@ -496,9 +496,6 @@ execute:
     push(scr);
     next;
 
-/*$p accept */      case ACCEPT:    token = T(TICK_ACCEPT);    goto execute;
-/*$p interpret */   case INTERPRET: token = T(TICK_INTERPRET); goto execute;
-
 /*$p abort */   case ABORT:
     abort:
         push(-1);
@@ -1440,9 +1437,7 @@ execute_word(char *s, cell *up)
 /*$u handler    e HANDLER:      */
 /*$t voc-link   e VOC_LINK:     */
 /*$t last       e LASTP:        */
-/*$t 'interpret e TICK_INTERPRET: */
-/*$t 'quit      e TICK_QUIT:    */
-/*$t 'accept    e TICK_ACCEPT:  */
+/*$d accept     e ACCEPT:       */
 /*$u thisdef    e THISDEF:      */
 /*$u complevel  e COMPLEVEL:    */
 /*$u #ins       e NUMINS:       */

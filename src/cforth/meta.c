@@ -74,6 +74,13 @@ void dodefer(cell *up)
 	V(NUM_USER) += sizeof(cell);
 }
 
+void dodefer_init(cell *up)
+{
+	create_word((token_t)DODEFER, up);
+	unumcomma(V(NUM_USER));
+	V(NUM_USER) += sizeof(cell);
+}
+
 void doconstant(cell *up)
 {
 	create_word((token_t)DOCON, up);
@@ -160,6 +167,7 @@ struct metatab {  char *name; void (*func)(); } metawords[] = {
 	"p",		doprim,
 	"u",		donuser,
 	"t",		dotuser,
+	"d",		dodefer,
 	"i",		doiprim,
 	"c",		docftok,
 	"w",		dostore,
@@ -250,7 +258,7 @@ void init_variables(int unum, cell *up)
     V(NUM_USER) = unum;
     V(NUM_OUT) = V(NUM_LINE) = 0;
     V(BASE) = 10;
-    V(TICK_ACCEPT) = SYS_ACCEPT;
+    V(ACCEPT) = SYS_ACCEPT;
 #ifdef XXX
     V(TICK_INTERPRET) = SYS_INTERPRET;
 #endif

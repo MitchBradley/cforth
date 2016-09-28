@@ -100,7 +100,7 @@ main(argc, argv)
 			;
 		(void)fgetc(ffd);			/* Eat ' ' */
 
-		if (primtype == 'u' || primtype == 't') {
+		if (primtype == 'u' || primtype == 't' || primtype == 'd') {
 			/* Write, for example    #define LAST 12   */
 			fputs("#define\t", vfd);
 			while ((c = fgetc(ffd)) != ':')	/* Copy name */

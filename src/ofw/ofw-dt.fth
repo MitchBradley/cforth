@@ -1,3 +1,4 @@
+: init ;
 : 5drop  ( x x x x x -- )  2drop 3drop  ;
 
 : (confirmed?)  ( adr len -- char )

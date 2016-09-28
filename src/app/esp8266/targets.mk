@@ -89,7 +89,8 @@ date.o: $(PLAT_OBJS) $(FORTH_OBJS)
 
 EXTRA_CLEAN += *.elf *.dump *.nm *.img date.c $(FORTH_OBJS) $(PLAT_OBJS)
 
-PREFIX:=BP=$(realpath $(TOPDIR)/src)
+PREFIX += BP=$(realpath $(TOPDIR)/src)
+PREFIX += OFW=$(realpath /c/Users/wmb/Documents/svn/openfirmware)
 
 include $(SRC)/cforth/embed/targets.mk
 

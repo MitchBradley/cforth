@@ -100,9 +100,11 @@ false config-flag diag-switch?
 ' diag-switch? is (diagnostic-mode?)
 
 headerless
+[ifndef] (.d)
 : (.d)  ( n -- adr len )
    base @ >r  decimal  <# 0 hold u#s u#>  r> base !
 ;
+[then]
 : ?base  ( adr len -- adr' len' )
    dup 2 >  if                     ( adr len )
       over c@ ascii 0  =  if       ( adr len )

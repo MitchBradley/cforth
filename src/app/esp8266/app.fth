@@ -151,6 +151,25 @@ fl ${BP}/lib/ssd1306.fth
 fl ../../lib/stringar.fth
 fl ../../lib/lex.fth
 
+\ : fl parse-word 2dup type space included ;
+\ alias fload fl
+
+4 constant 4
+5 constant 5
+6 constant 6
+7 constant 7
+8 constant 8
+9 constant 9
+alias tuser nuser
+alias (interactive? interactive?
+nuser prior
+#32 buffer: 'word
+alias .id .name
+fl $(OFW)/forth/lib/fileed.fth
+fl $(OFW)/forth/lib/editcmd.fth
+fl $(OFW)/forth/lib/cmdcpl.fth
+fl $(OFW)/forth/lib/fcmdcpl.fth
+
 fl ${BP}/ofw/disklabel/gpttools.fth
 fl ofw-rootnode.fth
 fl ${BP}/ofw/filenv.fth

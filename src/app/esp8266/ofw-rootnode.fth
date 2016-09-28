@@ -5,7 +5,7 @@ $200 constant pagesize
 
 fload ${BP}/ofw/core/memops.fth		\ Call memory node methods
 
-create no-tools
+\ create no-tools
 fload ${BP}/ofw/confvar/loadcv.fth	\ Configuration option management
 
 alias rb@ c@
