@@ -72,7 +72,7 @@ defer respond   ( pcb -- close? )
    \ gives no indication what other values might mean.  I assume that
    \ the err argument is present only for consistency with other callbacks.
    drop  to rx-pcb  nip         ( pbuf )
-   ?dup 0=  if                  ( pbuf )
+   ?dup 0=  if                  ( )
       ." Connection closed" cr cr
       rx-pcb close-connection   ( )
       \ This is a normal termination, not a premature abort
