@@ -1960,15 +1960,17 @@ digit(cell base, u_char c)
 static void
 ip_canonical(char *adr, cell len, cell *up)   // Canonicalize string "in place"
 {
-    register char *p;
-    register char c;
+    char *p;
+    char c;
 
     if ( !V(CAPS) )
         return;
 
     for (p = adr; len--; p++) {
         c = *p;
-        *p++ = (c >= 'A' && c <= 'Z') ? (c - 'A' + 'a') : c;
+	if (c >= 'A' && c <= 'Z') {
+		*p = c - 'A' + 'a';
+	}
     }
 }
 
