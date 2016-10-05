@@ -1706,15 +1706,15 @@ alnumber(char *adr, cell len, cell *nhigh, cell *nlow, cell *up)
     return( len ? 0 : -1 );
 }
 
-void udot(unsigned int u, cell *up) {
+void udot(u_cell u, cell *up) {
     if (u>10)
         udot(u/10, up);
     emit('0'+u%10, up);
 }
 
-void udotx(unsigned int u, cell *up) {
+void udotx(u_cell u, cell *up) {
     int i;
-    for (i=28; i>=0; i -= 4) {
+    for (i=(sizeof(u)*8)-4; i>=0; i -= 4) {
 	emit("0123456789abcdef"[(u>>i)&0xf], up);
     }
     emit(' ', up);

@@ -1,6 +1,12 @@
 \ Mostly-trivial definitions for compatibility with the OFW Forth system
+
+\needs purpose: alias purpose: \
+\needs copyright: alias copyright: \
+
 : init ;
 : 5drop  ( x x x x x -- )  2drop 3drop  ;
+\needs 3dup  : 3dup  ( -- )  2 pick 2 pick 2 pick  ;
+
 
 : (confirmed?)  ( adr len -- char )
    type  ."  [y/n]? "  key dup emit cr  upc
@@ -208,32 +214,14 @@ defer minimum-search-order
 ;
 : round-down  ( adr granularity -- adr' )  1- invert and  ;
 
-\ From openfirmare/forth/kernel/endian.fth
-\needs le-w@  : le-w@   ( a -- w )   dup    c@ swap ca1+    c@ bwjoin  ;
-\needs be-w@  : be-w@   ( a -- w )   dup ca1+    c@ swap    c@ bwjoin  ;
-
-\needs le-l@  : le-l@   ( a -- l )   dup le-w@ swap wa1+ le-w@ wljoin  ;
-\needs be-l@  : be-l@   ( a -- l )   dup wa1+ be-w@ swap be-w@ wljoin  ;
-
-\needs le-l!  : le-l!   ( l a -- )   >r lwsplit r@ wa1+ le-w! r> le-w!  ;
-\needs be-l!  : be-l!   ( l a -- )   >r lwsplit r@ be-w! r> wa1+ be-w!  ;
-
-\needs le-l,  : le-l,   ( l -- )     here /l allot le-l!  ;
-\needs be-l,  : be-l,   ( l -- )     here /l allot be-l!  ;
-
-alias unaligned-w! le-w!
+fl ${BP}/forth/kernel/splits.fth
+fl ${BP}/forth/kernel/endian.fth
 alias unaligned-l! le-l!
-alias unaligned-! unaligned-l!
+32\ alias unaligned-! unaligned-l!
+64\ alias unaligned-! !
+64\ alias rx@ @
+64\ alias rx! !
 
-8 constant /x
-
-: be-x@  ( adr -- d )  dup la1+ be-l@  swap be-l@  ;
-: be-x!  ( d adr -- )  tuck be-l!  la1+ be-l!  ;
-: be-x,   ( x -- )  here /x allot be-x!  ;
-
-alias be-n@ be-l@
-alias be-n! be-l!
-alias be-n, be-l,
 : -leading  ( adr len -- adr' len' )  
    begin  dup  while
       over c@ bl  <>  if  exit  then

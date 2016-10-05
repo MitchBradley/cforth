@@ -1,5 +1,11 @@
 \ Stub versions of OFW frame buffer support
 
+\needs column#  0 value column#
+\needs line#    0 value line#
+\needs #columns 0 value #columns
+\needs #lines   0 value #lines
+\needs #scroll-lines  1 value #scroll-lines
+
 0 value inverse?
 0 value inverse-screen?
 \needs draw-character defer draw-character

@@ -366,6 +366,10 @@ nuser csp
 64\ : n->w  ( n -- w )  $ffff and ;
 64\ : l->n  ( l -- n )  #32 << #32 >>a  ;
 64\ : n->l  ( n -- w )  $ffffffff and ;
+64\ alias x@ @
+64\ alias x! !
+64\ alias xa+ na+
+64\ alias /x* cells
 
 32\ #32 constant bits/cell
 32\ : 64-bit 1 abort" Not a 64 bit forth" ; immediate

@@ -33,7 +33,7 @@ INCLUDE=compiler.h $(FINC) prims.h
 BASEOBJS=forth.o compiler.o syscall.o floatops.o extend.o
 
 # Objects specific to the host environment
-HOSTOBJS=main.o io.o nullbi.o dictfile.o mallocl.o
+HOSTOBJS += main.o io.o nullbi.o dictfile.o mallocl.o
 
 # You can substitute linenoise.o for linedit.o to get slightly more
 # editing functionality, in particular history-across-sessions and
@@ -116,7 +116,7 @@ meta: $(METAOBJS)
 forth: $(BASEOBJS) $(HOSTOBJS)
 	@echo MAKING FORTH
 	@echo CC $(HOSTOBJS) $(BASEOBJS) $(LIBS) -o $@
-	@$(CC) $(CFLAGS) -o $@ $(HOSTOBJS) $(BASEOBJS) $(LIBS)
+	$(CC) $(CFLAGS) -o $@ $(HOSTOBJS) $(BASEOBJS) $(LIBS)
 
 # main.o is the main() entry point for the self-contained applications above
 
@@ -139,6 +139,17 @@ extend.o: $(EXTENDSRC) $(FINC) makeccalls
 	@echo CC $<
 	@$(CC) $(CFLAGS) -c $(EXTENDSRC) -o $@
 	@$(CC) $(CFLAGS) -E -C -c $(EXTENDSRC) | ./makeccalls >ccalls.fth
+
+# This rule builds a date stamp object that you can include in the image
+# if you wish.
+
+date.o: $(PLAT_OBJS) $(FORTH_OBJS)
+	@(echo "`git rev-parse --verify --short HEAD``if git diff-index --exit-code --name-only HEAD >/dev/null; then echo '-dirty'; fi`" || echo UNKNOWN) >version
+	@echo 'const char version[] = "'`cat version`'";' >date.c
+	@echo 'const char build_date[] = "'`date --utc +%F\ %R`'";' >>date.c
+	@cat date.c
+	@echo CC $@
+	@$(CC) -c date.c -o $@
 
 # These files are automatically-generated header files containing
 # information extracted from the C source file "forth.c".  They
