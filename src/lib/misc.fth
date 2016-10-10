@@ -32,10 +32,6 @@
 : be-w!   ( w adr -- )   2dup 1+ c!  swap 8 rshift swap c!  ;
 [then]
 
-[ifndef] lbflip
-: lbflip  ( l -- l )  lbsplit  swap 2swap swap bljoin  ;
-[then]
-
 [ifndef] comp
 : comp  ( adr1 adr2 len -- diff )  tuck compare  ;
 [then]

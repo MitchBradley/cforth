@@ -29,7 +29,6 @@ fl ${CBP}/ofw/core/deblock.fth
 fl ${BP}/forth/lib/seechain.fth
 
 fl ../lib/stringar.fth
-fl ../lib/lex.fth
 
 \ : fl parse-word 2dup type space included ;
 \ alias fload fl

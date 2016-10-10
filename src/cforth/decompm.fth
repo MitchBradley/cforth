@@ -86,7 +86,9 @@ alias rslist 2drop
 : unbug 0 <ip !  ;
 
 : unaligned-w@  dup c@ swap 1+ c@ bwjoin   ;
+: unaligned-w!  ( w adr -- )  >r wbsplit  r@ 1+ c!  r> c!  ;
 : unaligned-l@  >r r@ c@  r@ 1+ c@  r@ 2+ c@  r> 3 + c@  bljoin ;
+: unaligned-l!  ( l adr -- )  >r lwsplit  r@ 2+ unaligned-w!  r> unaligned-w! ;
 : unaligned-@  unaligned-l@  ;
 : d@ 2@ ;
 [ifdef] notdef

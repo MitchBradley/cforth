@@ -4,7 +4,7 @@ all: default
 
 TOPDIR=../..
 PREFIX += CBP=$(realpath $(TOPDIR)/src)
-PREFIX += BP=$(realpath $(TOPDIR)/../../svn/openfirmware)
+PREFIX += BP=$(realpath $(TOPDIR)/../openfirmware)
 CC = gcc
 
 CONFIG += -DBITS32 -m32

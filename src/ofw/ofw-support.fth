@@ -82,13 +82,13 @@ alias do-is (to)
 : wpoke  ( w adr -- okay? )  w! true  ;
 : lpoke  ( l adr -- okay? )  l! true  ;
 
-: wbflip  ( w -- w )  wbsplit swap bwjoin  ;
-: lwflip  ( l -- l )  lwsplit swap wljoin  ;
-\needs lbflip : lbflip  ( l -- l )  lbsplit swap 2swap swap bljoin  ;
+\ : wbflip  ( w -- w )  wbsplit swap bwjoin  ;
+\ : lwflip  ( l -- l )  lwsplit swap wljoin  ;
+\ \needs lbflip : lbflip  ( l -- l )  lbsplit swap 2swap swap bljoin  ;
 
-: lbflips  ( adr len -- )   bounds  ?do  i l@ lbflip i l!  /l +loop  ;
-: wbflips  ( adr len -- )   bounds  ?do  i w@ wbflip i w!  /w +loop  ;
-: lwflips  ( adr len -- )   bounds  ?do  i l@ lwflip i l!  /l +loop  ;
+\ : lbflips  ( adr len -- )   bounds  ?do  i l@ lbflip i l!  /l +loop  ;
+\ : wbflips  ( adr len -- )   bounds  ?do  i w@ wbflip i w!  /w +loop  ;
+\ : lwflips  ( adr len -- )   bounds  ?do  i l@ lwflip i l!  /l +loop  ;
 
 #260 constant /stringbuf
 /stringbuf 2* buffer: stringbuf
@@ -202,6 +202,7 @@ alias resident noop
 alias headerless? false
 alias ascii [char]
 alias partial-headers noop
+alias external headers
 create cforth
 \needs standalone?  false value standalone?
 alias eval evaluate
@@ -215,12 +216,14 @@ defer minimum-search-order
 : round-down  ( adr granularity -- adr' )  1- invert and  ;
 
 fl ${BP}/forth/kernel/splits.fth
+fl ${BP}/forth/lib/split.fth
 fl ${BP}/forth/kernel/endian.fth
-alias unaligned-l! le-l!
 32\ alias unaligned-! unaligned-l!
 64\ alias unaligned-! !
 64\ alias rx@ @
 64\ alias rx! !
+64\ alias x, ,
+64\ alias xa1+ cell+
 
 : -leading  ( adr len -- adr' len' )  
    begin  dup  while
