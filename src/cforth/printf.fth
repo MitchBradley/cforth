@@ -3,13 +3,6 @@ purpose: printf and sprintf
 
 : push-octal  ( -- )  r>  base @ >r >r  octal  ;
 
-: cindex  ( adr len char -- [ index true ]  | false )
-   false swap 2swap  bounds  ?do  ( false char )
-      dup  i c@  =  if  nip i true rot  leave  then
-   loop                           ( false char  |  index true char )
-   drop
-;
-
 \needs lex fl ../lib/lex.fth
 
 d# 1024 buffer: spbuf

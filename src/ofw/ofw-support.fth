@@ -82,6 +82,8 @@ alias do-is (to)
 : wpoke  ( w adr -- okay? )  w! true  ;
 : lpoke  ( l adr -- okay? )  l! true  ;
 
+\needs lex fl ../lib/lex.fth
+
 \ : wbflip  ( w -- w )  wbsplit swap bwjoin  ;
 \ : lwflip  ( l -- l )  lwsplit swap wljoin  ;
 \ \needs lbflip : lbflip  ( l -- l )  lbsplit swap 2swap swap bljoin  ;

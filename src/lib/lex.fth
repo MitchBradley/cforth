@@ -1,6 +1,13 @@
 \ See license at end of file
 purpose: lexical analysis primitive
 
+: cindex  ( adr len char -- [ index true ]  | false )
+   false swap 2swap  bounds  ?do  ( false char )
+      dup  i c@  =  if  nip i true rot  leave  then
+   loop                           ( false char  |  index true char )
+   drop
+;
+
 \ text$ means ( text-adr text-len )
 0 value delim
 
