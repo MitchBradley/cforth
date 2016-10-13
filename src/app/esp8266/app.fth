@@ -91,6 +91,7 @@ fl bme280.fth
 fl pca9685.fth
 fl hcsr04.fth
 
+fl wifi.fth
 
 fl redirect.fth
 fl tcpnew.fth

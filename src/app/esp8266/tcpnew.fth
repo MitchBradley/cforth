@@ -201,3 +201,22 @@ defer respond   ( pcb -- close? )
 
 
 fl sendfile.fth
+
+: simple-connected  ( err pcb arg -- stat )
+   drop nip
+   ." Connected, pcb is " . cr
+   ERR_OK
+;
+
+defer connected
+' simple-connected to connected
+
+: connect  ( port# host -- )
+   \ XXX handle error callbacks
+   ['] connected  -rot   ( cb port# host )
+   tcp-new               ( cb port# host pcb )
+   tcp-connect 0<> abort" tcp-connect failed"
+;
+
+\ This is the default host IP for ESP8266's in softap mode
+create esp-ip  #192 c, #168 c, #4 c, #1 c,

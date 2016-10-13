@@ -1,4 +1,4 @@
-\ 
+\ Driver for SD card connected via SPI
 
 defer spi-bits-in   ( #bits -- n )
 defer spi-out-in    ( outbuf inbuf #bytes -- )

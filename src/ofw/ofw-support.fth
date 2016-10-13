@@ -198,8 +198,7 @@ alias link> ta1+
 alias transient noop
 alias resident noop
 0 value my-self
-0 constant struct
-: field  ( offset size )  create  over , +  does>  ( adr -- adr' )  @ +  ;
+\needs struct fl ../lib/struct.fth
 \needs $=  : $=  ( $1 $2 -- )  compare 0=  ;
 alias headerless? false
 alias ascii [char]
