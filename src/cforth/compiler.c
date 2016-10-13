@@ -38,7 +38,6 @@ init_compiler(const u_char *origin, u_char *ramorigin, token_t topct, u_char *he
 
     V(RAMTOKENS) = (cell)ramorigin;
     V(RAMCT) = (cell)topct;
-    printf("TOPCT %x\n", topct);
 
     xlimit -= 4 * sizeof(token_t *);      // Guard band
 
