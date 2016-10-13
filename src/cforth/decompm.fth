@@ -50,7 +50,8 @@ variable isvariable
       (value)      of ['] value      endof
     endcase
   else                   ( cfa code-field )
-      drop token@ find-cfa
+     drop token@ find-cfa
+     dup ['] setalias =  if  drop ['] alias  then
   then
 ;
 
