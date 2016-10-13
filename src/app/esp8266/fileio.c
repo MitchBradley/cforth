@@ -39,7 +39,7 @@ static spiffs_flags open_modes[] = { SPIFFS_RDONLY, SPIFFS_WRONLY, SPIFFS_RDWR }
 cell pfopen(char *name, int len, int mode, cell *up)  {
   char cstrbuf[MAXNAMELEN];
   char *s = altocstr(name, len, cstrbuf, MAXNAMELEN);
-  cell ret = SPIFFS_open(&fs, cstrbuf, (spiffs_flags)open_modes[mode], 0);
+  cell ret = SPIFFS_open(&fs, s, (spiffs_flags)open_modes[mode], 0);
   // spiffs returns negative number on error, like Unix open(),
   // but pfopen() is supposed to return NULL like fopen()
   return ret<0 ? 0 : ret ;
@@ -50,7 +50,7 @@ static spiffs_flags create_modes[] = { SPIFFS_CREAT|SPIFFS_APPEND|SPIFFS_RDWR, S
 cell pfcreate(char *name, int len, int mode, cell *up)  {
   char cstrbuf[MAXNAMELEN];
   char *s = altocstr(name, len, cstrbuf, MAXNAMELEN);
-  cell ret = SPIFFS_open(&fs, cstrbuf, (spiffs_flags)create_modes[mode], 0);
+  cell ret = SPIFFS_open(&fs, s, (spiffs_flags)create_modes[mode], 0);
   // spiffs returns negative number on error, like Unix open(),
   // but pfopen() is supposed to return NULL like fopen()
   return ret<0 ? 0 : ret ;

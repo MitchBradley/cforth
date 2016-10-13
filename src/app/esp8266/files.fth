@@ -37,4 +37,16 @@ alias rf xmodem-to-file:
 ;
 : cat  ( "filename" -- )  safe-parse-word  $print-file  ;
 
-: rm  ( "filename" -- )  safe-parse-word delete-file  ;
+: rm*  ( -- )
+   first-file                        ( dirent )
+   begin  ?dup  while                ( dirent )
+      file-name cscount delete-file  ( dirent )
+      next-file                      ( dirent )
+   repeat
+;
+\needs $= : $= ( $1 $2 -- same? )  compare 0=  ;
+: rm  ( "filename" -- )
+   safe-parse-word  ( name$ )
+   2dup " *" $=  if  2drop rm*  else  delete-file  then
+;
+
