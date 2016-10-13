@@ -246,7 +246,9 @@ int main(int argc, char **argv)
 
     origin = aln_alloc(MAXDICT, variables);
     *(token_t *)origin = 0;
-    init_compiler(origin, origin+MAXDICT, 0xfffe, origin, origin+MAXDICT, variables);
+    init_compiler(origin, origin+MAXDICT,
+		  (token_t)(MAXDICT / sizeof(token_t)),
+		  origin, origin+MAXDICT, variables);
     init_dictionary(variables);
     return 0;
 }

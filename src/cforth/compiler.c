@@ -38,6 +38,7 @@ init_compiler(const u_char *origin, u_char *ramorigin, token_t topct, u_char *he
 
     V(RAMTOKENS) = (cell)ramorigin;
     V(RAMCT) = (cell)topct;
+    printf("TOPCT %x\n", topct);
 
     xlimit -= 4 * sizeof(token_t *);      // Guard band
 
@@ -124,6 +125,8 @@ header(char *adr, cell len, cell *up)
     place_name(canonstr, len, *threadp, up);
 
  /* Link into vocabulary search list and remember lfa for hide/reveal */
+//    printf("%p %x %x %x %x\n", threadp, *threadp, CT_FROM_XT((xt_t)V(DP), up), V(RAMCT), V(RAMTOKENS));
+
     tokstore(CT_FROM_XT((xt_t)V(DP), up), threadp);
 }
 

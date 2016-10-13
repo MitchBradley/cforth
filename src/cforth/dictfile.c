@@ -148,7 +148,9 @@ prepare_dictionary(int *argcp, char *(*argvp[]))
     here = &origin[dict_size];
 
     *(token_t *)origin = 0;
-    init_compiler(origin, xlimit, 0xfffe, here, xlimit, variables);
+    init_compiler(origin, xlimit,
+		  (token_t)(MAXDICT / sizeof(token_t)),
+		  here, xlimit, variables);
     return variables;
 }
 
