@@ -1,3 +1,5 @@
+\needs voc-link,  : voc-link, lastacf voc-link link@  link,  voc-link link!  ;
+
 also root definitions
 
 : get-current  ( -- wid )  current @  ;
