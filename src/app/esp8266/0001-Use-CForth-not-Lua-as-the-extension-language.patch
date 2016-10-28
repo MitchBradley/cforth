@@ -1,0 +1,371 @@
+From 54fe4588f31b6724c13577df112ef294f7a51346 Mon Sep 17 00:00:00 2001
+From: Mitch Bradley <wmb@firmworks.com>
+Date: Fri, 28 Oct 2016 06:45:17 -1000
+Subject: [PATCH] Use CForth, not Lua, as the extension language
+
+---
+ Makefile                   | 11 ++++++-----
+ app/Makefile               | 48 ++++++----------------------------------------
+ app/driver/uart.c          | 16 ++++++++++++++++
+ app/include/driver/uart.h  |  4 ++++
+ app/platform/platform.c    |  3 +++
+ app/spiffs/spiffs.c        |  2 +-
+ app/spiffs/spiffs_config.h |  2 +-
+ app/user/user_main.c       | 40 ++++++++++++++++++++++++++++++++++++--
+ ld/nodemcu.ld              |  2 ++
+ tools/esptool.py           |  4 ++--
+ 10 files changed, 79 insertions(+), 53 deletions(-)
+
+diff --git a/Makefile b/Makefile
+index f3e8bc4..e5cd308 100644
+--- a/Makefile
++++ b/Makefile
+@@ -132,9 +132,9 @@ OBINS := $(GEN_BINS:%=$(BINODIR)/%)
+ 
+ ifndef PDIR
+ ifneq ($(wildcard $(TOP_DIR)/local/fs/*),)
+-SPECIAL_MKTARGETS += spiffs-image
++#SPECIAL_MKTARGETS += spiffs-image
+ else
+-SPECIAL_MKTARGETS += spiffs-image-remove
++#SPECIAL_MKTARGETS += spiffs-image-remove
+ endif
+ endif
+ 
+@@ -270,12 +270,12 @@ endif
+ endif
+ endif
+ 
+-.PHONY: spiffs-image-remove
++#.PHONY: spiffs-image-remove
+ 
+ spiffs-image-remove:
+ 	$(MAKE) -C tools remove-image spiffsimg/spiffsimg
+ 
+-.PHONY: spiffs-image
++#.PHONY: spiffs-image
+ 
+ spiffs-image: bin/0x10000.bin
+ 	$(MAKE) -C tools
+@@ -297,7 +297,8 @@ endif
+ 
+ $(OBJODIR)/%.o: %.c
+ 	@mkdir -p $(OBJODIR);
+-	$(CC) $(if $(findstring $<,$(DSRCS)),$(DFLAGS),$(CFLAGS)) $(COPTS_$(*F)) -o $@ -c $<
++	echo CC $<
++	@$(CC) $(if $(findstring $<,$(DSRCS)),$(DFLAGS),$(CFLAGS)) $(COPTS_$(*F)) -o $@ -c $<
+ 
+ $(OBJODIR)/%.d: %.c
+ 	@mkdir -p $(OBJODIR);
+diff --git a/app/Makefile b/app/Makefile
+index dcd89f6..8c9be64 100644
+--- a/app/Makefile
++++ b/app/Makefile
+@@ -15,6 +15,8 @@ TARGET = eagle
+ #FLAVOR = release
+ FLAVOR = debug
+ 
++FORTHOBJS ?= ../../cforth/build/esp8266/app.o
++
+ #EXTRA_CCFLAGS += -u
+ 
+ ifndef PDIR # {
+@@ -24,29 +26,9 @@ SPECIAL_MKTARGETS=$(APP_MKTARGETS)
+ SUBDIRS= 					\
+ 	user 					\
+ 	driver 					\
+-	pcm					\
+ 	platform 				\
+-	libc 					\
+-	lua 					\
+ 	lwip 					\
+-	coap 					\
+-	mqtt 					\
+-	task 					\
+-	u8glib 					\
+-	ucglib					\
+-	smart 					\
+-	modules 				\
+-	spiffs 					\
+-	cjson 					\
+-	crypto 					\
+-	dhtlib					\
+-	tsl2561					\
+-	net					\
+-	http					\
+-	fatfs					\
+-	esp-gdbstub				\
+-	websocket
+-
++	spiffs
+ endif # } PDIR
+ 
+ APPDIR = .
+@@ -73,34 +55,15 @@ LD_FILE = $(LDDIR)/nodemcu.ld
+ COMPONENTS_eagle.app.v6 = 			\
+ 	user/libuser.a 				\
+ 	driver/libdriver.a 			\
+-	pcm/pcm.a				\
+ 	platform/libplatform.a 			\
+-	task/libtask.a 				\
+-	libc/liblibc.a 				\
+-	lua/liblua.a 				\
+ 	lwip/liblwip.a 				\
+-	coap/coap.a 				\
+-	mqtt/mqtt.a 				\
+-	u8glib/u8glib.a 			\
+-	ucglib/ucglib.a 			\
+-	smart/smart.a 				\
+-	spiffs/spiffs.a 			\
+-	fatfs/libfatfs.a			\
+-	cjson/libcjson.a 			\
+-	crypto/libcrypto.a 			\
+-	dhtlib/libdhtlib.a 			\
+-	tsl2561/tsl2561lib.a			\
+-	http/libhttp.a				\
+-	websocket/libwebsocket.a		\
+-	esp-gdbstub/libgdbstub.a		\
+-	net/libnodemcu_net.a			\
+-	modules/libmodules.a			\
++	spiffs/spiffs.a
+ 
+ # Inspect the modules library and work out which modules need to be linked.
+ # For each enabled module, a symbol name of the form XYZ_module_selected is
+ # returned. At link time those names are declared undefined, so those (and
+ # only those) modules are pulled in.
+-SELECTED_MODULE_SYMS=$(filter %_module_selected %module_selected1,$(shell $(NM) modules/.output/$(TARGET)/$(FLAVOR)/lib/libmodules.a))
++# SELECTED_MODULE_SYMS=$(filter %_module_selected %module_selected1,$(shell $(NM) modules/.output/$(TARGET)/$(FLAVOR)/lib/libmodules.a))
+ 
+ LINKFLAGS_eagle.app.v6 = 			\
+ 	-Wl,--gc-sections 			\
+@@ -112,6 +75,7 @@ LINKFLAGS_eagle.app.v6 = 			\
+ 	-Wl,--wrap=_xtos_set_exception_handler	\
+ 	-Wl,-static 				\
+ 	$(addprefix -u , $(SELECTED_MODULE_SYMS)) \
++        $(FORTHOBJS)                            \
+ 	-Wl,--start-group 			\
+ 	-lc 					\
+ 	-lgcc 					\
+diff --git a/app/driver/uart.c b/app/driver/uart.c
+index 688dcd2..5556463 100755
+--- a/app/driver/uart.c
++++ b/app/driver/uart.c
+@@ -29,7 +29,12 @@
+ 
+ 
+ // For event signalling
++#ifdef USE_NEW_TASKS
+ static task_handle_t sig = 0;
++#else
++static uint8 task = USER_TASK_PRIO_MAX;
++static os_signal_t sig;
++#endif
+ 
+ // UartDev is defined and initialized in rom code.
+ extern UartDevice UartDev;
+@@ -277,8 +282,13 @@ uart0_rx_intr_handler(void *para)
+         got_input = true;
+     }
+ 
++#ifdef USE_NEW_TASKS
+     if (got_input && sig)
+       task_post_low (sig, false);
++#else
++    if (got_input && task != USER_TASK_PRIO_MAX)
++      system_os_post (task, sig, UART0);
++#endif
+ }
+ 
+ static void 
+@@ -321,8 +331,14 @@ uart_stop_autobaud()
+  * Returns      : NONE
+ *******************************************************************************/
+ void ICACHE_FLASH_ATTR
++#ifdef USE_NEW_TASKS
+ uart_init(UartBautRate uart0_br, UartBautRate uart1_br, os_signal_t sig_input)
+ {
++#else
++uart_init(UartBautRate uart0_br, UartBautRate uart1_br, uint8 task_prio, os_signal_t sig_input)
++{
++    task = task_prio;
++#endif
+     sig = sig_input;
+ 
+     // rom use 74880 baut_rate, here reinitialize
+diff --git a/app/include/driver/uart.h b/app/include/driver/uart.h
+index f9eada9..32f5950 100755
+--- a/app/include/driver/uart.h
++++ b/app/include/driver/uart.h
+@@ -101,7 +101,11 @@ typedef struct {
+     int                      buff_uart_no;  //indicate which uart use tx/rx buffer
+ } UartDevice;
+ 
++#ifdef USE_NEW_TASKS
+ void uart_init(UartBautRate uart0_br, UartBautRate uart1_br, os_signal_t sig_input);
++#else
++void uart_init(UartBautRate uart0_br, UartBautRate uart1_br, uint8 task_prio, os_signal_t sig_input);
++#endif
+ void uart0_alt(uint8 on);
+ void uart0_sendStr(const char *str);
+ void uart0_putc(const char c);
+diff --git a/app/platform/platform.c b/app/platform/platform.c
+index 9cf2835..c84956d 100755
+--- a/app/platform/platform.c
++++ b/app/platform/platform.c
+@@ -14,6 +14,9 @@
+ #include "driver/uart.h"
+ #include "driver/sigma_delta.h"
+ 
++#undef NODE_ERR
++#define NODE_ERR(...)
++
+ #ifdef GPIO_INTERRUPT_ENABLE
+ static task_handle_t gpio_task_handle;
+ 
+diff --git a/app/spiffs/spiffs.c b/app/spiffs/spiffs.c
+index 1a6a465..c577566 100644
+--- a/app/spiffs/spiffs.c
++++ b/app/spiffs/spiffs.c
+@@ -134,7 +134,7 @@ static bool myspiffs_find_cfg(spiffs_config *cfg, bool force_create) {
+ 
+   // No existing file system -- set up for a format
+   if (INTERNAL_FLASH_SIZE >= 700000) {
+-    myspiffs_set_cfg(cfg, 0x10000, 0x10000, TRUE);
++    myspiffs_set_cfg(cfg, 0x10000, 0, TRUE);
+ #ifndef SPIFFS_MAX_FILESYSTEM_SIZE
+     if (cfg->phys_size < 400000) {
+       // Don't waste so much in alignment
+diff --git a/app/spiffs/spiffs_config.h b/app/spiffs/spiffs_config.h
+index d4e161c..5a8dafd 100644
+--- a/app/spiffs/spiffs_config.h
++++ b/app/spiffs/spiffs_config.h
+@@ -207,7 +207,7 @@
+ // in the api. This function will visualize all filesystem using given printf
+ // function.
+ #ifndef SPIFFS_TEST_VISUALISATION
+-#define SPIFFS_TEST_VISUALISATION         1
++#define SPIFFS_TEST_VISUALISATION         0
+ #endif
+ #if SPIFFS_TEST_VISUALISATION
+ #ifndef spiffs_printf
+diff --git a/app/user/user_main.c b/app/user/user_main.c
+index 3c0189b..7d40dff 100644
+--- a/app/user/user_main.c
++++ b/app/user/user_main.c
+@@ -17,11 +17,13 @@
+ #include "flash_api.h"
+ #include "user_interface.h"
+ #include "user_exceptions.h"
+-#include "user_modules.h"
++// #include "user_modules.h"
+ 
+ #include "ets_sys.h"
+ #include "driver/uart.h"
++#ifdef USE_NEW_TASKS
+ #include "task/task.h"
++#endif
+ #include "mem.h"
+ #include "espconn.h"
+ 
+@@ -53,6 +55,7 @@ void TEXT_SECTION_ATTR user_start_trampoline (void)
+   call_user_start ();
+ }
+ 
++#ifdef USE_NEW_TASKS
+ // +================== New task interface ==================+
+ static void start_lua(task_param_t param, uint8 priority) {
+   char* lua_argv[] = { (char *)"lua", (char *)"-i", NULL };
+@@ -74,6 +77,29 @@ task_handle_t user_get_input_sig(void) {
+ bool user_process_input(bool force) {
+     return task_post_low(input_sig, force);
+ }
++#else
++void task_lua(os_event_t *e){
++    char* lua_argv[] = { (char *)"lua", (char *)"-i", NULL };
++    switch(e->sig){
++        case SIG_LUA:
++            lua_main( 2, lua_argv );
++            break;
++        case SIG_UARTINPUT:
++            lua_handle_input (false);
++            break;
++        case LUA_PROCESS_LINE_SIG:
++            lua_handle_input (true);
++            break;
++        default:
++            break;
++    }
++}
++#endif
++
++#undef NODE_ERR
++#define NODE_ERR(msg)
++#undef NODE_DBG
++#define NODE_DBG(msg)
+ 
+ void nodemcu_init(void)
+ {
+@@ -107,7 +133,7 @@ void nodemcu_init(void)
+ #ifdef BUILD_SPIFFS
+     if (!vfs_mount("/FLASH", 0)) {
+         // Failed to mount -- try reformat
+-	c_printf("Formatting file system. Please wait...\n");
++	ets_printf("Formatting file system. Please wait...\n");
+         if (!vfs_format()) {
+             NODE_ERR( "\n*** ERROR ***: unable to format. FS might be compromised.\n" );
+             NODE_ERR( "It is advised to re-flash the NodeMCU image.\n" );
+@@ -118,7 +144,13 @@ void nodemcu_init(void)
+ #endif
+     // endpoint_setup();
+ 
++#ifdef USE_NEW_TASKS
+     task_post_low(task_get_id(start_lua),'s');
++#else
++    taskQueue = (os_event_t *)os_malloc(sizeof(os_event_t) * TASK_QUEUE_LEN);
++    system_os_task(task_lua, USER_TASK_PRIO_0, taskQueue, TASK_QUEUE_LEN);
++    system_os_post(LUA_TASK_PRIO,SIG_LUA,'s');
++#endif
+ }
+ 
+ #ifdef LUA_USE_MODULES_WIFI
+@@ -190,8 +222,12 @@ void user_init(void)
+ 
+     UartBautRate br = BIT_RATE_DEFAULT;
+ 
++#ifdef USE_NEW_TASKS
+     input_sig = task_get_id(handle_input);
+     uart_init (br, br, input_sig);
++#else
++    uart_init (br, br, USER_TASK_PRIO_0, SIG_UARTINPUT);
++#endif
+ 
+ #ifndef NODE_DEBUG
+     system_set_os_print(0);
+diff --git a/ld/nodemcu.ld b/ld/nodemcu.ld
+index 0a2298b..747ce71 100644
+--- a/ld/nodemcu.ld
++++ b/ld/nodemcu.ld
+@@ -95,6 +95,8 @@ SECTIONS
+     */libc.a:*.o(.text* .literal*)
+     /* end libc functions */
+ 
++    *app.o(.text* .literal*)
++
+     _irom0_text_end = ABSOLUTE(.);
+     _flash_used_end = ABSOLUTE(.);
+   } >irom0_0_seg :irom0_0_phdr =0xffffffff
+diff --git a/tools/esptool.py b/tools/esptool.py
+index 38ffb72..8b09cdf 100755
+--- a/tools/esptool.py
++++ b/tools/esptool.py
+@@ -1,5 +1,5 @@
+-#!/usr/bin/env python
+-# NB: Before sending a PR to change the above line to '#!/usr/bin/env python2', please read https://github.com/themadinventor/esptool/issues/21
++#!/usr/bin/env python2.7
++# NB: Before sending a PR to change the above line to '#!/usr/bin/env python2', please read bmakehttps://github.com/themadinventor/esptool/issues/21
+ #
+ # ESP8266 ROM Bootloader Utility
+ # https://github.com/themadinventor/esptool
+-- 
+2.8.1.windows.1
+
