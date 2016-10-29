@@ -129,6 +129,10 @@ typedef token_t *xt_t;
 #define MAXVARS 0x300
 #define MAXUSER (MAXVARS * sizeof(cell))
 
+#if !defined(MAXDICT) && defined(T16)
+  #define MAXDICT (0x1fffcL) /* The extent of token-space reach */
+#endif
+
 #ifndef MAXDICT
   #ifdef BITS64
     #define MAXDICT (0x80000L)
