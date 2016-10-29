@@ -119,7 +119,21 @@ fl car.fth
 
 \ Replace 'quit' to make CForth auto-run some application code
 \ instead of just going interactive.
-: app  banner  hex init-i2c  showstack  quit  ;
+\ : app  banner  hex init-i2c  showstack  quit  ;
+: interrupt?  ( -- flag )
+   ." Type a key within 2 seconds to interact" cr
+   #20 0  do  key?  if  key drop  true unloop exit  then  #100 ms  loop
+   false
+;
+: load-startup-file  ( -- )  " start" included   ;
+
+: app
+   banner  hex
+   interrupt?  if  quit  then
+   init-i2c
+   ['] load-startup-file catch drop
+   quit
+;
 
 alias id: \
 
