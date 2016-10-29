@@ -8,8 +8,10 @@ ifneq "$(findstring 86,$(shell uname -m))" ""
 CONFIG += -m32
 endif
 
-FTDI = y
-INCS += -I/usr/include/libusb-1.0
-LIBS += -lusb-1.0
+FTDI = n
+ifeq ($(FTDI),y)
+INCS += $(shell pkg-config --cflags libusb-1.0)
+LIBS += $(shell pkg-config --libs libusb-1.0)
+endif
 
 include $(TOPDIR)/src/app/host-serial/targets.mk

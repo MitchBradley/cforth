@@ -9,7 +9,14 @@ CONFIG += -DFLOATING -DMOREFP
 
 LIBS += -lm
 
-# OpenGL stuff
+FTDI = n
+ifeq ($(FTDI),y)
+INCS += $(shell pkg-config --cflags libusb-1.0)
+LIBS += $(shell pkg-config --libs libusb-1.0)
+endif
+
+OPENGL = n
+ifeq ($(OPENGL),y)
 # You may need   sudo apt-get install libglfw3-dev
 CONFIG += -DMAXDICT=0x800000
 CONFIG += -DOPENGL
@@ -18,10 +25,6 @@ GCALLS += gcalls.fth
 INCS += $(shell pkg-config --cflags glfw3 glu)
 LIBS += $(shell pkg-config --static --libs glfw3 )
 LIBS += $(shell pkg-config --libs glu)
-
-FTDI = y
-INCS += $(shell pkg-config --cflags libusb-1.0)
-LIBS += $(shell pkg-config --libs libusb-1.0)
 
 MYOBJS += glops.o
 
@@ -34,6 +37,7 @@ glops.h: makegcalls
 
 glops.h: $(TOPDIR)/src/cforth/glops.c
 	./makegcalls <$<
+endif
 
 EXTRA_CLEAN += makegcalls glops.h gcalls.fth
 
