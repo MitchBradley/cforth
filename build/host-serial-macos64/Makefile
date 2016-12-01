@@ -1,5 +1,19 @@
 # Builds a MacOS host Forth application with serial port tools
 
+# Change the below to 'y' or pass in on the command line to enable support
+
+# FTDI=y includes code to access FTDI serial chips using FTDI's low-level
+# API, which lets you do special things like manage all their GPIO pins.
+# The default FTDI=n omits that code, but without it you can still use FTDI
+# devices as serial ports, using normal (not FTDI-specific) serial port
+# access APIs.
+
+# OPENGL=y includes support for OpenGL, so you can draw 3D graphics
+# in a separate window.  It's tricky to use.
+
+FTDI ?= n
+OPENGL ?= n
+
 all: default
 
 TOPDIR=../..
@@ -7,11 +21,10 @@ TOPDIR=../..
 CONFIG += -DBITS64
 CONFIG += -DFLOATING -DMOREFP
 
+ifeq ($(FTDI),y)
 # To get libusb-1.0 on MacOS, download and upack a source tarball from
 # www.libusb.org, then  ./configure && make && sudo make install
 # Or, if you have the "Homebrew" package manager, just "brew install libusb"
-
-FTDI = y
 
 LIBUSB_INSTALLED := $(shell pkg-config --modversion libusb-1.0 2>/dev/null)
 ifeq ($(LIBUSB_INSTALLED),)
@@ -24,8 +37,9 @@ endif
 # Static link so the user does not have to install libusb
 INCS += $(shell pkg-config --cflags libusb-1.0)
 LIBS += $(shell pkg-config --static --libs libusb-1.0)
+endif
 
-
+ifeq ($(OPENGL),y)
 # Big dictionary for parsing .obj files containing large graphical images
 CONFIG += -DMAXDICT=0x800000
 
@@ -59,5 +73,6 @@ glops.h: $(TOPDIR)/src/cforth/glops.c
 	./makegcalls <$<
 
 EXTRA_CLEAN += makegcalls glops.h gcalls.fth
+endif
 
 include $(TOPDIR)/src/app/host-serial/targets.mk
