@@ -517,6 +517,7 @@ cell ((* const ccalls[])()) = {
   C(set_progress_title) //c pb-set-title  { $.msg -- }
   C(set_progress_range) //c pb-set-range  { i.high i.low -- }
 
+#ifdef USE_FTDI
   C(libusb_init)                //c libusb_init  { a.'ctx -- i.err }
   C(libusb_exit)                //c libusb_exit  { a.ctx -- }
   C(libusb_set_debug)           //c libusb_set_debug  { i.level a.ctx -- }
@@ -556,6 +557,7 @@ cell ((* const ccalls[])()) = {
   C(libusb_control_transfer) //c libusb_control_transfer { i.timeout i.len a.data i.windex i.wvalue i.request i.reqtype a.handle -- h.nbytes }
   C(libusb_bulk_transfer) //c libusb_bulk_transfer { i.timeout a.actual i.len a.data i.ep a.handle -- h.err }
   C(libusb_interrupt_transfer) //c libusb_interrupt_transfer { i.timeout a.actual i.len a.data i.ep a.handle -- h.err }
+#endif
 
 #ifdef OPENGL
   C(glfwInit)          //c glfwInit           { -- h.okay }
