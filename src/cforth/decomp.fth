@@ -250,10 +250,10 @@ float?  ?\  r@ la1+ l@   r@ l@   fpush e.
 : .(")      (s ip -- ip' )   skip-word  .quoted ;
 : .(.")     (s ip -- ip' )   skip-word  ." ." .quoted ;
 : .abort"   (s ip -- ip' )   skip-word  ." abort" .quoted ;
-: .("s)     (s ip -- ip' )
+: .(c")     (s ip -- ip' )
    skip-word
    extract-str
-   [char] p emit  [char] " emit  space  type  [char] " emit  space
+   [char] c emit  [char] " emit  space  type  [char] " emit  space
 ;
 
 \ Use this version of .branch if the structured conditional code is not used
@@ -279,7 +279,7 @@ float?  ?\  r@ la1+ l@   r@ l@   fpush e.
    ( 14 ) [compile]  (char)          ( 15 ) [compile]  (fliteral)
    ( 16 ) [compile]  (')             ( 17 ) [compile]  (of)
    ( 18 ) [compile]  (endof)         ( 19 ) [compile]  (endcase)
-   ( 20 ) [compile]  ("s)            ( 21 ) [compile]  (wlit)
+   ( 20 ) [compile]  (c")            ( 21 ) [compile]  (wlit)
    ( 22 ) [compile]  dummy
 
 \ Print a word which has been classified by  execution-class
@@ -294,7 +294,7 @@ float?  ?\  r@ la1+ l@   r@ l@   fpush e.
    ( 14 )     .char                  ( 15 )     .flit
    ( 16 )     .[']                   ( 17 )     .of
    ( 18 )     .endof                 ( 19 )     .endcase
-   ( 20 )     .("s)                  ( 21 )     .wlit
+   ( 20 )     .(c")                  ( 21 )     .wlit
    ( 22 )     dummy                  ( default ) .word
 ;
 

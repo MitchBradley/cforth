@@ -283,16 +283,14 @@ defer exit?  ( -- flag )
    safe-parse-word drop c@  bl 1- and  state @  if  postpone literal  then
 ; immediate
 
-: ("s)  ( -- str-adr )  skipstr drop 1-  ;
 : (")  ( -- adr len )  skipstr  ;
-
 : sliteral  ( adr len -- )  postpone (")  ",  ; immediate
 : s"  \ string  ( -- adr len )
    [char] " parse
    state @  if  postpone sliteral  then
 ; immediate
 
-: (c")  ( -- adr )  skipstr drop  ;
+: (c")  ( -- str-adr )  skipstr drop 1-  ;
 : csliteral  ( adr len -- )  postpone (c")  ",  ; immediate
 : c"  \ string  ( -- adr )
    [char] " parse  2dup + 0 swap c!   ( adr len )

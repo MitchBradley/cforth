@@ -280,7 +280,7 @@ variable extent  extent off
 \ first check for word being immediate so that it may be preceded
 \ by postpone if necessary
 : check-postpone  ( acf -- acf )
-   dup immediate?  if  .." postpone"  then
+   dup immediate?  if  .." postpone "  then
 ;
 
 : put"  (s -- )  [char] " emit  space  ;
@@ -409,7 +409,7 @@ d# 23 constant #decomp-classes
    ( 14 ) [compile]  (char)          ( 15 ) [compile]  (fliteral)
    ( 16 ) [compile]  (')             ( 17 ) [compile]  (of)
    ( 18 ) [compile]  (endof)         ( 19 ) [compile]  (endcase)
-   ( 20 ) [compile]  ("s)            ( 21 ) [compile]  (wlit)
+   ( 20 ) [compile]  (c")            ( 21 ) [compile]  (wlit)
    ( 22 ) [compile]  dummy
 
 \ Print a word which has been classified by  execution-class
