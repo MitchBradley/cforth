@@ -292,7 +292,7 @@ defer exit?  ( -- flag )
    state @  if  postpone sliteral  then
 ; immediate
 
-: (c")  ( -- adr )  skipstr drop  ;
+: (c")  ( -- adr )  skipstr drop 1- ;
 : csliteral  ( adr len -- )  postpone (c")  ",  ; immediate
 : c"  \ string  ( -- adr )
    [char] " parse  2dup + 0 swap c!   ( adr len )
