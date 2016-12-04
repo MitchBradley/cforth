@@ -81,9 +81,11 @@ cell pfflush(cell f, cell *up)
     return -1;
 }
 
-cell pfsize(cell f, cell *up)
+cell pfsize(cell f, u_cell *high, u_cell *low, cell *up)
 {
-    return 0;
+    *high = 0;
+    *low = 0;
+    return SIZEFAIL;
 }
 
 cell isstandalone() { return 1; }

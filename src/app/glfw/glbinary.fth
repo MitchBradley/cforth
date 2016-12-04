@@ -7,7 +7,7 @@
 
 : open-file-to-memory  ( name$ -- adr len )
    r/o open-file  abort" Can't open file"  >r   (         r: fid )
-   r@ file-size                                 ( len     r: fid )
+   r@ file-size throw drop                      ( len     r: fid )
    dup alloc-mem swap                           ( adr len r: fid)
    2dup r@ read-file  if                        ( adr len r: fid)
       free-mem                                  (         r: fid)

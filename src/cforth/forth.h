@@ -74,7 +74,7 @@ cell pfopen(char *name, int len, int mode, cell *up);
 cell pfcreate(char *name, int len, int mode, cell *up);
 cell pfclose(cell f, cell *up);
 cell pfflush(cell f, cell *up);
-cell pfsize(cell f, cell *up);
+cell pfsize(cell f, u_cell *high, u_cell *low, cell *up);
 void write_dictionary(char *name, int len, char *dict, int dictsize, cell *up, int usersize);
 void pfmarkinput(void *fid, cell *up);
 void pfprint_input_stack();

@@ -14,7 +14,7 @@
       nip nip                   ( fid )
    then                         ( fid )
 
-   dup file-size to /image-buf                 ( )
+   dup file-size throw drop  to /image-buf     ( )
    /image-buf alloc-mem to image-buf           ( fid )
    image-buf /image-buf 2 pick  read-file  if  ( fid len )
       free-image                               ( fid len )

@@ -1235,8 +1235,9 @@ execute:
     tos = pfflush(tos, up);     /* EOF on error */
     next;
 
-/*$p file-size */  case FILE_SIZE:  /* fid -- size */
-    tos = pfsize(tos, up);
+/*$p file-size */  case FILE_SIZE:  /* fid -- ud ior */
+    sp -= 2;
+    tos = pfsize(tos, &sp[0], &sp[1], up);
     next;
 
 /*$p to-ram */  case TO_RAM:

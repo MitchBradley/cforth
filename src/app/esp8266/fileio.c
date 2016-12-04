@@ -24,11 +24,13 @@ cell pfflush(cell f, cell *up) {
   return SPIFFS_fflush(&fs, (spiffs_file)f);
 }
 
-cell pfsize(cell f, cell *up) {
+cell pfsize(cell f, u_cell *high, u_cell *low, cell *up) {
   int32_t curpos = SPIFFS_tell(&fs, (spiffs_file)f);
   int32_t size = SPIFFS_lseek(&fs, (spiffs_file)f, 0, SPIFFS_SEEK_END);
   (void) SPIFFS_lseek(&fs, (spiffs_file)f, curpos, SPIFFS_SEEK_SET);
-  return (cell)size;
+  *high = 0;
+  *low = size;
+  return (cell)0;  // SPIFFS_tell has no error returns
 }
 
 void pfmarkinput(void *fp, cell *up) {}
