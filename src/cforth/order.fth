@@ -1,28 +1,26 @@
-\needs voc-link,  : voc-link, lastacf voc-link link@  link,  voc-link link!  ;
-
 also root definitions
 
-: get-current  ( -- wid )  current @  ;
-: set-current  ( wid -- )  current !  ;
+: get-current  ( -- wid )  current token@  ;
+: set-current  ( wid -- )  current token!  ;
 
 : forth-wordlist  [ also forth ]  ['] forth  [ previous ]  ;
 : wordlist  ( -- wid )
    " Xwid" $create
-   #threads 0  do    origin link,  loop
-   voc-link,
    lastacf
+   (init-wordlist)
 ;
+
 : /context  ( -- n )  #vocs /token *  ;
 : set-order  ( wid1 .. widn n -- )
-   context  /context  erase
+   context /context bounds ?do i !null-token /token +loop
    dup -1  =  if  only  exit  then
-   0  do  context i ta+ !  loop
+   0  do  context i ta+ token!  loop
 ;
 : get-order  ( -- wid1 .. widn n )
    0
    context /context  +
    #vocs  0  do
-      /token -  dup token@  ?dup  if  -rot  swap 1+ swap  then
+      /token -  dup get-token?  if  rot 1+ rot  then
    loop
    drop
 ;
