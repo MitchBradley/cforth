@@ -101,14 +101,13 @@ decimal
 ;
 
 : (parse-s\"-loop) ( c-addr u -- c-addr' u' )
-   begin
-      dup 0= if exit then
+   begin dup while
       (next-char) case
 	 '\' of (parse-\) endof
 	 '"' of exit endof
 	 dup c,
       endcase
-   again
+   repeat
 ;
 
 \ Parse STRING, translating \-escape characters.  Store the translated
