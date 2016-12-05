@@ -453,14 +453,20 @@ warning on
 16 constant #vocs	\ Must agree with NVOCS in forth.h
 1 constant #threads
 
-: vocabulary  \ name  ( -- )
-   header vocabulary-cf
-   here body>    #user @                 ( my-acf user# )
+: (init-wordlist) ( my-acf -- my-acf )
+   #user @                               ( my-acf user# )
    \ This is wasteful - should be /token * - but it keeps #user cell aligned
    #threads cells   ,unum                ( my-acf user# )
    up@ +                                 ( my-acf ua-adr )
    #threads 0  do  dup !null-token  ta1+  loop  drop   ( my-acf )
-   voc-link link@ link,  voc-link link!
+   dup voc-link link@ link,  voc-link link!
+;
+
+: vocabulary  \ name  ( -- )
+   header vocabulary-cf
+   here body>
+   (init-wordlist)
+   drop
 ;
 
 \ The also/only vocabulary search order scheme
