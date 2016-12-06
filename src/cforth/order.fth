@@ -6,12 +6,7 @@ also root definitions
 : set-current  ( wid -- )  current !  ;
 
 : forth-wordlist  [ also forth ]  ['] forth  [ previous ]  ;
-: wordlist  ( -- wid )
-   " Xwid" $create
-   #threads 0  do    origin link,  loop
-   voc-link,
-   lastacf
-;
+: wordlist  ( -- wid )  " Xwid" $vocabulary lastacf  ;
 : /context  ( -- n )  #vocs /token *  ;
 : set-order  ( wid1 .. widn n -- )
    context  /context  erase
