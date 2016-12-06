@@ -1,5 +1,3 @@
-\needs voc-link,  : voc-link, lastacf voc-link link@  link,  voc-link link!  ;
-
 also root definitions
 
 : get-current  ( -- wid )  current @  ;
@@ -9,7 +7,7 @@ also root definitions
 : wordlist  ( -- wid )  " Xwid" $vocabulary lastacf  ;
 : /context  ( -- n )  #vocs /token *  ;
 : set-order  ( wid1 .. widn n -- )
-   context  /context  erase
+   context /context bounds  ?do  i !null-token  /token +loop
    dup -1  =  if  only  exit  then
    0  do  context i ta+ !  loop
 ;
