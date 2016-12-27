@@ -23,7 +23,20 @@ cell eeprom_length();
 cell eeprom_read_byte();
 cell eeprom_write_byte();
 
+cell version_adr(void)
+{
+    extern char version[];
+    return (cell)version;
+}
+
+cell build_date_adr(void)
+{
+    extern char build_date[];
+    return (cell)build_date;
+}
+
 cell ((* const ccalls[])()) = {
+
     (cell (*)())spins,            // Entry # 0
     (cell (*)())wfi,              // Entry # 1
     (cell (*)())get_msecs,        // Entry # 2
@@ -40,6 +53,8 @@ cell ((* const ccalls[])()) = {
     (cell (*)())eeprom_length,
     (cell (*)())eeprom_read_byte,
     (cell (*)())eeprom_write_byte,
+    (cell (*)())build_date_adr,
+    (cell (*)())version_adr,
 };
 
 // Forth words to call the above routines may be created by:

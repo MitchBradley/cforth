@@ -1,3 +1,4 @@
+#include "forth.h"
 #include "kinetis.h"
 #include "core_pins.h"
 #include "usb_serial.h"
@@ -98,7 +99,7 @@ int getkey()
   }
 }
 
-void init_io()
+void init_io(int argc, char **argv, cell *up)
 {
   // turn on clock
   SIM_SCGC4 |= SIM_SCGC4_UART0;
@@ -152,4 +153,30 @@ int spins(int i)
 {
   while(i--)
     asm("");  // The asm("") prevents optimize-to-nothing
+}
+
+void pfprint_input_stack(void) {}
+void pfmarkinput(void *fp, cell *up) {}
+
+cell pfflush(cell f, cell *up)
+{
+    return -1;
+}
+
+cell pfsize(cell f, u_cell *high, u_cell *low, cell *up)
+{
+    *high = 0;
+    *low = 0;
+    return SIZEFAIL;
+}
+
+cell isstandalone() { return 1; }
+
+#include <stdio.h>
+
+size_t strlen(const char *s)
+{
+    const char *p = s;
+    while (*p) { p++; }
+    return p-s;
 }

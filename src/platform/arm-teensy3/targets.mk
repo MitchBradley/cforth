@@ -36,7 +36,9 @@ INCS += -I$(SRC)/platform/arm-teensy3
 
 # Platform-specific object files for low-level startup and platform I/O
 
-PLAT_OBJS += tmk20dx128.o ttmain.o tconsoleio.o tusb_dev.o tusb_mem.o tusb_desc.o tusb_serial.o tanalog.o tpins_teensy.o teeprom.o
+tconsoleio.o: vars.h
+
+PLAT_OBJS += tmk20dx128.o ttmain.o tconsoleio.o tusb_dev.o tusb_mem.o tusb_desc.o tusb_serial.o tanalog.o tpins_teensy.o teeprom.o mallocembed.o
 
 # Object files for the Forth system and application-specific extensions
 
@@ -47,10 +49,10 @@ FORTH_OBJS = tembed.o textend.o
 
 LDSCRIPT = $(SRC)/platform/arm-teensy3/mk20dx256.ld
 
-app.elf: $(PLAT_OBJS) $(FORTH_OBJS)
+app.elf: $(PLAT_OBJS) $(FORTH_OBJS) tdate.o
 	@echo Linking $@ ... 
 	$(TLD) -o $@  $(TLFLAGS) -T$(LDSCRIPT) \
-	   $(PLAT_OBJS) $(FORTH_OBJS) \
+	   $(PLAT_OBJS) $(FORTH_OBJS) tdate.o \
 	   $(LIBDIRS) -lgcc
 
 
@@ -68,12 +70,12 @@ burn: app.hex
 # This rule builds a date stamp object that you can include in the image
 # if you wish.
 
-.PHONY: date.o
-
-date.o:
-	echo 'const char version[] = "'`cat version`'" ;' >date.c
-	echo 'const char build_date[] = "'`date  --iso-8601=minutes`'" ;' >>date.c
-	echo "const unsigned char sw_version[] = {" `cut -d . --output-delimiter=, -f 1,2 version` "};" >>date.c
-	$(TCC) -c date.c -o $@
+tdate.o: $(PLAT_OBJS) $(FORTH_OBJS)
+	@(echo "`git rev-parse --verify --short HEAD`" || echo UNKNOWN) >version
+	@echo 'const char version[] = "'`cat version`'";' >tdate.c
+	@echo 'const char build_date[] = "'`date --utc +%F\ %R`'";' >>tdate.c
+	@cat tdate.c
+	@echo TCC $@
+	@$(TCC) -c tdate.c -o $@
 
 EXTRA_CLEAN += *.elf *.dump *.nm *.img date.c $(FORTH_OBJS) $(PLAT_OBJS)

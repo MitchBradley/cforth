@@ -1,3 +1,5 @@
+CONFIG += -DBITS32
+
 # APPPATH is the path to the application code, i.e. this directory
 APPPATH=$(TOPDIR)/src/app/arm-teensy3
 

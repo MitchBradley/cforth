@@ -19,6 +19,8 @@ fl ../../lib/dl.fth
 #13 ccall: nv-length  { -- n }
 #14 ccall: nv@        { i.adr -- i.val }
 #15 ccall: nv!        { i.val i.adr -- }
+#16 ccall: 'build-date   { -- a.value }
+#17 ccall: 'version      { -- a.value }
 
 fl ../../platform/arm-teensy3/watchdog.fth
 fl ../../platform/arm-teensy3/timer.fth
@@ -79,9 +81,20 @@ fl ../../platform/arm-teensy3/nv.fth
    and 0=
 ;
 
+: .commit  ( -- )  'version cscount type  ;
+
+: .built  ( -- )  'build-date cscount type  ;
+
+: banner  ( -- )
+   cr ." CForth built " .built
+   ."  from " .commit
+   cr
+;
+
 : app
    confirm?  if  go  nv-evaluate  then
-   ." CForth" cr hex quit
+   banner
+   hex quit
 ;
 
 " app.dic" save
