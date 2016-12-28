@@ -6,7 +6,7 @@ fl ../../lib/dl.fth
 #0 ccall: spins       { i.nspins -- }
 #1 ccall: wfi         { -- }
 #2 ccall: get-msecs   { -- n }
-#3 ccall: a!          { n i.pin -- }
+#3 ccall: a!          { i.val -- }
 #4 ccall: a@          { i.pin -- n }
 #5 ccall: p!          { i.val i.pin -- }
 #6 ccall: p@          { i.pin -- n }
@@ -69,11 +69,14 @@ fl ../../platform/arm-teensy3/nv.fth
    $0 $d p!  $0 $d m!   \ drive off, mode input
 ;
 
-\ to prevent execution of non-volatile buffer, tie pin 13 to ground.
+\ to prevent execution of non-volatile buffer, tie pin 13 to pin 14.
 : confirm?  ( -- flag )
-   $0 $d m!  $1 $d p!  $2 ms    \ mode input, pullup on, stabilise
-   $d p@                        \ read pin
-   $1 $d m!  $0 $d p!           \ mode output, force low
+   $0 $e m!                     \ set pin 14 to input
+   $1 $d m!  $1 $d p!  $2 ms    \ force pin 13 high
+   $e p@                        \ read pin
+   $0 $d p!  $2 ms              \ force low
+   $e p@ 0=                     \ read pin and invert
+   and 0=
 ;
 
 : app
