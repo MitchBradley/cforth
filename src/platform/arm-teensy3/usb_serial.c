@@ -36,8 +36,10 @@
 
 // defined by usb_dev.h -> usb_desc.h
 #if defined(CDC_STATUS_INTERFACE) && defined(CDC_DATA_INTERFACE)
+#if F_CPU >= 20000000
 
 uint32_t usb_cdc_line_coding[2];
+volatile uint32_t usb_cdc_line_rtsdtr_millis;
 volatile uint8_t usb_cdc_line_rtsdtr=0;
 volatile uint8_t usb_cdc_transmit_flush_timer=0;
 
@@ -147,7 +149,15 @@ void usb_serial_flush_input(void)
 // software.  If it's too long, we stall the user's program when no software is running.
 #define TX_TIMEOUT_MSEC 70
 
-#if F_CPU == 168000000
+#if F_CPU == 240000000
+  #define TX_TIMEOUT (TX_TIMEOUT_MSEC * 1600)
+#elif F_CPU == 216000000
+  #define TX_TIMEOUT (TX_TIMEOUT_MSEC * 1440)
+#elif F_CPU == 192000000
+  #define TX_TIMEOUT (TX_TIMEOUT_MSEC * 1280)
+#elif F_CPU == 180000000
+  #define TX_TIMEOUT (TX_TIMEOUT_MSEC * 1200)
+#elif F_CPU == 168000000
   #define TX_TIMEOUT (TX_TIMEOUT_MSEC * 1100)
 #elif F_CPU == 144000000
   #define TX_TIMEOUT (TX_TIMEOUT_MSEC * 932)
@@ -179,6 +189,7 @@ int usb_serial_putchar(uint8_t c)
 
 int usb_serial_write(const void *buffer, uint32_t size)
 {
+	uint32_t ret = size;
 	uint32_t len;
 	uint32_t wait_count;
 	const uint8_t *src = (const uint8_t *)buffer;
@@ -221,7 +232,7 @@ int usb_serial_write(const void *buffer, uint32_t size)
 		usb_cdc_transmit_flush_timer = TRANSMIT_FLUSH_TIMEOUT;
 	}
 	tx_noautoflush = 0;
-	return 0;
+	return ret;
 }
 
 int usb_serial_write_buffer_free(void)
@@ -238,6 +249,13 @@ int usb_serial_write_buffer_free(void)
 		}
 	}
 	len = CDC_TX_SIZE - tx_packet->index;
+	// TODO: Perhaps we need "usb_cdc_transmit_flush_timer = TRANSMIT_FLUSH_TIMEOUT"
+	// added here, so the SOF interrupt can't take away the available buffer
+	// space we just promised the user could write without blocking?
+	// But does this come with other performance downsides?  Could it lead to
+	// buffer data never actually transmitting in some usage cases?  More
+	// investigation is needed.
+	// https://github.com/PaulStoffregen/cores/issues/10#issuecomment-61514955
 	tx_noautoflush = 0;
 	return len;
 }
@@ -283,9 +301,5 @@ void usb_serial_flush_callback(void)
 
 
 
-
-
-
-
-
+#endif // F_CPU
 #endif // CDC_STATUS_INTERFACE && CDC_DATA_INTERFACE
