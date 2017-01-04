@@ -5,7 +5,10 @@
 #include "forth.h"
 #include "compiler.h"
 #include "stdlib.h"
-#include "driver/uart.h"
+
+extern void uart_write_bytes(int, char *, int);
+extern int uart_read_bytes(int, char *, int, int);
+extern void init_uart(void);
 
 int isinteractive() {  return (1);  }
 int isstandalone() {  return (1);  }
@@ -45,35 +48,10 @@ int key(cell *up)
     return (cell)the_key;
 }
 
-static const char *TAG = "forth";
-#define BUF_SIZE (1024)
-void uart_on(void)
-{
-    int uart_num = UART_NUM_0;
-    uart_config_t uart_config = {
-       .baud_rate = 115200,
-       .data_bits = UART_DATA_8_BITS,
-       .parity = UART_PARITY_DISABLE,
-       .stop_bits = UART_STOP_BITS_1,
-       .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
-       .rx_flow_ctrl_thresh = 122,
-    };
-    //Set UART parameters
-    uart_param_config(uart_num, &uart_config);
-    //Set UART log level
-//    esp_log_level_set(TAG, ESP_LOG_INFO);
-    //Set UART pins,(-1: default pin, no change.)
-    //For UART0, we can just use the default pins.
-    //uart_set_pin(uart_num, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
-    //Install UART driver( We don't need an event queue here)
-    //We don't even use a buffer for sending data.
-    uart_driver_install(uart_num, BUF_SIZE * 2, 0, 0, NULL, 0);
-}
-
 void init_io(int argc, char **argv, cell *up)
 {
   key_is_avail = 0;
-  uart_on();
+  init_uart();
 }
 
 int caccept(char *addr, cell count, cell *up)

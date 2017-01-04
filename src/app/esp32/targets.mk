@@ -26,12 +26,6 @@ VPATH += $(SRC)/lib
 VPATH += $(APPPATH)
 INCS += -I$(APPPATH)
 
-INCS += -I$(IDF_TEMPLATE_PATH)/build/include
-INCS += -I$(IDF_PATH)/components/freertos/include
-INCS += -I$(IDF_PATH)/components/esp32/include
-INCS += -I$(IDF_PATH)/components/driver/include
-INCS += -I$(IDF_PATH)/components/nvs_flash/include
-
 include $(SRC)/common.mk
 include $(SRC)/cforth/targets.mk
 

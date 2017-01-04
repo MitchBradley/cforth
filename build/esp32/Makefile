@@ -4,7 +4,6 @@ default: forth.elf
 
 TOPDIR=../..
 
-# CONFIG += -DBITS32 -DT16
 CONFIG += -DBITS32
 
 CFLAGS += -m32
@@ -12,13 +11,12 @@ CFLAGS += -m32
 CC := gcc
 
 # Change these to reflect the locations of external stuff on your system,
-# either here or on the command line, e.g. COMPORT=COM27 make download
+# either here or on the command line
 XTGCCPATH ?= /c/msys32/opt/xtensa-esp32-elf/bin/
 CROSS ?= $(XTGCCPATH)xtensa-esp32-elf-
 
 # ESP32 SDK
 IDF_PATH ?= $(TOPDIR)/../esp-idf
-IDF_TEMPLATE_PATH ?= $(TOPDIR)/../esp-idf-template
 
 COMPORT ?= COM27
 
