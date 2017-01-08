@@ -7,7 +7,9 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <arpa/inet.h>
-
+#ifdef __FreeBSD__
+ #include <netinet/in.h>
+#endif
 
 static int sockfd = -1;
 

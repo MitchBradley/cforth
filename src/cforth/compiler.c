@@ -314,7 +314,7 @@ int num_initial_matches(char *adr, cell len,
 		}
 		if (nmatches == matchnum) {
 		    *namelen = name_len(xt);
-		    *namep = to_name_adr(xt);
+		    *namep = (char *)to_name_adr(xt);
 		}
 		++nmatches;
 		dictp = XT_FROM_CT(*to_link(xt), up);

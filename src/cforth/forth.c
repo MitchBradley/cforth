@@ -1237,7 +1237,7 @@ execute:
 
 /*$p file-size */  case FILE_SIZE:  /* fid -- ud ior */
     sp -= 2;
-    tos = pfsize(tos, &sp[0], &sp[1], up);
+    tos = pfsize(tos, (u_cell *)&sp[0], (u_cell *)&sp[1], up);
     next;
 
 /*$p to-ram */  case TO_RAM:
@@ -1264,7 +1264,7 @@ execute:
 
 /*$p file-position */  case FILE_POSITION:     /* fid -- ud ior */
     sp -= 2;
-    tos = pfposition((void *)tos, &sp[0], &sp[1], up);
+    tos = pfposition((void *)tos, (u_cell *)&sp[0], (u_cell *)&sp[1], up);
     next;
 
 /*$p w/o */         case W_O:  push(1);  next;
