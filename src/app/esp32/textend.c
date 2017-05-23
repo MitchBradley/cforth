@@ -2,6 +2,7 @@
 // See "ccalls" below.
 
 #include "forth.h"
+#include "i2c-ifce.h"
 
 extern cell *callback_up;
 
@@ -32,9 +33,29 @@ cell build_date_adr(void)
 extern void software_reset(void);
 extern void ms(void);
 
+extern void adc1_config_width(void);
+extern void adc1_config_channel_atten(void);
+extern void adc1_get_voltage(void);
+extern void hall_sensor_read(void);
+
 cell ((* const ccalls[])()) = {
-  C(build_date_adr)   //c 'build-date     { -- a.value }
-  C(version_adr)      //c 'version        { -- a.value }
-  C(ms)               //c ms              { i.ms -- }
-  C(software_reset)   //c restart         { -- }
+	C(build_date_adr)       //c 'build-date     { -- a.value }
+	C(version_adr)          //c 'version        { -- a.value }
+	C(ms)                   //c ms              { i.ms -- }
+	C(software_reset)       //c restart         { -- }
+
+	C(adc1_config_width)    //c adc-width!  { i.width -- }
+	C(adc1_config_channel_atten)  //c adc-atten!  { i.attenuation i.channel# -- }
+	C(adc1_get_voltage)     //c adc@        { i.channel# -- i.voltage }
+	C(hall_sensor_read)     //c hall@       { -- i.voltage }
+
+	C(i2c_open)		//c i2c-open  { i.scl i.sda -- i.error? }
+	C(i2c_close)		//c i2c-close  { -- }
+	C(i2c_write_read)	//c i2c-write-read { a.wbuf i.wsize a.rbuf i.rsize i.slave i.stop -- i.err? }
+	C(i2c_rb)		//c i2c-b@     { i.reg i.slave i.stop -- i.b }
+	C(i2c_wb)		//c i2c-b!     { i.value i.reg i.slave -- i.error? }
+	C(i2c_be_rw)		//c i2c-be-w@  { i.reg i.slave i.stop -- i.w }
+	C(i2c_le_rw)		//c i2c-le-w@  { i.reg i.slave i.stop -- i.w }
+	C(i2c_be_ww)		//c i2c-be-w!  { i.value i.reg i.slave -- i.error? }
+	C(i2c_le_ww)		//c i2c-le-w!  { i.value i.reg i.slave -- i.error? }
 };
