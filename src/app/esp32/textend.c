@@ -2,7 +2,8 @@
 // See "ccalls" below.
 
 #include "forth.h"
-#include "i2c-ifce.h"
+//#include "i2c-ifce.h"
+#include "interface.h"
 
 extern cell *callback_up;
 
@@ -58,4 +59,13 @@ cell ((* const ccalls[])()) = {
 	C(i2c_le_rw)		//c i2c-le-w@  { i.reg i.slave i.stop -- i.w }
 	C(i2c_be_ww)		//c i2c-be-w!  { i.value i.reg i.slave -- i.error? }
 	C(i2c_le_ww)		//c i2c-le-w!  { i.value i.reg i.slave -- i.error? }
+
+	C(gpio_pin_fetch)	//c gpio-pin@  { i.gpio# -- i.flag }
+	C(gpio_pin_store)	//c gpio-pin!  { i.level i.gpio# -- }
+	C(gpio_toggle)		//c gpio-toggle { i.gpio# -- }
+	C(gpio_is_output)	//c gpio-is-output { i.gpio# -- }
+	C(gpio_is_output_od)	//c gpio-is-output-open-drain { i.gpio# -- }
+	C(gpio_is_input)	//c gpio-is-input { i.gpio# -- }
+	C(gpio_is_input_pu)	//c gpio-is-input-pullup { i.gpio# -- }
+	C(gpio_is_input_pd)	//c gpio-is-input-pulldown { i.gpio# -- }
 };

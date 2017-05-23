@@ -184,3 +184,48 @@ cell i2c_le_ww(cell slave, cell reg, cell value)
     uint8_t buf[3] = {reg, value & 0xff, value >> 8};
     return i2c_write_read(0, slave, 0, 0, 3, buf);
 }
+
+#include <driver/gpio.h>
+cell gpio_pin_fetch(cell gpio_num)
+{
+    return gpio_get_level(gpio_num) ? -1 : 0;
+}
+
+void gpio_pin_store(cell gpio_num, cell level)
+{
+    gpio_set_level(gpio_num, level);
+}
+
+void gpio_toggle(cell gpio_num)
+{
+    int level = gpio_get_level(gpio_num);
+    gpio_set_level(gpio_num, !level);
+}
+
+void gpio_is_output(cell gpio_num)
+{
+    gpio_set_direction(gpio_num, GPIO_MODE_OUTPUT);
+}
+
+void gpio_is_output_od(cell gpio_num)
+{
+    gpio_set_direction(gpio_num, GPIO_MODE_OUTPUT_OD);
+}
+
+void gpio_is_input(cell gpio_num)
+{
+    gpio_set_pull_mode(gpio_num, GPIO_FLOATING);
+    gpio_set_direction(gpio_num, GPIO_MODE_INPUT);
+}
+
+void gpio_is_input_pu(cell gpio_num)
+{
+    gpio_set_pull_mode(gpio_num, GPIO_PULLUP_ONLY);
+    gpio_set_direction(gpio_num, GPIO_MODE_INPUT);
+}
+
+void gpio_is_input_pd(cell gpio_num)
+{
+    gpio_set_pull_mode(gpio_num, GPIO_PULLDOWN_ONLY);
+    gpio_set_direction(gpio_num, GPIO_MODE_INPUT);
+}

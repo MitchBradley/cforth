@@ -1,0 +1,17 @@
+cell i2c_open(uint8_t sda, uint8_t scl);
+void i2c_close();
+int i2c_write_read(uint8_t stop, uint8_t slave, uint8_t rsize, uint8_t *rbuf, uint8_t wsize, uint8_t *wbuf);
+cell i2c_rb(int stop, int slave, int reg);
+cell i2c_be_rw(cell stop, cell slave, cell reg);
+cell i2c_le_rw(cell stop, cell slave, cell reg);
+cell i2c_wb(cell slave, cell reg, cell value);
+cell i2c_be_ww(cell slave, cell reg, cell value);
+cell i2c_le_ww(cell slave, cell reg, cell value);
+cell gpio_pin_fetch(cell gpio_num);
+void gpio_pin_store(cell gpio_num, cell level);
+void gpio_toggle(cell gpio_num);
+void gpio_is_output(cell gpio_num);
+void gpio_is_output_od(cell gpio_num);
+void gpio_is_input(cell gpio_num);
+void gpio_is_input_pu(cell gpio_num);
+void gpio_is_input_pd(cell gpio_num);
