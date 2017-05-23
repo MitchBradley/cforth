@@ -118,12 +118,12 @@ cell ((* const ccalls[])()) = {
 	C(i2c_recv)		//c i2c-byte@  { i.nack? -- i.byte }
 	C(i2c_start_write)	//c i2c-start-write { i.reg i.slave -- i.err? }
 	C(i2c_start_read)	//c i2c-start-read  { i.stop? i.slave -- i.err? }
-	C(i2c_rb)		//c i2c-b@     { i.reg i.slave i.stop -- b }
-	C(i2c_wb)		//c i2c-b!     { i.value i.reg i.slave -- error? }
-	C(i2c_be_rw)		//c i2c-be-w@  { i.reg i.slave i.stop -- w }
-	C(i2c_le_rw)		//c i2c-le-w@  { i.reg i.slave i.stop -- w }
-	C(i2c_be_ww)		//c i2c-be-w!  { i.value i.reg i.slave -- error? }
-	C(i2c_le_ww)		//c i2c-le-w!  { i.value i.reg i.slave -- error? }
+	C(i2c_rb)		//c i2c-b@     { i.reg i.slave i.stop -- i.b }
+	C(i2c_wb)		//c i2c-b!     { i.value i.reg i.slave -- i.error? }
+	C(i2c_be_rw)		//c i2c-be-w@  { i.reg i.slave i.stop -- i.w }
+	C(i2c_le_rw)		//c i2c-le-w@  { i.reg i.slave i.stop -- i.w }
+	C(i2c_be_ww)		//c i2c-be-w!  { i.value i.reg i.slave -- i.error? }
+	C(i2c_le_ww)		//c i2c-le-w!  { i.value i.reg i.slave -- i.error? }
 
 	C(onewire_init)		//c ow-init { i.power i.id -- }
 	C(onewire_reset)	//c ow-reset  { -- i.present? }
