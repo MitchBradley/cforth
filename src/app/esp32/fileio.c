@@ -20,6 +20,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <limits.h>
 
 #include "forth.h"
 #include "compiler.h"
@@ -105,7 +106,7 @@ char *
 expand_name(char *name)
 {
   char envvar[64], *fnamep, *envp, paren, *fullp;
-  static char fullname[MAXPATHLEN];
+  static char fullname[PATH_MAX];
   int ndx;
 
   fullp = fullname;
@@ -120,7 +121,7 @@ expand_name(char *name)
       if (*fnamep == '{' || *fnamep == '(') {	// multi char env var
         paren = (*fnamep++ == '{') ? '}' : ')';
 
-        while (*fnamep != paren && ndx < MAXPATHLEN && *fnamep != '\0') {
+        while (*fnamep != paren && ndx < PATH_MAX && *fnamep != '\0') {
           envvar[ndx++] = *(fnamep++);
         }
         if (*fnamep == paren) {
@@ -160,8 +161,8 @@ static char *open_modes[]   = { "rb",  "ab", "r+b", "" };
 static char *popen_modes[]  = { "r",  "w", "rw", "" };
 cell pfopen(char *name, int len, int mode, cell *up)
 {
-    char cstrbuf[MAXPATHLEN];
-    char *s = expand_name(altocstr(name, len, cstrbuf, MAXPATHLEN));
+    char cstrbuf[PATH_MAX];
+    char *s = expand_name(altocstr(name, len, cstrbuf, PATH_MAX));
 
     FILE *res = fopen(s, open_modes[mode&3]);
     return (cell)res;
