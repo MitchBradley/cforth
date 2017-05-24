@@ -39,3 +39,4 @@ cell my_lwip_write(cell handle, cell len, void *adr);
 cell my_lwip_read(cell handle, cell len, void *adr);
 
 cell my_select(cell maxfdp1, void *reads, void *writes, void *excepts, cell milliseconds);
+cell tcpip_adapter_get_ip_info(cell ifce, void *info);

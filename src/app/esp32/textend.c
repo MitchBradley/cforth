@@ -93,4 +93,5 @@ cell ((* const ccalls[])()) = {
 	C(ip_info)		//c ip-info        { a.info -- }
 
 	C(my_select)		//c lwip-select    { i.sec a.exc a.wr a.rd i.n -- i.cnt }
+	C(tcpip_adapter_get_ip_info) //c ip-info@   { a.buf i.adapter# -- i.error }
 };

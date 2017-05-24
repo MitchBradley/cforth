@@ -1,10 +1,17 @@
 \ WIP test code for network functions
 
+: ipaddr@  ( -- 'ip )  pad 0 ip-info@ drop  pad  ; \ 1 for AP, 0 for STA
+: (.d)  ( n -- )  push-decimal (.) pop-base  ;
+: .ipaddr  ( 'ip -- )
+   3 0 do  dup c@ (.d) type ." ." 1+  loop  c@ (.d) type
+;
+
 -1 value listen-socket
 : wifion
    0 " wifi" log-level!
-   " OpenWrt-Bradley" " BunderditBaby" wifi-open . dhcp-status .
+   " OpenWrt-Bradley" " BunderditBaby" wifi-open drop
    #80 start-server to listen-socket
+   ." Listening on " ipaddr@ .ipaddr ." :80" cr
 ;
 
 create &linger 1 , 5 ,
@@ -20,6 +27,20 @@ create rfds 0 , 0 ,
    xfds wfds rfds  listen-socket 1+  lwip-select  ( nfds )
    0<=  if  true exit  then
    #16 sp@  here listen-socket lwip-accept nip false  ( socket false )
+;
+
+: ipaddr@  ( -- 'ip )  pad 1 wifi-ip-info@ drop  pad  ; \ 1 for AP, 0 for STA
+: (.d)  ( n -- )  push-decimal (.) pop-base  ;
+: .ipaddr  ( 'ip -- )
+   3 0 do  dup c@ (.d) type ." ." 1+  loop  c@ (.d) type
+;
+: .ip/port  ( adr -- )
+   dup 0=  if  drop ." (NULL)" exit  then
+   ." Local: " dup 2 la+ .ipaddr ." :" dup 1 la+ l@ .d
+   ." Remote: " dup 3 la+ .ipaddr ." :" l@ .d
+;
+: .listen  ( -- )
+   
 ;
 
 : respond1  ( -- )
