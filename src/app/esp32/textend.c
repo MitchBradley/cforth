@@ -68,4 +68,29 @@ cell ((* const ccalls[])()) = {
 	C(gpio_is_input)	//c gpio-is-input { i.gpio# -- }
 	C(gpio_is_input_pu)	//c gpio-is-input-pullup { i.gpio# -- }
 	C(gpio_is_input_pd)	//c gpio-is-input-pulldown { i.gpio# -- }
+
+	C(wifi_open)		//c wifi-open { $ssid $password -- i.error? }
+
+	C(esp_log_level_set)	//c log-level! { i.level $component -- }
+
+  // LWIP sockets
+  // Like Posix sockets but the socket descriptor space is not
+  // merged with the file descriptor space, so you cannot
+  // do a select that encompasses both
+	C(lwip_socket)		//c socket         { i.proto i.type i.family -- i.handle }
+	C(lwip_bind_r)		//c bind           { i.len a.addr i.handle -- i.error }
+	C(lwip_setsockopt_r)	//c setsockopt     { i.len a.addr i.optname i.level i.handle -- i.error }
+	C(lwip_getsockopt_r)	//c getsockopt     { i.len a.addr i.optname i.level i.handle -- i.error }
+	C(lwip_connect_r)	//c connect        { i.len a.adr i.handle -- i.error }
+	C(stream_connect)	//c stream-connect { i.timeout $.portname $.hostname -- i.handle }
+	C(my_lwip_write)	//c lwip-write     { a.buf i.size i.handle -- i.count }
+	C(my_lwip_read)		//c lwip-read      { a.buf i.size i.handle -- i.count }
+	C(lwip_close_r)		//c lwip-close     { i.handle -- }
+	C(lwip_listen_r)	//c lwip-listen    { i.backlog i.handle -- i.handle }
+	C(lwip_accept_r)	//c lwip-accept    { a.addrlen a.addr i.handle -- i.error }
+	C(start_server)		//c start-server   { i.port -- i.error }
+	C(dhcpc_status)		//c dhcp-status    { -- i.status }
+	C(ip_info)		//c ip-info        { a.info -- }
+
+	C(my_select)		//c lwip-select    { i.sec a.exc a.wr a.rd i.n -- i.cnt }
 };

@@ -6,6 +6,7 @@ typedef int cell;
 #include "esp_system.h"
 #include "nvs_flash.h"
 #include "driver/uart.h"
+#include "string.h"
 
 extern void forth(void);
 
@@ -228,4 +229,176 @@ void gpio_is_input_pd(cell gpio_num)
 {
     gpio_set_pull_mode(gpio_num, GPIO_PULLDOWN_ONLY);
     gpio_set_direction(gpio_num, GPIO_MODE_INPUT);
+}
+
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "freertos/event_groups.h"
+#include "esp_system.h"
+#include "esp_wifi.h"
+#include "esp_event_loop.h"
+#include "esp_log.h"
+#include "nvs_flash.h"
+
+#include "lwip/err.h"
+#include "lwip/sockets.h"
+#include "lwip/sys.h"
+#include "lwip/netdb.h"
+#include "lwip/dns.h"
+
+/* FreeRTOS event group to signal when we are connected & ready to make a request */
+static EventGroupHandle_t wifi_event_group;
+
+/* The event group allows multiple bits for each event,
+   but we only care about one event - are we connected
+   to the AP with an IP? */
+const int CONNECTED_BIT = BIT0;
+
+static esp_err_t wifi_event_handler(void *ctx, system_event_t *event)
+{
+    switch(event->event_id) {
+    case SYSTEM_EVENT_STA_START:
+        esp_wifi_connect();
+        break;
+    case SYSTEM_EVENT_STA_GOT_IP:
+        xEventGroupSetBits(wifi_event_group, CONNECTED_BIT);
+        break;
+    case SYSTEM_EVENT_STA_DISCONNECTED:
+        /* This is a workaround as ESP32 WiFi libs don't currently
+           auto-reassociate. */
+        esp_wifi_connect();
+        xEventGroupClearBits(wifi_event_group, CONNECTED_BIT);
+        break;
+    default:
+        break;
+    }
+    return ESP_OK;
+}
+
+cell wifi_open(char *password, char *ssid)
+{
+    tcpip_adapter_init();
+    wifi_event_group = xEventGroupCreate();
+    if (esp_event_loop_init(wifi_event_handler, NULL)) return -1;
+    wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
+    if (esp_wifi_init(&cfg) ) return -2;
+    if (esp_wifi_set_storage(WIFI_STORAGE_RAM)) return -3;
+    wifi_config_t wifi_config = { };
+    strncpy((char *)wifi_config.sta.ssid, ssid, sizeof(wifi_config.sta.ssid));
+    strncpy((char *)wifi_config.sta.password, password, sizeof(wifi_config.sta.password));
+    if(esp_wifi_set_mode(WIFI_MODE_STA)) return -4;
+    if(esp_wifi_set_config(ESP_IF_WIFI_STA, &wifi_config)) return -5;
+    if(esp_wifi_start()) return -6;
+    if (xEventGroupWaitBits(wifi_event_group, CONNECTED_BIT, false, true, portMAX_DELAY) != CONNECTED_BIT) return -7;
+    return 0;
+}
+
+int stream_connect(char *host, char *port, int timeout)
+{
+  struct addrinfo hints, *res, *res0;
+  int error;
+  int s;
+  const char *cause = NULL;
+
+  memset(&hints, 0, sizeof(hints));
+  hints.ai_family = AF_UNSPEC;
+  hints.ai_socktype = SOCK_STREAM;
+
+  error = getaddrinfo(host, port, &hints, &res0);
+  if (error) {
+    perror("getaddrinfo");
+    return -1;
+  }
+  s = -1;
+  for (res = res0; res; res = res->ai_next) {
+    s = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
+    if (s < 0) {
+      cause = "socket";
+      continue;
+    }
+
+    if (connect(s, res->ai_addr, res->ai_addrlen) < 0) {
+      cause = "connect";
+      close(s);
+      s = -1;
+      continue;
+    }
+    break;  /* okay we got one */
+  }
+  if (s < 0) {
+    printf("%s", cause);
+    return -2;
+  }
+  freeaddrinfo(res0);
+
+  const struct timeval recv_timeout = {.tv_sec=timeout, .tv_usec=0};
+  error = setsockopt(s, SOL_SOCKET, SO_RCVTIMEO, &recv_timeout, sizeof(recv_timeout));
+  if (error) {
+    perror("unable to set receive timeout.");
+    return -3;
+  }
+  return s;
+}
+
+cell start_server(cell port)
+{
+    struct addrinfo hints, *res, *p;
+    char portstr[10];
+    snprintf(portstr, 10, "%d", port);
+    int listenfd = -1;
+
+    // getaddrinfo for host
+    memset (&hints, 0, sizeof(hints));
+    hints.ai_family = AF_INET;
+    hints.ai_socktype = SOCK_STREAM;
+    hints.ai_flags = AI_PASSIVE;
+    if (getaddrinfo( NULL, portstr, &hints, &res) != 0)
+	return -1;
+    // socket and bind
+    for (p = res; p!=NULL; p=p->ai_next)
+    {
+        listenfd = socket (p->ai_family, p->ai_socktype, 0);
+        if (listenfd == -1) continue;
+
+        if (bind(listenfd, p->ai_addr, p->ai_addrlen) == 0) break;
+    }
+    if (p==NULL)
+	return -2;
+
+    freeaddrinfo(res);
+
+    // listen for incoming connections
+    if ( listen (listenfd, 1000000) != 0 ) {
+	close(listenfd);
+	return -3;
+    }
+    return listenfd;
+}
+
+cell my_select(cell maxfdp1, void *reads, void *writes, void *excepts, cell msecs)
+{
+    struct timeval to = { .tv_sec = msecs/1000, .tv_usec = (msecs%1000)*1000 };
+    return (cell)lwip_select((int)maxfdp1, (fd_set *)reads, (fd_set *)writes, (fd_set *)excepts, &to);
+}
+
+cell dhcpc_status(void)
+{
+    tcpip_adapter_dhcp_status_t status;
+    tcpip_adapter_dhcpc_get_status(TCPIP_ADAPTER_IF_STA, &status);
+    return status;
+}
+
+void ip_info(void *buf)
+{
+    tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_STA, (tcpip_adapter_ip_info_t *)buf);
+}
+
+cell my_lwip_write(cell handle, cell len, void *adr)
+{
+    return (cell)lwip_write_r((int)handle, adr, (size_t)len);
+}
+
+cell my_lwip_read(cell handle, cell len, void *adr)
+{
+    return (cell)lwip_read_r((int)handle, adr, (size_t)len);
 }

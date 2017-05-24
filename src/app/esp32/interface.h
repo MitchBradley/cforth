@@ -15,3 +15,27 @@ void gpio_is_output_od(cell gpio_num);
 void gpio_is_input(cell gpio_num);
 void gpio_is_input_pu(cell gpio_num);
 void gpio_is_input_pd(cell gpio_num);
+
+cell wifi_open(char *password, char *ssid);
+
+void esp_log_level_set(char *component, int level);
+
+cell lwip_socket(cell family, cell type, cell proto);
+cell lwip_bind_r(cell handle, void *addr, cell len);
+cell lwip_setsockopt_r(cell handle, cell level, cell optname, void *addr, cell len);
+cell lwip_getsockopt_r(cell handle, cell level, cell optname, void *addr, cell len);
+cell lwip_connect_r(cell handle, void *adr, cell len);
+cell lwip_write_r(cell handle, void *adr, cell len);
+cell lwip_read_r(cell handle, void *adr, cell len);
+void lwip_close_r(cell handle);
+cell lwip_listen_r(cell handle, cell backlog);
+cell lwip_accept_r(cell handle, void *adr, void *addrlen);
+
+cell stream_connect(char *hostname, char *portname, cell timeout);
+cell start_server(cell port);
+cell dhcpc_status(void);
+void ip_info(void *buf);
+cell my_lwip_write(cell handle, cell len, void *adr);
+cell my_lwip_read(cell handle, cell len, void *adr);
+
+cell my_select(cell maxfdp1, void *reads, void *writes, void *excepts, cell milliseconds);
