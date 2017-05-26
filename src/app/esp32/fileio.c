@@ -35,7 +35,6 @@ extern FILE *fopen();
 cell
 freadline(cell f, cell *sp, cell *up) // Returns IO result, actual and more? on stack
 {
-	printf("In freadline\n");
     // Stack: adr len -- actual more?
 
     u_char *adr = (u_char *)sp[1];
@@ -109,8 +108,8 @@ expand_name(char *name)
   static char fullname[PATH_MAX];
   int ndx;
 
-  fullp = fullname;
-  fullname[0] = '\0';
+  strcpy(fullname, "/spiffs/");
+  fullp = fullname + strlen(fullname);
 
   fnamep = name;
 

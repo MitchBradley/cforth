@@ -9,6 +9,7 @@
 extern void uart_write_bytes(int, char *, int);
 extern int uart_read_bytes(int, char *, int, int);
 extern void init_uart(void);
+extern void init_filesystem(void);
 
 int isinteractive() {  return (1);  }
 int isstandalone() {  return (1);  }
@@ -52,6 +53,7 @@ void init_io(int argc, char **argv, cell *up)
 {
   key_is_avail = 0;
   init_uart();
+  init_filesystem();
 }
 
 int caccept(char *addr, cell count, cell *up)

@@ -402,3 +402,74 @@ cell my_lwip_read(cell handle, cell len, void *adr)
 {
     return (cell)lwip_read_r((int)handle, adr, (size_t)len);
 }
+
+#include <errno.h>
+#include <sys/fcntl.h>
+#include "esp_vfs.h"
+#include "esp_vfs_fat.h"
+#include "esp_log.h"
+#include "spiffs_vfs.h"
+
+void init_filesystem(void)
+{
+    vfs_spiffs_register();
+}
+
+char *expand_path(char *name)
+{
+    static char path[256];
+    strcpy(path, "/spiffs/");
+    strncat(path, name, 256 - strlen("/spiffs/"));
+    return path;
+}
+
+void *open_dir(void)
+{
+    return opendir(expand_path(""));
+}
+
+void *next_file(void *dir)
+{
+    struct dirent *ent;
+
+    while ((ent = readdir((DIR *)dir)) != NULL) {
+	if (ent->d_type == DT_REG) {
+	    return ent;
+	}
+    }
+    return NULL;
+}
+
+char *dirent_name(void *ent)
+{
+    return ((struct dirent *)ent)->d_name;
+}
+
+cell dirent_size(void *ent)
+{
+    struct stat statbuf;
+    if (stat(expand_path(((struct dirent *)ent)->d_name), &statbuf)) {
+	return -1;
+    }
+    return statbuf.st_size;
+}
+
+void rename_file(char *new, char *old)
+{
+    static char path[256];
+    strcpy(path, "/spiffs/");
+    strncat(path, new, 256 - strlen("/spiffs/"));
+
+    rename(expand_path(old), path);
+}
+cell fs_avail(void)
+{
+  u32_t total, used;
+  spiffs_fs_stat(&total, &used);
+  return (cell)(total - used);
+}
+
+void delete_file(char *name)
+{
+    remove(expand_path(name));
+}

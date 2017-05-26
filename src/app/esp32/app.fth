@@ -20,6 +20,26 @@ warning !
    cr
 ;
 
+\ m-emit is defined in textend.c
+alias m-key  key
+alias m-init noop
+
+: m-avail?  ( -- false | char true )
+   key?  if  key true exit  then
+   false
+;
+alias get-ticks get-msecs
+: ms>ticks  ( ms -- ticks )  ;
+
+fl ../esp8266/xmifce.fth
+fl ../../lib/crc16.fth
+fl ../../lib/xmodem.fth
+also modem
+: rx  ( -- )  pad  unused pad here - -  (receive)  #100 ms  ;
+previous
+
+fl files.fth
+
 0 [if]
 \ Replace 'quit' to make CForth auto-run some application code
 \ instead of just going interactive.

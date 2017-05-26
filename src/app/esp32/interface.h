@@ -40,3 +40,13 @@ cell my_lwip_read(cell handle, cell len, void *adr);
 
 cell my_select(cell maxfdp1, void *reads, void *writes, void *excepts, cell milliseconds);
 cell tcpip_adapter_get_ip_info(cell ifce, void *info);
+
+void *open_dir(void);
+//void *readdir(void *dir);
+void *next_file(void *dir);
+void closedir(void *dir);
+cell dirent_size(void *ent);
+char *dirent_name(void *ent);
+void rename_file(char *new, char *old);
+void delete_file(char *path);
+cell fs_avail(void);

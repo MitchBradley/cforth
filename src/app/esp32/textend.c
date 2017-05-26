@@ -39,10 +39,14 @@ extern void adc1_config_channel_atten(void);
 extern void adc1_get_voltage(void);
 extern void hall_sensor_read(void);
 
+int xTaskGetTickCount(void);
+void raw_emit(char c);
+
 cell ((* const ccalls[])()) = {
 	C(build_date_adr)       //c 'build-date     { -- a.value }
 	C(version_adr)          //c 'version        { -- a.value }
 	C(ms)                   //c ms              { i.ms -- }
+	C(xTaskGetTickCount)    //c get-msecs       { -- i.ms }
 	C(software_reset)       //c restart         { -- }
 
 	C(adc1_config_width)    //c adc-width!  { i.width -- }
@@ -93,5 +97,17 @@ cell ((* const ccalls[])()) = {
 	C(ip_info)		//c ip-info        { a.info -- }
 
 	C(my_select)		//c lwip-select    { i.sec a.exc a.wr a.rd i.n -- i.cnt }
-	C(tcpip_adapter_get_ip_info) //c ip-info@   { a.buf i.adapter# -- i.error }
+	C(tcpip_adapter_get_ip_info) //c ip-info@  { a.buf i.adapter# -- i.error }
+
+	C(open_dir)		//c open-dir       { -- a.dir }
+	C(closedir)		//c close-dir      { a.dir -- }
+	C(next_file)		//c next-file      { a.dir -- a.dirent }
+	C(dirent_size)		//c file-bytes     { a.dir -- i.size }
+	C(dirent_name)		//c file-name      { a.dir -- a.name }
+	C(rename_file)		//c rename-file    { $.old $.new -- }
+	C(delete_file)		//c delete-file    { $.name -- }
+	C(fs_avail)		//c fs-avail       { -- i.bytes }
+
+	C(raw_emit)		//c m-emit         { i.char -- }
 };
+
