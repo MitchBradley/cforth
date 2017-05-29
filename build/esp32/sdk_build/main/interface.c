@@ -412,6 +412,7 @@ cell my_lwip_read(cell handle, cell len, void *adr)
 
 void init_filesystem(void)
 {
+    esp_log_level_set("[SPIFFS]", 0);
     vfs_spiffs_register();
 }
 
