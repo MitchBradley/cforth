@@ -4,7 +4,7 @@ CONFIG += -DBITS32
 CC:=gcc
 
 # APPPATH is the path to the application code, i.e. this directory
-APPPATH=$(TOPDIR)/src/app/arm-teensy3
+APPPATH=$(TOPDIR)/src/app/arm-teensy3-pump
 
 # APPLOADFILE is the top-level "Forth load file" for the application code.
 APPLOADFILE = app.fth
