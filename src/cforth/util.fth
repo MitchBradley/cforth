@@ -453,8 +453,8 @@ warning on
 16 constant #vocs	\ Must agree with NVOCS in forth.h
 1 constant #threads
 
-: $vocabulary  ( name$ -- )
-   $header vocabulary-cf
+: vocabulary-noname  ( -- )
+   vocabulary-cf                         ( )
    here body>    #user @                 ( my-acf user# )
    \ This is wasteful - should be /token * - but it keeps #user cell aligned
    #threads cells   ,unum                ( my-acf user# )
@@ -462,6 +462,7 @@ warning on
    #threads 0  do  dup !null-token  ta1+  loop  drop   ( my-acf )
    voc-link link@ link,  voc-link link!
 ;
+: $vocabulary  ( name$ -- )  $header vocabulary-noname  ;
 : vocabulary  \ name  ( -- )
    safe-parse-word $vocabulary
 ;

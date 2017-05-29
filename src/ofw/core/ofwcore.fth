@@ -1188,10 +1188,7 @@ headerless
 \ Creates an unnamed vocabulary
 nowarn(
 : (vocabulary)  ( -- )
-   ['] acf-align is header
-   vocabulary
-   ['] (header) is header
-
+   vocabulary-noname
    erase-voc-link
 ;
 )nowarn
