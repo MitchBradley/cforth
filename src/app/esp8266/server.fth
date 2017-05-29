@@ -1,109 +1,51 @@
-fl url.fth
-fl redirect.fth
-
-#80 value port   0 value server  0 value client
-: tcp-transmit  ( adr len -- )
-   begin       ( adr len )
-      2dup client send  
-      case      ( adr len )
-         0 of  2drop  exit  endof  ( adr len )
+: tcp-send  ( adr len handle -- )
+   begin       ( adr len handle )
+      3dup send
+      case     ( adr len handle )
+         0 of  3drop  exit  endof  ( adr len handle )
         -7 of  'W' sys-emit #400 ms 'w' sys-emit  endof  ( adr len )  \ retry after a delay
-        ( default )  ." TCP error " .d cr  2drop exit
+        ( default )  ." TCP error " .d cr  3drop exit
       endcase
    again
 ;
-' tcp-transmit to tx
-alias t tcp-transmit
-: tcr ( -- )  " "r"n" tcp-transmit  ;
 
-#128 buffer: file-buf
-: remove-eofs  ( adr len -- adr len' )
-   begin  dup  while
-      2dup + 1- c@ $1a <>  if  exit  then
-      1-
-   repeat
-;
-0 value verbose?
-: t-send-file  ( filename$ -- )
-   r/o open-file  if  drop ." File open failed" cr exit  then  >r
-   begin
-      file-buf #128 r@ read-file  drop  ( actual )
-   ?dup while                           ( actual )
-      file-buf swap remove-eofs         ( adr len )
-      verbose?  if  2dup type  then     ( adr len )
-      tcp-transmit                      ( )
-   repeat
-   r> close-file drop
+fl ../../lib/httpserver.fth
+
+\ Due to ESP8266 callback timing requirements, it's dangerous to
+\ reply directly from within the receive callback handler, so
+\ we save the incoming data in a buffer, then schedule an alarm
+\ to fire 2 milliseconds later and do the work of replying then.
+
+#256 constant /req-buf
+/req-buf buffer: req-buf
+0 value req-len
+: save-req  ( adr len -- )
+   dup to req-len      ( adr len )
+   req-buf swap move   ( )
 ;
 
-: hello  " Hello from ESP8266" tcp-transmit  ;
-defer homepage   ' hello to homepage
-defer server-init  ' noop to server-init
-
-\needs $=  : $=  ( $1 $2 -- )  compare 0=  ;
-
-: find-cmd  ( -- false | val$ true )
-   args-adr args-len urldecode$ ( $ )
-   2dup tcp-transmit  tcr       ( $ )
-   begin  dup  while            ( $ )
-      '&' left-parse-string     ( $'  head$ )
-      '=' left-parse-string     ( $   val$ name$ )
-      " cmd" $=  if             ( $  val$ )
-	 2swap 2drop true exit  ( -- val$ )
-      else                      ( $  val$ )
-         2drop                  ( $ )
-      then                      ( $ )
-   repeat                       ( $ )
-   2drop false                  ( false )
-;
-
-: do-forth  ( -- )
-    find-cmd  if  reply{ evaluate }reply  then
-;
-#256 buffer: url-buf
-0 value url-len
-: save-url  ( adr len -- )
-   dup to url-len      ( adr len )
-   url-buf swap move   ( )
-;
-
-: handle-rcv  ( -- )
+\ This is called from the alarm handler to do the work of
+\ handling the request
+: handle-rcv-later  ( -- )
    7 client tcp-bufcnt!
    \ client .espconn   
-   url-buf url-len                      ( url$ )
-   http-get?  if                        ( url$ )
-      2dup " /favicon.ico" $=  if       ( url$ )
-         2drop                          ( )
-      else                              ( url$ )
-         ." URL: " 2dup type cr         ( url$ )
-         1 /string                      ( url$' )
-         parse-args                     ( filename$ )
-         dup  if                        ( filename$ )
-            2dup  " forth"  $=  if      ( filename$ )
-	       2drop  do-forth          ( )
-            else                        ( filename$ )
-	       t-send-file              ( )
-	    then                        ( )
-	 else                           ( null$ )
-            2drop homepage              ( )
-         then                           ( )
-      then                              ( )
-   else
-      2drop
-\      type
-   then
+   req-buf req-len client handle-rcv
    client tcp-disconnect
 ;
+
+\ This is the receive callback handler
 : rcv   ( adr len handle -- )
 ." Client is " dup . cr
-   to client   save-url    ( )
+   to client   save-req    ( )
    \ Schedule the work for later so we do not have
    \ nested callbacks if the reply takes a long
    \ time and must do "ms" to avoid watchdogs.
-   ['] handle-rcv 2 set-alarm
+   ['] handle-rcv-later 2 set-alarm
 ;
 
 \ : ds ." Disconn " .espconn ;  : cn ." Conn " .espconn ;  : tx ." Sent " .espconn ;
+0 value server
+#80 value port
 : serve
    server-init
    0 0 0  \ 0 ['] ds ['] cn

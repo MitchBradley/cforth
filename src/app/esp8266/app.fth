@@ -84,19 +84,19 @@ previous
 5 constant gpio-int-hilevel
 
 fl files.fth
-fl vl6180x.fth
-fl ds18x20.fth
-fl ads1115.fth
-fl bme280.fth
-fl pca9685.fth
+fl ../../sensors/vl6180x.fth
+fl ../../sensors/ds18x20.fth
+fl ../../sensors/ads1115.fth
+fl ../../sensors/bme280.fth
+fl ../../sensors/pca9685.fth
 fl hcsr04.fth
 
 fl wifi.fth
 
-fl redirect.fth
+fl ../../lib/redirect.fth
 fl tcpnew.fth
 
-fl url.fth
+fl ../../lib/url.fth
 \ fl serve-sensors.fth
 
 fl car.fth
@@ -149,6 +149,7 @@ fl ${CBP}/lib/ssd1306.fth
    #20 0  do  i (u.)  fb-type "  Hello" fb-type  fb-cr  loop
 ;
 
+0 [if]
 \ Open Firmware stuff; omit if you don't need it
 fl ${CBP}/ofw/loadofw.fth      \ Mostly platform-independent
 fl ofw-rootnode.fth \ ESP8266-specific
@@ -166,5 +167,6 @@ fl sdspi.fth
    ['] spi-bits@    to spi-bits-in
    sd-card-init
 ;
+[then]
 
 " app.dic" save

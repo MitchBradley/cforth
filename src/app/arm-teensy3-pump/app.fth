@@ -40,21 +40,11 @@ pi 2E f* fconstant 2pi
 
 : init-i2c  ( -- )  #10 9 i2c-setup  ;
 
-\ I2C devices
-fl ina219.fth
-fl mcp23008.fth
-fl mcp23017.fth
-fl fixture.fth
-fl ../bluez/colors.fth
-fl ../bluez/rgblcd.fth
-fl ../esp8266/pca9685.fth
-fl ../esp8266/ms5803.fth
-fl ../esp8266/bme280.fth
-fl ../esp8266/vl6180x.fth
-fl ../esp8266/ads1115.fth \ Possibly unnecessary since Teensy3 has good ADCs
-fl sht21.fth
+fl ../../sensors/bme280.fth
+fl ../../sensors/vl6180x.fth
+fl ../../sensors/ads1115.fth \ Possibly unnecessary since Teensy3 has good ADCs
 
-fl ../esp8266/ds18x20.fth  \ Onewire temperature probe
+fl ../../sensors/ds18x20.fth  \ Onewire temperature probe
 #23 to ds18x20-pin  \ Needs 4.7K pullup
 
 : pump-setup  ( -- )

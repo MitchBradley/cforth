@@ -31,6 +31,8 @@ alias m-init noop
 alias get-ticks get-msecs
 : ms>ticks  ( ms -- ticks )  ;
 
+fl wifi.fth
+
 fl ../esp8266/xmifce.fth
 fl ../../lib/crc16.fth
 fl ../../lib/xmodem.fth
@@ -40,7 +42,8 @@ previous
 
 fl files.fth
 
-0 [if]
+fl server.fth
+
 \ Replace 'quit' to make CForth auto-run some application code
 \ instead of just going interactive.
 \ : app  banner  hex init-i2c  showstack  quit  ;
@@ -50,10 +53,11 @@ fl files.fth
    false
 ;
 : load-startup-file  ( -- )  " start" included   ;
-[then]
 
 : app
    banner  hex
+   interrupt?  if  quit  then
+   ['] load-startup-file catch drop
    quit
 ;
 
