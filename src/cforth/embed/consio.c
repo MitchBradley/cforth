@@ -14,13 +14,19 @@
 
 int kbhit(void);
 int getkey(void);
-int putchar(int c);
+int raw_putchar(int c);
+
+void init_io(int argc, char **argv, cell *up)
+{
+}
 
 int isinteractive() {  return (1);  }
 
 void emit(u_char c, cell *up)
 {
-    (void)putchar((char)c);
+    if (c == '\n')
+        raw_putchar('\r');
+    raw_putchar(c);
 }
 
 void cprint(const char *str, cell *up)
@@ -31,7 +37,7 @@ void cprint(const char *str, cell *up)
 
 void title(cell *up)
 {
-    cprint("C Forth 2005.  Copyright (c) 1997-2005 by FirmWorks\n", up);
+    cprint("CForth by Mitch Bradley\n", up);
 }
 
 int caccept(char *addr, cell count, cell *up)
@@ -96,8 +102,14 @@ pfposition(void *fid, u_cell *high, u_cell *low, cell *up)
     *high = *low = 0;
     return (NOFILEIO);
 }
+cell pfflush(cell f, cell *up) { return (NOFILEIO); }
+void pfmarkinput(void *fp, cell *up) { }
+void pfprint_input_stack(void) { }
+cell pfsize(cell f, u_cell *high, u_cell *low, cell *up) { return (NOFILEIO); }
 
 void clear_log(cell *up) { }
 void start_logging(cell *up) { }
 void stop_logging(cell *up) { }
 cell log_extent(cell *log_base, cell *up) { *log_base = 0; return 0; }
+
+int isstandalone() { return 1; }

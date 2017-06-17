@@ -3,7 +3,7 @@
 main()
 {
     void *up;
-    tx('C');
+    raw_putchar('C');
 
 //    init_io();   // Perform platform-specific initialization
 

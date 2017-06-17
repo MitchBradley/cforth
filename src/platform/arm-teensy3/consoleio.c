@@ -29,7 +29,7 @@ char * ultoa(unsigned long val, char *buf, int radix)
 int seen_usb; /* data has been received from the USB host */
 int sent_usb; /* data has been sent to the USB layer that is not yet flushed */
 
-void tx(char c)
+void raw_putchar(char c)
 {
   while(!(UART0_S1 & UART_S1_TDRE)) // pause until transmit data register empty
     ;
@@ -40,21 +40,14 @@ void tx(char c)
   }
 }
 
-int putchar(int c)
-{
-  if (c == '\n')
-    tx('\r');
-  tx(c);
-}
-
 #if 0
 // early debug
 const char hexen[] = "0123456789ABCDEF";
 
 void put8(uint32_t c)
 {
-  putchar(hexen[(c >> 4) & 0xf]);
-  putchar(hexen[c & 0xf]);
+  emit(hexen[(c >> 4) & 0xf]);
+  emit(hexen[c & 0xf]);
 }
 
 void put32(uint32_t n)
@@ -68,7 +61,7 @@ void put32(uint32_t n)
 void putline(char *str)
 {
   while (*str)
-    putchar((int)*str++);
+    emit((int)*str++);
 }
 #endif
 

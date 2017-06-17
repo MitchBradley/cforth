@@ -30,7 +30,7 @@ extern int put_serial0(int ch);
 #endif /* !VCOM */
 #endif
 
-void tx(char c)
+void raw_putchar(char c)
 {
 #ifdef STANDALONE
     while (!(U0LSR & 0x20));
@@ -42,13 +42,6 @@ void tx(char c)
     putc_serial0((int)c);
 #endif
 #endif
-}
-
-void putchar(char c)
-{
-    if (c == '\n')
-        tx('\r');
-    tx(c);
 }
 
 int kbhit() {

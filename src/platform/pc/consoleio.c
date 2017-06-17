@@ -2,19 +2,12 @@
 
 #include "io.h"
 
-void tx(char c)
+void raw_putchar(char c)
 {
     // send the character to the console output device
     while ((inb(0x3fd) & 0x20) == 0)
         ;
     outb(c, 0x3f8);
-}
-
-void putchar(char c)
-{
-    if (c == '\n')
-        tx('\r');
-    tx(c);
 }
 
 int kbhit() {

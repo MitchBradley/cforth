@@ -1,15 +1,8 @@
 // Character I/O stubs
 
-void tx(char c)
+void raw_putchar(char c)
 {
     // send the character to the console output device
-}
-
-void putchar(char c)
-{
-    if (c == '\n')
-        tx('\r');
-    tx(c);
 }
 
 int kbhit() {

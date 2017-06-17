@@ -19,7 +19,7 @@ void usb_serial_flush_output(void);
 extern uint8_t usb_cdc_line_rtsdtr;
 #define USB_SERIAL_ON (usb_cdc_line_rtsdtr & 1)
 
-void tx(char c)
+void raw_putchar(char c)
 {
     if (USB_SERIAL_ON) {
 	usb_serial_putchar(c);
@@ -27,13 +27,6 @@ void tx(char c)
 #ifdef USE_UART
     serial_putchar(c);
 #endif
-}
-
-int putchar(int c)
-{
-    if (c == '\n')
-        tx('\r');
-    tx(c);
 }
 
 int kbhit() {

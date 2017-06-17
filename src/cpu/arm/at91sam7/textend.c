@@ -30,7 +30,7 @@ void rcv_init();
 
 int dbgu_mayget();
 u_char ukey();
-void tx(u_char);
+void raw_putchar(u_char);
 
 void shift_lsbs(int, int, int, unsigned long);
 unsigned long shift_33msbs(int, unsigned long);
@@ -78,7 +78,7 @@ cell ((* const ccalls[])()) = {
 
     C(dbgu_mayget)          //c dbgu-mayget  { a.buf -- i.gotone? }
     C(ukey)                 //c dbgu-key     { -- i.char }
-    C(tx)                   //c dbgu-emit    { i.char -- }
+    C(raw_putchar)          //c dbgu-emit    { i.char -- }
 
     C(xtoa)                 //c xtoa         { i.digits i.num -- a.cstr }
 

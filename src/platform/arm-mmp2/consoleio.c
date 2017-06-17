@@ -3,19 +3,12 @@
 
 #define UARTREG ((unsigned int volatile *)0xd4018000)
 
-void tx(char c)
+void raw_putchar(char c)
 {
     // send the character to the console output device
     while ((UARTREG[5] & 0x20) == 0)
         ;
     UARTREG[0] = (unsigned int)c;
-}
-
-void putchar(char c)
-{
-    if (c == '\n')
-        tx('\r');
-    tx(c);
 }
 
 int kbhit() {

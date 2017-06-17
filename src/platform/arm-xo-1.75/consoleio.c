@@ -65,7 +65,7 @@ void txdbg(char c)
 {
     tx4(c);
 }
-void tx(char c)
+void raw_putchar(char c)
 {
     txdbg(c);
     if (dbg_uart_only)
@@ -91,14 +91,6 @@ void dbgputresp(unsigned int c)
 {
 	dbgputn(c);
 	txdbg(' ');
-}
-
-int putchar(int c)
-{
-    if (c == '\n')
-        tx('\r');
-    tx(c);
-    return c;
 }
 
 int kbhit1() {

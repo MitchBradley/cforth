@@ -9,13 +9,6 @@ void raw_putchar(unsigned char c)
   uart_tx_one_char(0, c);
 }
 
-int putchar(int c)
-{
-    if (c == '\n')
-        raw_putchar('\r');
-    raw_putchar(c);
-}
-
 u_char key_is_avail = 0;
 u_char the_key;
 

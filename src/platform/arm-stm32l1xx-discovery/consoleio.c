@@ -5,18 +5,11 @@
 
 USART_TypeDef *consoleUart;
 
-void tx(char c)
+void raw_putchar(char c)
 {
   while(!USART_GetFlagStatus(consoleUart, USART_FLAG_TXE))
     ;
   USART_SendData(consoleUart, (uint16_t)c);
-}
-
-int putchar(int c)
-{
-    if (c == '\n')
-        tx('\r');
-    tx(c);
 }
 
 int kbhit() {

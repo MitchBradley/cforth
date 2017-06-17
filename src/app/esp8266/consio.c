@@ -17,7 +17,9 @@ int isstandalone() {  return (1);  }
 
 void emit(u_char c, cell *up)
 {
-    (void)putchar((char)c);
+    if (c == '\n')
+        raw_putchar('\r');
+    raw_putchar(c);
 }
 
 void cprint(const char *str, cell *up)

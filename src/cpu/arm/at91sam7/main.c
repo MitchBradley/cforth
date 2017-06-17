@@ -1,12 +1,6 @@
 // Top-level routine for calling the Forth interpreter
 // Defines a few serial I/O interface functions and main()
 
-void putchar(char c)
-{
-    if (c == '\n')
-        tx('\r');
-    tx(c);
-}
 static int pending_char;
 
 int kbhit() {
@@ -28,7 +22,7 @@ int getkey()
         retval = pending_char-1;
         pending_char = 0;
         return retval;
-    }        
+    }
 
     return ((int)ukey()) & 0xff;
 }

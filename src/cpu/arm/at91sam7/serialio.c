@@ -35,7 +35,7 @@ int dbgu_mayput(u_char c)
     return 1;
 }
 
-void tx(u_char c)
+void raw_putchar(u_char c)
 {
     while (dbgu_mayput(c) == 0) ;
 
@@ -46,7 +46,7 @@ void type(u_char *s)
 {
     u_char c;
     while ( (c = *s) != 0) {
-        tx(c);
+        raw_putchar(c);
         s++;
     }
 }
