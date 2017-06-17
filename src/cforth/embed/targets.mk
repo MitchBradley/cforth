@@ -23,7 +23,7 @@ else
 endif
 
 # Objects specific to the target environment
-EMBEDOBJS=startapp.o tconsio.o
+EMBEDOBJS+=startapp.o tconsio.o
 
 HELPERS += makebi forthbi
 ARTIFACTS += $(TBASEOBJS) $(EMBEDOBJS) $(DICTOBJ)
@@ -46,7 +46,7 @@ TLFLAGS = -static
 # putchar/getchar, and simple string routines like strcpy().
 
 tembed.o: $(TBASEOBJS) $(EMBEDOBJS) $(DICTOBJ)
-	@echo TLD $<
+	@echo TLD $@
 	@$(TLD) -r -o $@ $(TBASEOBJS) $(EMBEDOBJS) $(DICTOBJ)
 
 # tkernel.o is like tembed.o but it omits the dictionary so
