@@ -61,7 +61,7 @@ int caccept(char *addr, cell count, cell *up)
     return lineedit(addr, count, up);
 }
 
-// Defines the resolution of c_puts
+int puts(const char *);
 void output_redirect(const char *str) {
     puts(str);
 }

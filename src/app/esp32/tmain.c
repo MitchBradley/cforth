@@ -1,6 +1,7 @@
 // Top-level routine for starting Forth
 
 #include "forth.h"
+#include "compiler.h"
 
 // Defines startup routine for nodemcu-firmware
 void forth(void)
