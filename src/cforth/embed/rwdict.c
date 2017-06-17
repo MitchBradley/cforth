@@ -15,13 +15,15 @@ u_char dictionary[MAXDICT] = {
 #include "dict.h"
 };
 
+extern u_char *origin;
+
 // dictmax is ignored because the dictionary is defined statically
 cell *
 prepare_builtin_dictionary(int dictmax)
 {
     u_char *here;
     here = dictionary + builtin_hdr.dsize;
-    *(token_t *)origin = 0;
+    *(token_t *)dictionary = 0;
     init_compiler(dictionary, dictionary+MAXDICT,
 		  (token_t)(sizeof(dictionary) / sizeof(token_t)),
 		  here, dictionary + MAXDICT, (cell *)variables);
