@@ -6,10 +6,17 @@ $40 constant sht21-i2c-slave \ Cannot be changed
 : sht21-user@  ( -- b )  $e7 sht21-i2c-slave 0 i2c-b@  ;
 : sht21-user!  ( b -- )  $e7 sht21-i2c-slave i2c-b!  ;
 
-: sht21-command  ( command -- )
-   sht21-i2c-slave i2c-start-write abort" SHT21 not responding"
+4 buffer: sht21-buf
+: sht21-write  ( b -- )
+   sht21-buf c!
+   sht21-buf 1  0 0  sht21-i2c-slave 0  i2c-write-read  ( err? )
+   abort" SHT21 not responding"
 ;
-: sht21-reset  ( -- )  $fe sht21-command  ;
+: sht21-poll  ( -- nack? )
+   0 0   sht21-buf 3  sht21-i2c-slave 0  i2c-write-read  ( nack? )
+;
+
+: sht21-reset  ( -- )  $fe sht21-write  ;
 
 : sht21-crc-step   ( crc byte -- crc' )
    xor
@@ -28,15 +35,12 @@ $40 constant sht21-i2c-slave \ Cannot be changed
 ;
 
 : sht21-read  ( command ms -- w )
-   >r sht21-command
+   >r sht21-write
    r> ms
-   begin
-      0 sht21-i2c-slave i2c-start-read  ( nack? )
-   while
-      5 ms
-   repeat
-   0 i2c-byte@  0 i2c-byte@             ( high low )
-   2dup  1 i2c-byte@   sht21-check-crc  ( high low error? )
+   begin  sht21-poll  ( nack? )  while  5 ms  repeat
+   sht21-buf c@  sht21-buf 1+ c@        ( high low )
+   2dup  sht21-buf 2+ c@                ( high low  high low check )
+   sht21-check-crc                      ( high low error? )
    abort" SHT21 CRC error"              ( high low )       
    swap bwjoin                          ( w )
 ;
@@ -45,7 +49,7 @@ $40 constant sht21-i2c-slave \ Cannot be changed
 ;
 
 : sht21-temp@  ( -- C*100 )
-   $f3 #60 sht21-read               ( w )
+   $f3 #40 sht21-read               ( w )
    #175.72 $10000 */                ( scaled )
    #46.85 -                         ( C*100*2^16 )
 ;

@@ -2,21 +2,21 @@
 
 $29 constant vl-slave
 
-: ?vl-error  ( err? -- )  abort" VL6180X failed"  ;
-: vl-reg  ( reg# -- )
-   wbsplit                             ( reg.lo reg.hi )
-   vl-slave i2c-start-write ?vl-error  ( reg.lo )
-   i2c-byte! ?vl-error                 ( )
+3 buffer: vl-buf
+
+: vl-setreg  ( w.reg# -- )  wbsplit vl-buf c!  vl-buf 1+ c!  ;
+: vl-run  ( wbuf wlen rbuf rlen -- )
+   vl-slave false i2c-write-read abort" VL6180X op failed"
 ;
-: vl!  ( b reg# -- )
-   vl-reg               ( b )
-   i2c-byte! ?vl-error  ( )
-   i2c-stop
-;
-: vl@  ( reg# -- b )
-   vl-reg                                  ( )
-   false vl-slave i2c-start-read ?vl-error ( )  \ Repeated-start and slave address
-   true i2c-byte@                          ( b )
+
+: vl!  ( b w.reg# -- )
+   vl-setreg  vl-buf 2+ c!
+   vl-buf 3  pad 0  vl-run
+;   
+: vl@  ( wreg# -- b )
+   vl-setreg
+   vl-buf 2  vl-buf 2+ 1  vl-run
+   vl-buf 2+ c@
 ;
 
 create vl-init-table

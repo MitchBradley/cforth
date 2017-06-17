@@ -5,6 +5,7 @@ default: forth.elf
 TOPDIR=../..
 
 CONFIG += -DBITS32
+CONFIG += -DFLOATING -DMORE_FP
 
 CFLAGS += -m32
 
