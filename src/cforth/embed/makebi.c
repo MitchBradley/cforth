@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include "config.h"
 
 int
 test_little_endian()
@@ -8,12 +9,12 @@ test_little_endian()
     return *(char *)&cell == 1;
 }
 
-void longs_to_file(char *filename, FILE *infile, int len, int *dsizep, int *usizep)
+void cells_to_file(char *filename, FILE *infile, int len, u_cell *dsizep, u_cell *usizep)
 {
     FILE *outfile;
-    int val;
+    u_cell val;
     int le;
-    int i;
+    int i, j;
 
     if ((outfile = fopen(filename, "w")) == 0) {
         fprintf(stderr, "Can't open output file %s\n", filename);
@@ -23,16 +24,13 @@ void longs_to_file(char *filename, FILE *infile, int len, int *dsizep, int *usiz
     le = test_little_endian();
 
     for (i=0; i<8; i++) {
-        if (le) {
-            val  =  (unsigned char)fgetc(infile);
-            val |= ((unsigned char)fgetc(infile) << 8);
-            val |= ((unsigned char)fgetc(infile) << 16);
-            val |= ((unsigned char)fgetc(infile) << 24);
-        } else {
-            val  = ((unsigned char)fgetc(infile) << 24);
-            val |= ((unsigned char)fgetc(infile) << 16);
-            val |= ((unsigned char)fgetc(infile) << 8);
-            val |=  (unsigned char)fgetc(infile);
+        val = 0;
+        for (j=0; j<sizeof(val); j++) {
+            if (le) {
+                val = (val>>8) | ((u_cell)(unsigned char)fgetc(infile) << ((sizeof(val) - 1)*8));
+            } else {
+                val = (val<<8) | (unsigned char)fgetc(infile);
+            }
         }
         if (i == 3) {
             *dsizep = val;
@@ -40,7 +38,7 @@ void longs_to_file(char *filename, FILE *infile, int len, int *dsizep, int *usiz
         if (i == 5) {
             *usizep = val;
         }
-        fprintf(outfile, "0x%08x, ", val);
+        fprintf(outfile, "0x%tx, ", val);
     }
     fputc('\n', outfile);
     fclose(outfile);
@@ -75,7 +73,8 @@ int main(argc, argv)
 {
     char *dictionary_file;
     FILE *infile;
-    int dictsize, uasize;
+    //    int dictsize, uasize;
+    u_cell dictsize, uasize;
 
     if(argc != 2)
         dictionary_file = "forth.dic";
@@ -87,7 +86,7 @@ int main(argc, argv)
         exit(1);
     }
 
-    longs_to_file("dicthdr.h", infile, 8, &dictsize, &uasize);
+    cells_to_file("dicthdr.h", infile, 8, &dictsize, &uasize);
     bytes_to_file("dict.h", infile, dictsize);
     bytes_to_file("userarea.h", infile, uasize);
 

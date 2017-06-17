@@ -18,7 +18,7 @@ struct voc_t {
 #define vocabulary_t struct voc_t
 
 struct header {
-	cell magic, serial, dstart, dsize, ustart, usize, entry, res1;
+    u_cell magic, serial, dstart, dsize, ustart, usize, entry, res1;
 };
 extern struct header file_hdr;
 extern const struct header builtin_hdr;
