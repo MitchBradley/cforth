@@ -1,6 +1,6 @@
 /* Teensyduino Core Library
  * http://www.pjrc.com/teensy/
- * Copyright (c) 2013 PJRC.COM, LLC.
+ * Copyright (c) 2017 PJRC.COM, LLC.
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -206,7 +206,7 @@ int usb_serial_write(const void *buffer, uint32_t size)
 				}
 				if (usb_tx_packet_count(CDC_TX_ENDPOINT) < TX_PACKET_LIMIT) {
 					tx_noautoflush = 1;
-					tx_packet = usb_malloc();
+					tx_packet = usb_malloc(0);
 					if (tx_packet) break;
 					tx_noautoflush = 0;
 				}
@@ -243,7 +243,7 @@ int usb_serial_write_buffer_free(void)
 	if (!tx_packet) {
 		if (!usb_configuration ||
 		  usb_tx_packet_count(CDC_TX_ENDPOINT) >= TX_PACKET_LIMIT ||
-		  (tx_packet = usb_malloc()) == NULL) {
+		  (tx_packet = usb_malloc(0)) == NULL) {
 			tx_noautoflush = 0;
 			return 0;
 		}
@@ -270,7 +270,7 @@ void usb_serial_flush_output(void)
 		usb_tx(CDC_TX_ENDPOINT, tx_packet);
 		tx_packet = NULL;
 	} else {
-		usb_packet_t *tx = usb_malloc();
+		usb_packet_t *tx = usb_malloc(0);
 		if (tx) {
 			usb_cdc_transmit_flush_timer = 0;
 			usb_tx(CDC_TX_ENDPOINT, tx);
@@ -289,7 +289,7 @@ void usb_serial_flush_callback(void)
 		usb_tx(CDC_TX_ENDPOINT, tx_packet);
 		tx_packet = NULL;
 	} else {
-		usb_packet_t *tx = usb_malloc();
+		usb_packet_t *tx = usb_malloc(0);
 		if (tx) {
 			usb_tx(CDC_TX_ENDPOINT, tx);
 		} else {

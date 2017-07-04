@@ -1,6 +1,6 @@
 /* Teensyduino Core Library
  * http://www.pjrc.com/teensy/
- * Copyright (c) 2013 PJRC.COM, LLC.
+ * Copyright (c) 2017 PJRC.COM, LLC.
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -10,10 +10,10 @@
  * permit persons to whom the Software is furnished to do so, subject to
  * the following conditions:
  *
- * 1. The above copyright notice and this permission notice shall be 
+ * 1. The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  *
- * 2. If the Software is incorporated into a build system that allows 
+ * 2. If the Software is incorporated into a build system that allows
  * selection among a list of target devices, then similar target
  * devices manufactured by PJRC.COM must be included in the list of
  * target devices and selectable in the same manner.
@@ -582,8 +582,9 @@ void _init_Teensyduino_internal_(void)
 	// for background about this startup delay, please see these conversations
 	// https://forum.pjrc.com/threads/36606-startup-time-(400ms)?p=113980&viewfull=1#post113980
 	// https://forum.pjrc.com/threads/31290-Teensey-3-2-Teensey-Loader-1-24-Issues?p=87273&viewfull=1#post87273
-	delay(400);
+	delay(50);
 	usb_init();
+	delay(350);
 }
 
 
@@ -897,14 +898,17 @@ void analogWrite(uint8_t pin, int val)
 }
 
 
-void analogWriteRes(uint32_t bits)
+uint32_t analogWriteRes(uint32_t bits)
 {
+	uint32_t prior_res;
 	if (bits < 1) {
 		bits = 1;
 	} else if (bits > 16) {
 		bits = 16;
 	}
+	prior_res = analog_write_res;
 	analog_write_res = bits;
+	return prior_res;
 }
 
 
@@ -925,6 +929,11 @@ void analogWriteFrequency(uint8_t pin, float frequency)
 		ftmClock = 16000000;
 	} else
 #endif
+#if defined(__MKL26Z64__)
+	// Teensy LC does not support slow clock source (ftmClockSource = 2)
+	ftmClockSource = 1; 	// Use default F_TIMER clock source
+	ftmClock = F_TIMER;	// Set variable for the actual timer clock frequency
+#else
 	if (frequency < (float)(F_TIMER >> 7) / 65536.0f) {
 		// frequency is too low for working with F_TIMER:
 		ftmClockSource = 2; 	// Use alternative 31250Hz clock source
@@ -933,6 +942,7 @@ void analogWriteFrequency(uint8_t pin, float frequency)
 		ftmClockSource = 1; 	// Use default F_TIMER clock source
 		ftmClock = F_TIMER;	// Set variable for the actual timer clock frequency
 	}
+#endif
 
 	
 	for (prescale = 0; prescale < 7; prescale++) {
@@ -1144,6 +1154,9 @@ uint8_t shiftIn_msbFirst(uint8_t dataPin, uint8_t clockPin)
 }
 
 
+
+// the systick interrupt is supposed to increment this at 1 kHz rate
+volatile uint32_t systick_millis_count = 0;
 
 //uint32_t systick_current, systick_count, systick_istatus;  // testing only
 

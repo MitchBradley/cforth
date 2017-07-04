@@ -1,6 +1,6 @@
 /* Teensyduino Core Library
  * http://www.pjrc.com/teensy/
- * Copyright (c) 2013 PJRC.COM, LLC.
+ * Copyright (c) 2017 PJRC.COM, LLC.
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -218,6 +218,7 @@ static uint8_t mouse_report_desc[] = {
 #endif
 
 #ifdef JOYSTICK_INTERFACE
+#if JOYSTICK_SIZE == 12
 static uint8_t joystick_report_desc[] = {
         0x05, 0x01,                     // Usage Page (Generic Desktop)
         0x09, 0x04,                     // Usage (Joystick)
@@ -262,7 +263,73 @@ static uint8_t joystick_report_desc[] = {
         0x81, 0x02,                     //   Input (variable,absolute)
         0xC0                            // End Collection
 };
-#endif
+#elif JOYSTICK_SIZE == 64
+// extreme joystick  (to use this, edit JOYSTICK_SIZE to 64 in usb_desc.h)
+//  128 buttons   16
+//    6 axes      12
+//   17 sliders   34
+//    4 pov        2
+static uint8_t joystick_report_desc[] = {
+        0x05, 0x01,                     // Usage Page (Generic Desktop)
+        0x09, 0x04,                     // Usage (Joystick)
+        0xA1, 0x01,                     // Collection (Application)
+        0x15, 0x00,                     // Logical Minimum (0)
+        0x25, 0x01,                     // Logical Maximum (1)
+        0x75, 0x01,                     // Report Size (1)
+        0x95, 0x80,                     // Report Count (128)
+        0x05, 0x09,                     // Usage Page (Button)
+        0x19, 0x01,                     // Usage Minimum (Button #1)
+        0x29, 0x80,                     // Usage Maximum (Button #128)
+        0x81, 0x02,                     // Input (variable,absolute)
+        0x05, 0x01,                     // Usage Page (Generic Desktop)
+        0x09, 0x01,                     // Usage (Pointer)
+        0xA1, 0x00,                     // Collection ()
+        0x15, 0x00,                     // Logical Minimum (0)
+        0x27, 0xFF, 0xFF, 0, 0,         // Logical Maximum (65535)
+        0x75, 0x10,                     // Report Size (16)
+        0x95, 23,                       // Report Count (23)
+        0x09, 0x30,                     // Usage (X)
+        0x09, 0x31,                     // Usage (Y)
+        0x09, 0x32,                     // Usage (Z)
+        0x09, 0x33,                     // Usage (Rx)
+        0x09, 0x34,                     // Usage (Ry)
+        0x09, 0x35,                     // Usage (Rz)
+        0x09, 0x36,                     // Usage (Slider)
+        0x09, 0x36,                     // Usage (Slider)
+        0x09, 0x36,                     // Usage (Slider)
+        0x09, 0x36,                     // Usage (Slider)
+        0x09, 0x36,                     // Usage (Slider)
+        0x09, 0x36,                     // Usage (Slider)
+        0x09, 0x36,                     // Usage (Slider)
+        0x09, 0x36,                     // Usage (Slider)
+        0x09, 0x36,                     // Usage (Slider)
+        0x09, 0x36,                     // Usage (Slider)
+        0x09, 0x36,                     // Usage (Slider)
+        0x09, 0x36,                     // Usage (Slider)
+        0x09, 0x36,                     // Usage (Slider)
+        0x09, 0x36,                     // Usage (Slider)
+        0x09, 0x36,                     // Usage (Slider)
+        0x09, 0x36,                     // Usage (Slider)
+        0x09, 0x36,                     // Usage (Slider)
+        0x81, 0x02,                     // Input (variable,absolute)
+        0xC0,                           // End Collection
+        0x15, 0x00,                     // Logical Minimum (0)
+        0x25, 0x07,                     // Logical Maximum (7)
+        0x35, 0x00,                     // Physical Minimum (0)
+        0x46, 0x3B, 0x01,               // Physical Maximum (315)
+        0x75, 0x04,                     // Report Size (4)
+        0x95, 0x04,                     // Report Count (4)
+        0x65, 0x14,                     // Unit (20)
+        0x05, 0x01,                     // Usage Page (Generic Desktop)
+        0x09, 0x39,                     // Usage (Hat switch)
+        0x09, 0x39,                     // Usage (Hat switch)
+        0x09, 0x39,                     // Usage (Hat switch)
+        0x09, 0x39,                     // Usage (Hat switch)
+        0x81, 0x42,                     // Input (variable,absolute,null_state)
+        0xC0                            // End Collection
+};
+#endif // JOYSTICK_SIZE
+#endif // JOYSTICK_INTERFACE
 
 #ifdef MULTITOUCH_INTERFACE
 // https://forum.pjrc.com/threads/32331-USB-HID-Touchscreen-support-needed
@@ -876,7 +943,7 @@ static uint8_t config_descriptor[CONFIG_DESC_SIZE] = {
         0x06,                                   // bInterfaceClass (0x06 = still image)
         0x01,                                   // bInterfaceSubClass
         0x01,                                   // bInterfaceProtocol
-        0,                                      // iInterface
+        4,                                      // iInterface
         // endpoint descriptor, USB spec 9.6.6, page 269-271, Table 9-13
         7,                                      // bLength
         5,                                      // bDescriptorType
@@ -1064,7 +1131,7 @@ static uint8_t config_descriptor[CONFIG_DESC_SIZE] = {
 	9, 					// bLength
 	5, 					// bDescriptorType, 5 = ENDPOINT_DESCRIPTOR
 	AUDIO_TX_ENDPOINT | 0x80,		// bEndpointAddress
-	0x05, 					// bmAttributes = isochronous, asynchronous
+	0x09, 					// bmAttributes = isochronous, adaptive
 	LSB(AUDIO_TX_SIZE), MSB(AUDIO_TX_SIZE),	// wMaxPacketSize
 	1,			 		// bInterval, 1 = every frame
 	0,					// bRefresh
@@ -1223,6 +1290,13 @@ struct usb_string_descriptor_struct usb_string_serial_number_default = {
         3,
         {0,0,0,0,0,0,0,0,0,0}
 };
+#ifdef MTP_INTERFACE
+struct usb_string_descriptor_struct usb_string_mtp = {
+	2 + 3 * 2,
+	3,
+	{'M','T','P'}
+};
+#endif
 
 void usb_init_serialnumber(void)
 {
@@ -1300,6 +1374,9 @@ const usb_descriptor_list_t usb_descriptor_list[] = {
 #ifdef MULTITOUCH_INTERFACE
         {0x2200, MULTITOUCH_INTERFACE, multitouch_report_desc, sizeof(multitouch_report_desc)},
         {0x2100, MULTITOUCH_INTERFACE, config_descriptor+MULTITOUCH_HID_DESC_OFFSET, 9},
+#endif
+#ifdef MTP_INTERFACE
+	{0x0304, 0x0409, (const uint8_t *)&usb_string_mtp, 0},
 #endif
         {0x0300, 0x0000, (const uint8_t *)&string0, 0},
         {0x0301, 0x0409, (const uint8_t *)&usb_string_manufacturer_name, 0},

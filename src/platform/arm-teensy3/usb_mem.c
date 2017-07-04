@@ -1,6 +1,6 @@
 /* Teensyduino Core Library
  * http://www.pjrc.com/teensy/
- * Copyright (c) 2013 PJRC.COM, LLC.
+ * Copyright (c) 2017 PJRC.COM, LLC.
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -40,26 +40,31 @@ unsigned char usb_buffer_memory[NUM_USB_BUFFERS * sizeof(usb_packet_t)];
 
 static uint32_t usb_buffer_available = 0xFFFFFFFF;
 
+#define MASK_RX 0x55555555 // 50% share tx vs rx
+#define MASK_TX 0xaaaaaaaa
+
 // use bitmask and CLZ instruction to implement fast free list
 // http://www.archivum.info/gnu.gcc.help/2006-08/00148/Re-GCC-Inline-Assembly.html
 // http://gcc.gnu.org/ml/gcc/2012-06/msg00015.html
 // __builtin_clz()
 
-usb_packet_t * usb_malloc(void)
+usb_packet_t * usb_malloc(int rx)
 {
-	unsigned int n, avail;
+	unsigned int mask, n, avail;
 	uint8_t *p;
 
+	mask = rx ? MASK_TX : MASK_RX;
 	__disable_irq();
 	avail = usb_buffer_available;
-	n = __builtin_clz(avail); // clz = count leading zeros
+	n = __builtin_clz(avail & ~mask); // clz = count leading zeros
 	if (n >= NUM_USB_BUFFERS) {
 		__enable_irq();
+		//serial_print("MALLOC FAIL\n");
 		return NULL;
 	}
-	//serial_print("malloc:");
+	//serial_print("malloc ");
 	//serial_phex(n);
-	//serial_print("\n");
+	//if (rx) serial_print(" (rx)\n"); else serial_print(" (TX)\n");
 
 	usb_buffer_available = avail & ~(0x80000000 >> n);
 	__enable_irq();
@@ -80,23 +85,23 @@ void usb_free(usb_packet_t *p)
 {
 	unsigned int n, mask;
 
-	//serial_print("free:");
 	n = ((uint8_t *)p - usb_buffer_memory) / sizeof(usb_packet_t);
 	if (n >= NUM_USB_BUFFERS) return;
+	//serial_print("free ");
 	//serial_phex(n);
 	//serial_print("\n");
+	mask = (0x80000000 >> n);
 
 	// if any endpoints are starving for memory to receive
 	// packets, give this memory to them immediately!
-	if (usb_rx_memory_needed && usb_configuration) {
+	if ((mask & MASK_RX) && usb_rx_memory_needed && usb_configuration) {
 		//serial_print("give to rx:");
-		//serial_phex32((int)p);
+		//serial_phex(n);
 		//serial_print("\n");
 		usb_rx_memory(p);
 		return;
 	}
 
-	mask = (0x80000000 >> n);
 	__disable_irq();
 	usb_buffer_available |= mask;
 	__enable_irq();

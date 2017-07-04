@@ -1,6 +1,6 @@
 /* Teensyduino Core Library
  * http://www.pjrc.com/teensy/
- * Copyright (c) 2013 PJRC.COM, LLC.
+ * Copyright (c) 2017 PJRC.COM, LLC.
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -10,10 +10,10 @@
  * permit persons to whom the Software is furnished to do so, subject to
  * the following conditions:
  *
- * 1. The above copyright notice and this permission notice shall be 
+ * 1. The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
  *
- * 2. If the Software is incorporated into a build system that allows 
+ * 2. If the Software is incorporated into a build system that allows
  * selection among a list of target devices, then similar target
  * devices manufactured by PJRC.COM must be included in the list of
  * target devices and selectable in the same manner.
@@ -31,6 +31,7 @@
 #include "kinetis.h"
 #include "core_pins.h" // testing only
 #include "ser_print.h" // testing only
+#include <errno.h>
 
 
 // Flash Security Setting. On Teensy 3.2, you can lock the MK20 chip to prevent
@@ -65,6 +66,7 @@ extern unsigned long _estack;
 
 extern int main (void);
 void ResetHandler(void);
+void _init_Teensyduino_internal_(void) __attribute__((noinline));
 void __libc_init_array(void);
 
 
@@ -684,10 +686,11 @@ void startup_early_hook(void)		__attribute__ ((weak, alias("startup_default_earl
 void startup_late_hook(void)		__attribute__ ((weak, alias("startup_default_late_hook")));
 
 
-#ifdef __clang__
-// Clang seems to generate slightly larger code with Os than gcc
+#if defined(__PURE_CODE__) || !defined(__OPTIMIZE__) || defined(__clang__)
+// cases known to compile too large for 0-0x400 memory region
 __attribute__ ((optimize("-Os")))
 #else
+// hopefully all others fit into startup section (below 0x400)
 __attribute__ ((section(".startup"),optimize("-Os")))
 #endif
 void ResetHandler(void)
@@ -1093,6 +1096,8 @@ void ResetHandler(void)
 	//init_pins();
 	__enable_irq();
 
+	_init_Teensyduino_internal_();
+
 #if defined(KINETISK)
 	// RTC initialization
 	if (RTC_SR & RTC_SR_TIF) {
@@ -1102,10 +1107,11 @@ void ResetHandler(void)
 		// flag into the VBAT register file indicating the
 		// RTC is set with known-stale time and should be
 		// updated when fresh time is known.
-		RTC_SR = 0;
-		RTC_TPR = 0;
-		RTC_TSR = TIME_T;
-		RTC_SR = RTC_SR_TCE;
+		#if ARDUINO >= 10600
+		rtc_set((uint32_t)&__rtc_localtime);
+		#else
+		rtc_set(TIME_T);
+		#endif
 		*(uint32_t *)0x4003E01C = 0x5A94C3A5;
 	}
 	if ((RCM_SRS0 & RCM_SRS0_PIN) && (*(uint32_t *)0x4003E01C == 0x5A94C3A5)) {
@@ -1131,10 +1137,34 @@ void ResetHandler(void)
 
 char *__brkval = (char *)&_ebss;
 
+#ifndef STACK_MARGIN
+#if defined(__MKL26Z64__)
+#define STACK_MARGIN  512
+#elif defined(__MK20DX128__)
+#define STACK_MARGIN  1024
+#elif defined(__MK20DX256__)
+#define STACK_MARGIN  4096
+#elif defined(__MK64FX512__) || defined(__MK66FX1M0__)
+#define STACK_MARGIN  8192
+#endif
+#endif
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+
 void * _sbrk(int incr)
 {
-	char *prev = __brkval;
-	__brkval += incr;
+	char *prev, *stack;
+
+	prev = __brkval;
+	if (incr != 0) {
+		__asm__ volatile("mov %0, sp" : "=r" (stack) ::);
+		if (prev + incr >= stack - STACK_MARGIN) {
+			errno = ENOMEM;
+			return (void *)-1;
+		}
+		__brkval = prev + incr;
+	}
 	return prev;
 }
 
@@ -1195,9 +1225,11 @@ void __cxa_guard_release(char *g)
 	*g = 1;
 }
 
+#pragma GCC diagnostic pop
+
 int nvic_execution_priority(void)
 {
-	int priority=256;
+	uint32_t priority=256;
 	uint32_t primask, faultmask, basepri, ipsr;
 
 	// full algorithm in ARM DDI0403D, page B1-639
@@ -1269,7 +1301,7 @@ int kinetis_hsrun_enable(void)
 	if (SMC_PMSTAT == SMC_PMSTAT_RUN) {
 		// Turn HSRUN mode on
 		SMC_PMCTRL = SMC_PMCTRL_RUNM(3);
-		while (SMC_PMSTAT != SMC_PMSTAT_HSRUN) ; // wait
+		while (SMC_PMSTAT != SMC_PMSTAT_HSRUN) {;} // wait
 		// Then configure clock for full speed
 		#if F_CPU == 240000000 && F_BUS == 60000000
 			SIM_CLKDIV1 = SIM_CLKDIV1_OUTDIVS(0, 3, 0, 7);

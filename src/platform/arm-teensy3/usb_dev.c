@@ -1,6 +1,6 @@
 /* Teensyduino Core Library
  * http://www.pjrc.com/teensy/
- * Copyright (c) 2016 PJRC.COM, LLC.
+ * Copyright (c) 2017 PJRC.COM, LLC.
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -235,7 +235,7 @@ static void usb_setup(void)
 #endif
 			if (epconf & USB_ENDPT_EPRXEN) {
 				usb_packet_t *p;
-				p = usb_malloc();
+				p = usb_malloc(1);
 				if (p) {
 					table[index(i, RX, EVEN)].addr = p->buf;
 					table[index(i, RX, EVEN)].desc = BDT_DESC(64, 0);
@@ -243,7 +243,7 @@ static void usb_setup(void)
 					table[index(i, RX, EVEN)].desc = 0;
 					usb_rx_memory_needed++;
 				}
-				p = usb_malloc();
+				p = usb_malloc(1);
 				if (p) {
 					table[index(i, RX, ODD)].addr = p->buf;
 					table[index(i, RX, ODD)].desc = BDT_DESC(64, 1);
@@ -274,14 +274,15 @@ static void usb_setup(void)
 		data = reply_buffer;
 		break;
 	  case 0x0082: // GET_STATUS (endpoint)
-		if (setup.wIndex > NUM_ENDPOINTS) {
+		i = setup.wIndex & 0x7F;
+		if (i > NUM_ENDPOINTS) {
 			// TODO: do we need to handle IN vs OUT here?
 			endpoint0_stall();
 			return;
 		}
 		reply_buffer[0] = 0;
 		reply_buffer[1] = 0;
-		if (*(uint8_t *)(&USB0_ENDPT0 + setup.wIndex * 4) & 0x02) reply_buffer[0] = 1;
+		if (*(uint8_t *)(&USB0_ENDPT0 + i * 4) & 0x02) reply_buffer[0] = 1;
 		data = reply_buffer;
 		datalen = 2;
 		break;
@@ -358,18 +359,23 @@ static void usb_setup(void)
 #endif
 
 #if defined(MTP_INTERFACE)
-	case 0x2164: // Cancel Request (PTP spec, 5.2.1, page 8)
+	case 0x64A1: // Cancel Request (PTP spec, 5.2.1, page 8)
 		// TODO: required by PTP spec
 		endpoint0_stall();
 		return;
-	case 0x2166: // Device Reset (PTP spec, 5.2.3, page 10)
+	case 0x66A1: // Device Reset (PTP spec, 5.2.3, page 10)
 		// TODO: required by PTP spec
 		endpoint0_stall();
 		return;
-	case 0x2167: // Get Device Statis (PTP spec, 5.2.4, page 10)
-		// TODO: required by PTP spec
-		endpoint0_stall();
-		return;
+	case 0x67A1: // Get Device Statis (PTP spec, 5.2.4, page 10)
+		// For now, always respond with status ok.
+		reply_buffer[0] = 0x4;
+		reply_buffer[1] = 0;
+		reply_buffer[2] = 0x01;
+		reply_buffer[3] = 0x20;
+		data = reply_buffer;
+		datalen = 4;
+		break;
 #endif
 
 // TODO: this does not work... why?
@@ -1002,7 +1008,7 @@ void usb_isr(void)
 					// packets, so a flood of incoming data on 1 endpoint
 					// doesn't starve the others if the user isn't reading
 					// it regularly
-					packet = usb_malloc();
+					packet = usb_malloc(1);
 					if (packet) {
 						b->addr = packet->buf;
 						b->desc = BDT_DESC(64,
