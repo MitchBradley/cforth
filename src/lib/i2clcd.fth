@@ -51,3 +51,12 @@ $27 value lcd-i2c-slave
 : lcd-emit  ( char -- )  lcd-char-mode lcd!  ;
 : lcd-type  ( adr len -- )  bounds ?do  i c@ lcd-emit  loop  ;
 : lcd-type-at  ( adr len col# line# -- )  lcd-at lcd-type  ;
+: lcd-clear-at  ( col# line# #chars -- )
+   >r  2dup lcd-at  r>        ( col# line# #chars )
+   0  ?do  bl lcd-emit  loop  ( col# line# )
+   lcd-at
+;
+: lcd-clear-type-at  ( adr len col# line# #chars -- )
+   lcd-clear-at      ( adr len )
+   lcd-type          ( )
+;

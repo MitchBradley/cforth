@@ -35,7 +35,7 @@ create &linger 1 , 5 ,  \ on , 5 seconds
 #1024 constant /req-buf
 /req-buf buffer: req-buf
 
-: respond1  ( -- )
+: http-respond  ( timeout -- )
    poll-interval timed-accept if  exit  then  >r
 
    \ Set SO_LINGER so lwip-close does not discard any pending data
@@ -48,6 +48,8 @@ create &linger 1 , 5 ,  \ on , 5 seconds
    r> lwip-close
 ;
 
+defer responder
+' http-respond  to responder
 : serve-http  ( -- )
-   begin  respond1  handle-timeout  key? until   key drop
+   begin  poll-interval responder handle-timeout  key? until   key drop
 ;

@@ -1,4 +1,11 @@
 
+#19 constant phup-gpio
+#18 constant phdn-gpio
+#05 constant nutrient-gpio
+#17 constant circulate-gpio
+#16 constant spray-gpio
+#04 constant addwater-gpio
+
 #10 value ec-limit-low
 #30 value ec-limit-high
 #55 value pH-limit-low
@@ -167,28 +174,141 @@ previous definitions
 
 fl sht21.fth
 fl vl6180x.fth
+fl pH.fth
+fl i2clcd.fth
 
-: read-temperature  ['] sht21-temp@     catch  0=  if  to temperature  then  ;
-: read-humidity     ['] sht21-humidity@ catch  0=  if  to humidity     then  ;
-: read-water        ['] vl-distance     catch  0=  if  to water-level  then  ;
+: n$  ( n -- $ )
+   push-decimal
+   <# u#s u#>
+   pop-base
+   save$
+;
+
+: lcd-label  ( adr len n -- )
+   2 /mod                  ( adr len low high )
+   swap #10 * swap         ( adr len col row )
+   2dup lcd-at             ( adr len col row )
+   "           " lcd-type  ( adr len col row )
+   lcd-type-at             ( )
+;
+: rounded-/  ( num den -- quot )  tuck 2/ +  swap /  ;
+
+: >fahrenheit*100  ( c*100 -- f*100 )  9 5 */ #3200 +  ;
+: >fahrenheit      ( c*100 -- f )  >fahrenheit*100 #100 rounded-/  ;
+
+: lcd-temperature  ( -- )
+   " Temp " 1 lcd-label  temperature >fahrenheit n$ lcd-type " F" lcd-type
+;
+: read-temperature
+   ['] sht21-temp@     catch  if  exit then
+   to temperature
+   ." Temperature: " temperature >fahrenheit n$ type ." F" cr
+   ['] lcd-temperature catch drop
+;
+: lcd-humidity  ( -- )
+   " RH " 2 lcd-label  humidity #100 rounded-/ n$ lcd-type " %" lcd-type
+;
+: read-humidity
+   ['] sht21-humidity@ catch  if  exit  then
+   to humidity
+   ." Humidity: " humidity #100 rounded-/ n$ type ." %" cr
+   ['] lcd-humidity catch drop
+;
+: water$  ( -- $ )  \ in inches
+   water-level   ( mm )
+   dup #254 >=  if  drop " >10" exit  then  ( mm )
+   #100 #254 */  ( in*10 )
+   n.n$          ( $ )
+;
+: lcd-water  ( -- )
+   " Head " 3 lcd-label  water$ lcd-type  " in" lcd-type
+;
+
+: read-water
+   ['] vl-distance     catch  if  exit  then
+   to water-level
+   ." Water headroom: " water$ type ." in" cr
+   ['] lcd-water catch drop
+;
+: pH$  ( -- $ )
+   ph*10  dup #140 >  if  drop  " ----"  else  n.n$  then   ( $ )
+;
+: lcd-ph  ( -- )  " pH " 0 lcd-label  pH$ lcd-type  ;
+: read-pH
+   read-pH*10 0 max to pH*10
+   ." pH " pH$ type cr
+   ['] lcd-ph catch drop
+;
+: gpio-out-off  ( gpio# -- )  0 over gpio-pin!  gpio-is-output  ;
+: init-gpios  ( -- )
+   phup-gpio gpio-out-off
+   phdn-gpio gpio-out-off
+   nutrient-gpio gpio-out-off
+   circulate-gpio gpio-out-off
+   spray-gpio gpio-out-off
+   addwater-gpio gpio-out-off
+;
+
+: safe-lcd-clear-type-at  ( adr len col row n -- )
+   ['] lcd-clear-type-at catch  if  3drop 2drop  then
+;
+: spray-field  ( adr len -- )  #10 2 #20  safe-lcd-clear-type-at  ;
+: spray-on  ( -- )
+   1 spray-gpio gpio-pin!
+   " Spraying" spray-field
+;
+: spray-off  ( -- )
+   0 spray-gpio gpio-pin!
+   " " spray-field
+;
+#900 value water-interval \ 900
 0 value counter
 : periodic
-   counter case
-      0 of  read-temperature  endof
-      5 of  read-humidity     endof
-      #10 of  read-water     endof
+   counter #20 mod  case
+      #00 of  read-pH           endof
+      #05 of  read-temperature  endof
+      #10 of  read-humidity     endof
+      #15 of  read-water        endof
    endcase
-   counter 1+  dup #15 =  if  drop 0  then  to counter
+   counter water-interval =  if  spray-on  then
+   counter water-interval 2* =  if  spray-off  0  else  counter 1+  then
+   to counter
+   counter n$  0 2 #10 safe-lcd-clear-type-at
 ;
 ' periodic to handle-timeout
 
-:noname  " OpenWrt-Bradley" ;  to wifi-sta-ssid
-:noname  " BunderditBaby"   ;  to wifi-sta-password
+:noname  " user's Network" ;  to wifi-sta-ssid
+:noname  " remydannee"   ;  to wifi-sta-password
 
-: go 
+: init-sensors  ( -- )
+   ['] init-vl6180x catch  if  ." VL6180 init failed" cr  then
+   init-pH  \ Can't fail
+   ['] init-lcd catch
+;
+
+: setup  ( -- )
+   init-gpios
    #27 #14 i2c-open
-   init-vl6180x
-   wifi-sta-on
+   init-sensors
+;
+
+: wifi-line  ( adr len -- )  0 3 #20 safe-lcd-clear-type-at  ;
+: setup-server  ( -- )
+   " WiFi..." wifi-line
+   #20000 to wifi-timeout
+   wifi-sta-on  if
+      ['] ms to responder
+      " No WiFi" wifi-line
+      exit
+   then
+   wifi-sta-ssid wifi-line
    http-listen
+   ipaddr@ ipaddr$ wifi-line
+;
+: go
+   setup
+   setup-server
    serve-http
 ;
+
+go
