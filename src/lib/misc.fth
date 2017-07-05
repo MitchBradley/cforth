@@ -27,10 +27,45 @@
 
 [ifndef] be-l@
 : be-l@   ( adr -- l )
-   >r  r@ c@ 8 lshift  r@ 1+ c@ or 8 lshift  r@ 2+ c@ or 8 lshift  r> 3 + c@ or
+   >r  r@ 3 + c@  r@ 2+ c@   r@ 1+ c@   r> c@  bljoin
 ;
-: be-w!   ( w adr -- )   2dup 1+ c!  swap 8 rshift swap c!  ;
 [then]
+
+[ifndef] be-l!
+: be-l!   ( l adr -- l )
+   >r  lbsplit  r@ c!  r@ 1+ c!  r@ 2+ c!  r@ 3 + c!
+;
+[then]
+
+[ifndef] be-w@
+: be-w@   ( adr -- w )  dup 1+ c@  swap c@  bwjoin  ;
+[then]
+
+[ifndef] be-w!
+: be-w!   ( w adr -- )  >r  wbsplit  r@ c!  r> 1+ c!  ;
+[then]
+
+
+[ifndef] le-l@
+: le-l@   ( adr -- l )
+   >r  r@ c@  r@ 1+ c@   r@ 2+ c@   r> 3 + c@  bljoin
+;
+[then]
+
+[ifndef] le-l!
+: le-l!   ( l adr -- l )
+   >r  lbsplit  r@ 3 + c!  r@ 2+ c!  r@ 1+ c!  r@ c!
+;
+[then]
+
+[ifndef] le-w@
+: le-w@   ( adr -- w )  dup c@  swap 1+ c@  bwjoin  ;
+[then]
+
+[ifndef] le-w!
+: le-w!   ( w adr -- )  >r  wbsplit  r@ 1+ c!  r> c!  ;
+[then]
+
 
 [ifndef] comp
 : comp  ( adr1 adr2 len -- diff )  tuck compare  ;

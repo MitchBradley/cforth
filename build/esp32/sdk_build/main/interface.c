@@ -275,7 +275,7 @@ static esp_err_t wifi_event_handler(void *ctx, system_event_t *event)
     return ESP_OK;
 }
 
-cell wifi_open(char *password, char *ssid)
+cell wifi_open(cell timeout, char *password, char *ssid)
 {
     tcpip_adapter_init();
     wifi_event_group = xEventGroupCreate();
@@ -289,7 +289,7 @@ cell wifi_open(char *password, char *ssid)
     if(esp_wifi_set_mode(WIFI_MODE_STA)) return -4;
     if(esp_wifi_set_config(ESP_IF_WIFI_STA, &wifi_config)) return -5;
     if(esp_wifi_start()) return -6;
-    if (xEventGroupWaitBits(wifi_event_group, CONNECTED_BIT, false, true, portMAX_DELAY) != CONNECTED_BIT) return -7;
+    if (xEventGroupWaitBits(wifi_event_group, CONNECTED_BIT, false, true, timeout) != CONNECTED_BIT) return -7;
     return 0;
 }
 

@@ -73,7 +73,7 @@ cell ((* const ccalls[])()) = {
 	C(gpio_is_input_pu)	//c gpio-is-input-pullup { i.gpio# -- }
 	C(gpio_is_input_pd)	//c gpio-is-input-pulldown { i.gpio# -- }
 
-	C(wifi_open)		//c wifi-open { $ssid $password -- i.error? }
+	C(wifi_open)		//c wifi-open { $ssid $password i.timeout -- i.error? }
 
 	C(esp_log_level_set)	//c log-level! { i.level $component -- }
 
