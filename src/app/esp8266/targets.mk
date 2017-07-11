@@ -87,7 +87,8 @@ tdate.o: $(PLAT_OBJS) $(FORTH_OBJS)
 	@echo TCC $@
 	@$(TCC) -c tdate.c -o $@
 
-EXTRA_CLEAN += *.elf *.dump *.nm *.img date.c $(FORTH_OBJS) $(PLAT_OBJS)
+EXTRA_CLEAN += *.elf *.dump *.nm *.img tdate.c version
+EXTRA_CLEAN += $(FORTH_OBJS) $(PLAT_OBJS)
 
 PREFIX += CBP=$(realpath $(TOPDIR)/src)
 PREFIX += BP=$(realpath /c/Users/wmb/Documents/svn/openfirmware)
