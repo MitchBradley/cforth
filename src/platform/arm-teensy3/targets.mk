@@ -78,4 +78,5 @@ tdate.o: $(PLAT_OBJS) $(FORTH_OBJS)
 	@echo TCC $@
 	@$(TCC) -c tdate.c -o $@
 
-EXTRA_CLEAN += *.elf *.dump *.nm *.img date.c $(FORTH_OBJS) $(PLAT_OBJS)
+EXTRA_CLEAN += *.map *.elf *.dump *.nm *.hex version tdate.c
+EXTRA_CLEAN += $(FORTH_OBJS) $(PLAT_OBJS)
