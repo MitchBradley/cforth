@@ -26,19 +26,97 @@ char * ultoa(unsigned long val, char *buf, int radix)
   return buf;
 }
 
-int seen_usb; /* data has been received from the USB host */
+int use_uart; /* data has been received from the UART */
+int use_usb;  /* data has been received from the USB host */
 int sent_usb; /* data has been sent to the USB layer that is not yet flushed */
+
+void console_uart_on()
+{
+  use_uart++;
+}
+
+void console_uart_off()
+{
+  use_uart = 0;
+}
+
+int console_uart()
+{
+  return use_uart;
+}
+
+void console_usb_on()
+{
+  use_usb++;
+}
+
+void console_usb_off()
+{
+  use_usb = 0;
+}
+
+int console_usb()
+{
+  return use_usb;
+}
 
 void raw_putchar(char c)
 {
-  while(!(UART0_S1 & UART_S1_TDRE)) // pause until transmit data register empty
-    ;
-  UART0_D = c;
-  if (seen_usb) {
+  if (use_uart) {
+    /* pause until transmit data register empty */
+    while(!(UART0_S1 & UART_S1_TDRE))
+      ;
+    UART0_D = c;
+  }
+  if (use_usb) {
     usb_serial_putchar(c);
     sent_usb++;
   }
 }
+
+#if 0
+// usb debug
+void serial_putchar(char c)
+{
+  if (!use_usb) return;
+  while(!(UART0_S1 & UART_S1_TDRE))
+    ;
+  UART0_D = c;
+}
+
+static void serial_phex1(uint32_t n)
+{
+  n &= 15;
+  if (n < 10) {
+    serial_putchar('0' + n);
+  } else {
+    serial_putchar('A' - 10 + n);
+  }
+}
+
+void serial_phex(uint32_t n)
+{
+  serial_phex1(n >> 4);
+  serial_phex1(n);
+}
+
+void serial_phex32(uint32_t n)
+{
+  serial_phex(n >> 24);
+  serial_phex(n >> 16);
+  serial_phex(n >> 8);
+  serial_phex(n);
+}
+
+void serial_print(const char *p)
+{
+  while (*p) {
+    char c = *p++;
+    if (c == '\n') serial_putchar('\r');
+    serial_putchar(c);
+  }
+}
+#endif
 
 #if 0
 // early debug
@@ -67,8 +145,14 @@ void putline(char *str)
 
 int kbhit()
 {
-  if (UART0_RCFIFO > 0) return 1;
-  if (usb_serial_peekchar() != -1) return 1;
+  if (UART0_RCFIFO > 0) {
+    use_uart++;
+    return 1;
+  }
+  if (usb_serial_peekchar() != -1) {
+    use_usb++;
+    return 1;
+  }
   return 0;
 }
 
@@ -82,17 +166,18 @@ int getkey()
   while (1) {
     if (UART0_RCFIFO > 0) {
       c = UART0_D;
+      use_uart++;
       return c;
     }
     c = usb_serial_getchar();
     if (c != -1) {
-      seen_usb++;
+      use_usb++;
       return c;
     }
   }
 }
 
-void init_io(int argc, char **argv, cell *up)
+void init_uart()
 {
   // turn on clock
   SIM_SCGC4 |= SIM_SCGC4_UART0;
@@ -120,10 +205,9 @@ void init_io(int argc, char **argv, cell *up)
   // transmitter enable, receiver enable
   UART0_C2 = UART_C2_TE | UART_C2_RE;
 
-  seen_usb = 0;
+  use_uart = 0;
+  use_usb = 0;
   sent_usb = 0;
-  usb_init();
-  analog_init();
 }
 
 void wfi(void)
@@ -136,7 +220,7 @@ void yield(void)
   asm("wfi"); // __WFI();
 }
 
-volatile uint32_t systick_millis_count = 0;
+extern volatile uint32_t systick_millis_count;
 int get_msecs(void)
 {
   return systick_millis_count;
@@ -147,23 +231,6 @@ int spins(int i)
   while(i--)
     asm("");  // The asm("") prevents optimize-to-nothing
 }
-
-void pfprint_input_stack(void) {}
-void pfmarkinput(void *fp, cell *up) {}
-
-cell pfflush(cell f, cell *up)
-{
-    return -1;
-}
-
-cell pfsize(cell f, u_cell *high, u_cell *low, cell *up)
-{
-    *high = 0;
-    *low = 0;
-    return SIZEFAIL;
-}
-
-cell isstandalone() { return 1; }
 
 #include <stdio.h>
 

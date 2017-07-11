@@ -1,6 +1,6 @@
 /* Teensyduino Core Library
  * http://www.pjrc.com/teensy/
- * Copyright (c) 2013 PJRC.COM, LLC.
+ * Copyright (c) 2017 PJRC.COM, LLC.
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -44,7 +44,7 @@ typedef struct usb_packet_struct {
 extern "C" {
 #endif
 
-usb_packet_t * usb_malloc(void);
+usb_packet_t * usb_malloc(int);
 void usb_free(usb_packet_t *p);
 
 #ifdef __cplusplus

@@ -116,7 +116,7 @@ meta: $(METAOBJS)
 forth: $(BASEOBJS) $(HOSTOBJS)
 	@echo MAKING FORTH
 	@echo CC $(HOSTOBJS) $(BASEOBJS) $(LIBS) -o $@
-	$(CC) $(CFLAGS) -o $@ $(HOSTOBJS) $(BASEOBJS) $(LIBS)
+	@$(CC) $(CFLAGS) -o $@ $(HOSTOBJS) $(BASEOBJS) $(LIBS)
 
 # main.o is the main() entry point for the self-contained applications above
 
@@ -156,11 +156,12 @@ date.o: $(PLAT_OBJS) $(FORTH_OBJS)
 # are used in the compilation of other object modules.
 
 init.x prims.h vars.h: forth.c
-	$(MAKE) makename
-	rm -f init.x prims.h vars.h
+	@$(MAKE) --no-print-directory makename
+	@rm -f init.x prims.h vars.h
 	@echo CPP $<
 	@$(CPP) -C -DMAKEPRIMS $(CONFIG) $< >forth.ip
-	./makename forth.ip
+	@echo MAKENAME
+	@./makename forth.ip
 
 # makename is a self-contained application whose purpose is to
 # extract various bits of information from the "forth.c" source

@@ -3,26 +3,6 @@
 fl ../../lib/misc.fth
 fl ../../lib/dl.fth
 
-#0 ccall: spins       { i.nspins -- }
-#1 ccall: wfi         { -- }
-#2 ccall: get-msecs   { -- n }
-#3 ccall: a!          { i.val -- }
-#4 ccall: a@          { i.pin -- n }
-#5 ccall: p!          { i.val i.pin -- }
-#6 ccall: p@          { i.pin -- n }
-#7 ccall: m!          { i.mode i.pin -- }
-#8 ccall: get-usecs   { -- n }
-#9 ccall: delay       { n -- }
-#10 ccall: bye        { -- }
-#11 ccall: /nv        { -- n }
-#12 ccall: nv-base    { -- n }
-#13 ccall: nv-length  { -- n }
-#14 ccall: nv@        { i.adr -- i.val }
-#15 ccall: nv!        { i.val i.adr -- }
-#16 ccall: 'build-date   { -- a.value }
-#17 ccall: 'version      { -- a.value }
-
-fl ../../platform/arm-teensy3/watchdog.fth
 fl ../../platform/arm-teensy3/timer.fth
 fl ../../platform/arm-teensy3/pcr.fth
 fl ../../platform/arm-teensy3/i2c.fth
