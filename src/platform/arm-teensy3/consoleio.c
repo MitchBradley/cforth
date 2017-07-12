@@ -193,6 +193,12 @@ void init_uart()
   // sre - slew rate enable, slow, p229
   CORE_PIN1_CONFIG = PORT_PCR_DSE | PORT_PCR_SRE | PORT_PCR_MUX(3);
 
+#ifdef ENABLE_RTS
+  // hardware flow control on receive path only, using RTS
+  CORE_PIN6_CONFIG = PORT_PCR_DSE | PORT_PCR_SRE | PORT_PCR_MUX(3);
+  UART0_MODEM = UART_MODEM_RXRTSE;
+#endif
+
   // baud rate generator, 115200, derived from test build
   // reference, *RM.pdf, table 47-57, page 1275, 38400 baud?
   UART0_BDH = 0;
