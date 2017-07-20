@@ -4,16 +4,16 @@ SRC=$(TOPDIR)/src
 
 # Target compiler definitions
 CROSS ?= arm-none-eabi-
-CPU_VARIANT=-mthumb -mcpu=cortex-m4
+CPU_VARIANT=-mthumb -mcpu=cortex-m0
 include $(SRC)/cpu/arm/compiler.mk
 
 include $(SRC)/common.mk
 include $(SRC)/cforth/targets.mk
 
-DEFS += -DF_CPU=48000000 -DUSB_SERIAL -DLAYOUT_US_ENGLISH -D__MK20DX256__ -DARDUINO=105 -DTEENSYDUINO=118
+DEFS += -DF_CPU=48000000 -DUSB_SERIAL -DLAYOUT_US_ENGLISH -D__MKL26Z64__ -DARDUINO=105 -DTEENSYDUINO=118
 
 DICTIONARY=ROM
-DICTSIZE=0x2000
+DICTSIZE=0xb00
 
 include $(SRC)/cforth/embed/targets.mk
 
@@ -24,7 +24,7 @@ TCFLAGS += -Os
 # Omit unreachable functions from output
 
 TCFLAGS += -ffunction-sections -fdata-sections $(DEFS)
-TLFLAGS += --gc-sections -Map main.map
+TLFLAGS += --gc-sections -Map main.map --cref
 
 # VPATH += $(SRC)/cpu/arm
 VPATH += $(SRC)/lib
@@ -38,7 +38,7 @@ INCS += -I$(SRC)/platform/arm-teensy3
 
 tconsoleio.o: vars.h
 
-PLAT_OBJS += tmk20dx128.o ttmain.o tconsoleio.o tusb_dev.o tusb_mem.o tusb_desc.o tusb_serial.o tanalog.o tpins_teensy.o teeprom.o mallocembed.o
+PLAT_OBJS += tmk20dx128.o ttmain.o tconsoleio.o tusb_dev.o tusb_mem.o tusb_desc.o tusb_serial.o tpins_teensy.o mallocembed.o
 
 # Object files for the Forth system and application-specific extensions
 
@@ -47,7 +47,7 @@ FORTH_OBJS = tembed.o textend.o
 
 # Recipe for linking the final image
 
-LDSCRIPT = $(SRC)/platform/arm-teensy3/mk20dx256.ld
+LDSCRIPT = $(SRC)/platform/arm-teensy3/mkl26z64.ld
 
 app.elf: $(PLAT_OBJS) $(FORTH_OBJS) tdate.o
 	@echo Linking $@ ... 
@@ -65,7 +65,7 @@ app.elf: $(PLAT_OBJS) $(FORTH_OBJS) tdate.o
 
 # This rule loads the hex file to the module
 burn: app.hex
-	teensy_loader_cli -w -mmcu=mk20dx128 app.hex
+	teensy_loader_cli -w -mmcu=mkl26z64 app.hex
 
 # This rule builds a date stamp object that you can include in the image
 # if you wish.

@@ -578,7 +578,6 @@ void _init_Teensyduino_internal_(void)
 	TPM1_C1SC = 0x28;
 	TPM1_SC = FTM_SC_CLKS(1) | FTM_SC_PS(0);
 #endif
-	analog_init();
 	// for background about this startup delay, please see these conversations
 	// https://forum.pjrc.com/threads/36606-startup-time-(400ms)?p=113980&viewfull=1#post113980
 	// https://forum.pjrc.com/threads/31290-Teensey-3-2-Teensey-Loader-1-24-Issues?p=87273&viewfull=1#post87273
