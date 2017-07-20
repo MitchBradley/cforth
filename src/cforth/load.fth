@@ -44,6 +44,7 @@ fload locals.fth	\ LOCALS
 [ifdef] $command
 fload cmdcom.fth
 [then]
-fload debug.fth
+
+hex
 
 " forth.dic" save

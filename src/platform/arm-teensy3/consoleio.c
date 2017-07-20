@@ -145,7 +145,7 @@ void putline(char *str)
 
 int kbhit()
 {
-  if (UART0_RCFIFO > 0) {
+  if (UART0_S1 & UART_S1_RDRF) {
     use_uart++;
     return 1;
   }
@@ -164,7 +164,7 @@ int getkey()
     sent_usb = 0;
   }
   while (1) {
-    if (UART0_RCFIFO > 0) {
+    if (UART0_S1 & UART_S1_RDRF) {
       c = UART0_D;
       use_uart++;
       return c;
@@ -205,13 +205,10 @@ void init_uart()
   UART0_BDL = 0x1a;
   UART0_C4 = 0x1;
 
-  // fifo enable
-  UART0_PFIFO = UART_PFIFO_TXFE | UART_PFIFO_RXFE;
-
   // transmitter enable, receiver enable
   UART0_C2 = UART_C2_TE | UART_C2_RE;
 
-  use_uart = 0;
+  use_uart = 1;
   use_usb = 0;
   sent_usb = 0;
 }
