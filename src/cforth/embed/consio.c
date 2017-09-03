@@ -16,10 +16,6 @@ int kbhit(void);
 int getkey(void);
 int raw_putchar(int c);
 
-void init_io(int argc, char **argv, cell *up)
-{
-}
-
 int isinteractive() {  return (1);  }
 
 void emit(u_char c, cell *up)
