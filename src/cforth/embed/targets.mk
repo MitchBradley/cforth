@@ -114,29 +114,21 @@ base_dict.h base_dicthdr.h base_userarea.h: forth.dic makebi
 # tconsio.o is a simplified Forth I/O module that supports only console I/O
 # (i.e. getchar() and putchar()).
 
-tconsio.o: consio.c $(INCLUDE)
-	@echo TCC $<
-	@$(TCC) $(TCFLAGS) -c $<  -o $@
+tconsio.o: $(INCLUDE)
 
-tlineedit.o: lineedit.c $(INCLUDE)
-	@echo TCC $<
-	@$(TCC) $(TCFLAGS) -c $<  -o $@
+tlineedit.o: $(INCLUDE)
 
 # tforth.o implements the Forth virtual machine and the core primitives.
 # It corresponds roughly to the set of Forth words that would typically
 # be implemented in assembly language in a machine-specific Forth
 # implementation
 
-tforth.o: forth.c $(INCLUDE)
-	@echo TCC $<
-	@$(TCC) $(TCFLAGS) -c $< -o $@
+tforth.o: $(INCLUDE)
 
 # compiler.o implements low-level support routines that are used by
 # the Forth interpreter/incremental compiler
 
-tcompiler.o: compiler.c $(INCLUDE)
-	@echo TCC $<
-	@$(TCC) $(TCFLAGS) -c $< -o $@
+tcompiler.o: $(INCLUDE)
 
 # dictfile.o implements file I/O routines specifically for the purpose
 # of reading and writing Forth dictionary images to and from files.
@@ -148,18 +140,12 @@ tcompiler.o: compiler.c $(INCLUDE)
 # The next few object files implement miscellaneous primitives;
 
 tsyscall.o: generic/syscall.c $(FINC)
-	@echo TCC $<
-	@$(TCC) $(TCFLAGS) -c $< -o $@
 
-tfloatops.o: floatops.c $(FINC) prims.h
-	@echo TCC $<
-	@$(TCC) $(TCFLAGS) -c $< -o $@
+tfloatops.o: $(FINC) prims.h
 
 tccalls.fth: textend.c
 	./makeccalls <$< >tccalls.fth
 
 textend.o: textend.c $(FINC)
-	@echo TCC $<
-	@$(TCC) $(TCFLAGS) -c $< -o $@
 
 EXTRA_CLEAN += tembed.o
