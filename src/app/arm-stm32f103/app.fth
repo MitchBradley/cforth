@@ -2,71 +2,65 @@
 
 fl ../../lib/misc.fth
 fl ../../lib/dl.fth
-
-: +apb1 $40000000 +  ;
-: +apb2 $40010000 +  ;
-: +ahb  $40020000 +  ;
-: +gpioa +ahb  ;
-: +gpiob +ahb $400 + ;
-: +gpioc +ahb $800 + ;
-: +gpiod +ahb $c00 + ;
-: +rcc   +ahb $3800 +  ;
-: +i2c1  +apb1 $5400 +  ;
-
-\ RCC offsets
-$1c constant ahbenr
-$20 constant apb2enr
-$24 constant apb1enr
-
-\ GPIO register offsets
-$00 constant moder
-$04 constant otyper
-$0c constant pupdr
-$10 constant idr
-$14 constant odr
-$18 constant bsrr
-$20 constant afr0
-$24 constant afr1
-$28 constant brr
-
-: clk-fast  ( -- )  ;
-: clk-slow  ( -- )  ;
+$3000 $5000 npatch load-base
 
 : bitset  ( mask adr -- )  tuck l@ or swap l!  ;
 : bitclr  ( mask adr -- )  tuck l@ swap invert and swap l!  ;
-: gpiob-clk-on  ( -- )  2  ahbenr +rcc bitset  ;
-: i2c-clk-on    ( -- )  $200000  ahbenr +rcc bitset  ;  \ I2C1
-: usart2-clk-on ( -- )  $020000  ahbenr +rcc bitset  ;
-: usart3-clk-on ( -- )  $040000  ahbenr +rcc bitset  ;
 
-: gpioa-set-mode  ( mode pin# -- )  2*  lshift  moder +gpioa  bitset  ;
-: gpioa-is-input  ( pin# -- )  0 swap gpioa-set-mode  ;
-: gpioa-is-output ( pin# -- )  1 swap gpioa-set-mode  ;
-: gpioa-is-af     ( pin# -- )  2 swap gpioa-set-mode  ;
-: gpioa-is-analog ( pin# -- )  3 swap gpioa-set-mode  ;
+0 constant gpioa
+1 constant gpiob
+2 constant gpioc
 
-: gpioa-open-drain  ( pin# -- )  1 swap lshift  otyper +gpioa  bitset  ;
-: gpioa-push-pull   ( pin# -- )  1 swap lshift  otyper +gpioa  bitclr  ;
+\ If the part has more GPIO ports ...
+\ 3 constant gpiod
+\ 4 constant gpioe
+\ 5 constant gpiof
+\ 6 constant gpiog
 
-: gpiob-set-mode  ( mode pin# -- )  2*  lshift  moder +gpiob  bitset  ;
-: gpiob-is-input  ( pin# -- )  0 swap gpiob-set-mode  ;
-: gpiob-is-output ( pin# -- )  1 swap gpiob-set-mode  ;
-: gpiob-is-af     ( pin# -- )  2 swap gpiob-set-mode  ;
-: gpiob-is-analog ( pin# -- )  3 swap gpiob-set-mode  ;
+\ GPIO modes.  This encoding matches the STM Standard Peripheral Library
+$00 constant ain
 
-: gpiob-open-drain  ( pin# -- )  1 swap lshift  otyper +gpiob  bitset  ;
-: gpiob-push-pull   ( pin# -- )  1 swap lshift  otyper +gpiob  bitclr  ;
+$10 constant out_pp
+$14 constant out_od
 
-: gpiob-set  ( pin# -- )  1 swap lshift  odr +gpiob  bitset  ;
-: gpiob-clr  ( pin# -- )  1 swap lshift  odr +gpiob  bitclr  ;
+$18 constant af_pp
+$1c constant af_od
 
-: gpioa-set  ( pin# -- )  1 swap lshift  odr +gpioa  bitset  ;
-: gpioa-clr  ( pin# -- )  1 swap lshift  odr +gpioa  bitclr  ;
+$04 constant in_floating
+$28 constant in_pulldown
+$48 constant in_pullup
 
-: pin-sda      gpiob-clk-on 9 gpiob-open-drain  9 gpiob-clr  9 gpiob-is-output  ;
-: ms  0 ?do  #1000 0 do loop  loop  ;
+0 value led-gpio
+: init-led  ( -- )
+   out_pp #13 gpioc gpio-open to led-gpio
+;
+: led-on  ( -- )  led-gpio gpio-clr  ;
+: led-off ( -- )  led-gpio gpio-set  ;
 
-: release-scl  gpiob-clk-on 8 gpiob-open-drain  8 gpiob-set  8 gpiob-is-output  ;
+0 value adc
+
+0 value adc-channel
+
+: init-adc  ( channel# -- )
+   dup to adc-channel    ( channel# )
+   8 /mod                ( pin# port# )
+   if  gpiob  else  gpioa  then  ( pin port )
+   ain -rot  gpio-open drop     \ Configure the GPIO for analog
+   1 adc-open to adc            \ Fire up the ADC
+;
+
+\ Lower adc-time values, down to 0, result in faster conversion at lower
+\ precision. Values less than 6 don't speed it up much in polled mode
+\ because the software time dominates.  adc-time values of 6 and lower
+\ take about 36 us, while 7 takes 46 us.
+
+7 value adc-time  \ 7 is slow conversion for high precision
+
+: adc@  ( -- value )
+   adc-time adc-channel adc adc-start
+   begin  adc adc-done?  until
+   adc adc-get
+;
 
 \ Replace 'quit' to make CForth auto-run some application code
 \ instead of just going interactive.

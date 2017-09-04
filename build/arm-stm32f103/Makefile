@@ -14,9 +14,9 @@ MYNAME=arm-stm32f103
 
 CONFIG += -DBITS32 -DT16
 
-include $(TOPDIR)/src/app/$(MYNAME)/targets.mk
-
 default: app.elf app.bin app.nm app.dump
+
+include $(TOPDIR)/src/app/$(MYNAME)/targets.mk
 
 
 ifeq ("$(wildcard $(STMLIB))","")
@@ -45,5 +45,7 @@ COMPORT ?= /dev/ttyUSB0
 
 STMLOADER ?= $(TOPDIR)/../stm32loader/stm32loader.py
 
+VERIFY ?= -v
+
 flash: app.bin
-	python $(STMLOADER) -p $(COMPORT) -e -w -v app.bin
+	python $(STMLOADER) -p $(COMPORT) -e -w $(VERIFY) app.bin

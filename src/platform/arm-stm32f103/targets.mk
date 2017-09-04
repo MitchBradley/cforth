@@ -32,6 +32,7 @@ VPATH += $(SRC)/platform/$(MYNAME)
 VPATH += $(SRC)/lib
 VPATH += $(STMLIB)/Libraries/STM32F10x_StdPeriph_Driver/src
 VPATH += $(STMLIB)/Libraries/CMSIS/CM3/DeviceSupport/ST/STM32F10x/
+$(info VPATH = $(VPATH))
 
 # This directory, including board information
 INCS += -I$(SRC)/platform/$(MYNAME)
@@ -57,11 +58,15 @@ include $(SRC)/cforth/targets.mk
 FIRST_OBJ = tstartup_stm32f10x.o
 
 # PLAT_OBJS += tsystem_stm32f10x$(CLKCONFIG).o
-PLAT_OBJS += tstm32f10x_usart.o tstm32f10x_rcc.o tstm32f10x_gpio.o
+PLAT_OBJS += tstm32f10x_usart.o tstm32f10x_rcc.o
+PLAT_OBJS += tstm32f10x_gpio.o
+PLAT_OBJS += tstm32f10x_adc.o
 PLAT_OBJS += tmisc.o tsystick.o
 PLAT_OBJS += ttmain.o mallocembed.o
 PLAT_OBJS += tconsoleio.o 
 PLAT_OBJS += tsystem_stm32f10x.o
+PLAT_OBJS += tgpio.o
+PLAT_OBJS += tadc.o
 
 ttmain.o: vars.h
 
@@ -71,7 +76,7 @@ PLAT_OBJS += $(EXTEND_OBJS)
 
 # Object files for the Forth system and application-specific extensions
 
-FORTH_OBJS = tembed.o textend.o
+FORTH_OBJS = tembed.o ttextend.o
 
 
 # Recipe for linking the final image

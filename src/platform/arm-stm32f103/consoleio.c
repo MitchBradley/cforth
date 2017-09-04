@@ -30,7 +30,7 @@ void init_io()
   consoleUart = USART1;
         
   RCC_APB2PeriphClockCmd(RCC_APB2Periph_USART1 | RCC_APB2Periph_AFIO | 
-                         RCC_APB2Periph_GPIOA, ENABLE);
+                         RCC_APB2Periph_GPIOA | RCC_APB2Periph_GPIOB | RCC_APB2Periph_GPIOC, ENABLE);
 
   GPIO_InitTypeDef gpioInit = {
     .GPIO_Speed = GPIO_Speed_50MHz
@@ -58,17 +58,6 @@ void init_io()
   USART_Cmd(consoleUart, ENABLE);
 
   init_systick();
-}
-
-void wfi(void)
-{
-  __WFI();
-}
-
-extern int ms_tick;
-int get_msecs(void)
-{
-  return ms_tick;
 }
 
 int spins(int i)
