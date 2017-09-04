@@ -22,6 +22,7 @@ include $(TOPDIR)/src/app/$(MYNAME)/targets.mk
 ifeq ("$(wildcard $(STMLIB))","")
 	$(info You need the STM Standard Peripheral Library)
 	$(info Get it from http://www.st.com/content/st_com/en/products/embedded-software/mcus-embedded-software/stm32-embedded-software/stm32-standard-peripheral-libraries/stsw-stm32054.html)
+	$(info Get it from https://my.st.com/content/ccc/resource/technical/software/firmware/48/ab/e5/17/0d/79/43/74/stsw-stm32054.zip/files/stsw-stm32054.zip/_jcr_content/translations/en.stsw-stm32054.zip)
 	$(info Unpack it into the parent directory of the cforth/ tree)
 	$(error )
 endif
