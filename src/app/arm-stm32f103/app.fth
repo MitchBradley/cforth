@@ -1,5 +1,5 @@
 \ Load file for application-specific Forth extensions
-
+fl ../../lib/bitband.fth
 fl ../../lib/misc.fth
 fl ../../lib/dl.fth
 $3000 $5000 npatch load-base
