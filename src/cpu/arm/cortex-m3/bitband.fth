@@ -5,16 +5,21 @@
 \ using a single LDR instruction. It also enables individual bits to be toggled
 \ without performing a read-modify-write sequence of instructions.
 
+\ Usage:
+\   variable x
+\   0 x !
+\   x 0 BITBAND 1 swap c! x @ .
+
 1 #28 shift 1- constant BITBAND.BASEMASK_               \ covers the offset
 BITBAND.BASEMASK_ invert constant BITBAND.BASEMASK      \ covers only the page
 \ bit_word_offset is the position of the target bit in the bit-band memory region.
 $2000000 constant BITBAND.OFFSET
 
-: BITBAND ( addr bit -- aliasaddress ) 
+: BITBAND ( addr bit -- aliasaddress )
     $4 * \ offest caused by the bit
     swap
     dup  \ we need to split the addr is two parts
-	\ get the bit_band_base - the starting address of the alias region. 
+	\ get the bit_band_base - the starting address of the alias region.
     BITBAND.BASEMASK and
     swap
 	\ get the byte_offset - the number of the byte in the bit-band region that
