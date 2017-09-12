@@ -33,7 +33,7 @@
 
 [ifndef] be-l!
 : be-l!   ( l adr -- l )
-   >r  lbsplit  r@ c!  r@ 1+ c!  r@ 2+ c!  r@ 3 + c!
+   >r  lbsplit  r@ c!  r@ 1+ c!  r@ 2+ c!  r> 3 + c!
 ;
 [then]
 
