@@ -493,6 +493,7 @@ cell ((* const ccalls[])()) = {
   C(fcntl)             //c fcntl          { i.flags i.cmd i.handle -- i.error }
   C(memmap)            //c mmap           { a.phys i.len i.fd -- a.virt }
   C(memunmap)          //c munmap         { a.virt i.len -- i.error }
+  C(lseek)             //c lseek          { i.whence i.offset i.fd -- i.offset }
 
   // Posix sockets
   C(socket)            //c socket         { i.proto i.type i.family -- i.handle }
@@ -519,6 +520,7 @@ cell ((* const ccalls[])()) = {
 
   // Miscellaneous
   C(open_scanner)      //c open-scanner   { -- i.fd }
+  C(system)            //c system         { $ -- }
 
 #ifdef USE_FTDI
   // FTDI bit-banging

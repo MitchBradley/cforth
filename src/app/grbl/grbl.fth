@@ -8,24 +8,57 @@ false value show-line#?   \ Show how many lines have been executed and how many 
 false value show-buf?     \ Show the space left in GRBL's Rx buffer
 true value show-time?     \ Show the elapsed time in seconds
 
-0 value comport  \ File handle for serial port
+-1 value comport  \ File handle for serial port
 
-: flush-grbl  ( -- )
-   pad #1000  #500 comport timed-read-com pad swap type
+\ User interface event handler
+defer handle-ui-events
+
+\ Simple UI.  Type q to exit, anything else gets you back to the Forth ok prompt
+: key-ui  key?  if  key 'q' =  if  bye  else  abort  then  then  ;
+' key-ui to handle-ui-events
+
+: read-grbl  ( timeout-ms -- adr len )
+   pad #4  rot comport timed-read-com   0 max   pad swap
+;
+
+: flush-grbl  ( initial-timeout -- )
+    read-grbl     ( adr len )
+    begin  dup  while  ( adr len )
+       type            ( )
+       #100 read-grbl  ( adr len )
+    repeat             ( adr len )
+    2drop              ( )
+;
+: send-gcode-line  ( adr len -- )  comport write-com drop  ;
+: reset-grbl  ( -- )
+   #500 flush-grbl
+
+   " "(18)" send-gcode-line
+   #1000 flush-grbl
+   #1000 flush-grbl
+
+   " $X"n" send-gcode-line
+   #1000 flush-grbl
+   #1000 flush-grbl
 ;
 : open-grbl  ( -- )
-   comport if exit then
+   comport 0>=  if exit then
    0 open-com to comport
    comport 0< abort" Can't open serial port"
    #115200 comport baud
-   flush-grbl
-   #2000 ms
-   flush-grbl
+   #500 flush-grbl
+   #500 flush-grbl
+   reset-grbl
 ;
-: send-gcode-line  ( adr len -- )  comport write-com drop  ;
+: close-grbl  ( -- )
+   comport 0<  if
+      comport close-com
+      -1 to comport
+   then
+;
 
 \ A couple of convenience words for interactive testing
-: r  pad #100  #100 comport timed-read-com  pad swap type  ;
+: r  #100 flush-grbl  ;
 : w  0 parse  send-gcode-line  " "n" send-gcode-line  r r  ;
 
 #128 constant /rxbuf           \ The size of GRBL's Rx buffer, determined externally
@@ -40,12 +73,14 @@ true value show-time?     \ Show the elapsed time in seconds
 0 value time0                  \ Start time in milliseconds
 
 \ Show some statistics
-: .stats  ( -- )
+defer show-stats
+: type-stats  ( -- )
    show-line#?  if  executed-line# .d  sent-line# executed-line# - .d   then
    show-buf?  if  bufavail .d   then
    show-time?  if  get-msecs time0 - #1000 / .d  then
    #out @  if  (cr  then
 ;
+' type-stats to show-stats
 
 \ Remove a line from the queued list and increase the buffer count by its length
 \ Called with an ack ('ok') is received from GRBL
@@ -80,19 +115,24 @@ true value show-time?     \ Show the elapsed time in seconds
 \ Interpret GRBL response data
 : parse-response  ( -- )
     response-buf #response " "(0a)" lex  if          ( tail$ head$ char )
+
        \ The response data contains a complete line
        drop                                          ( tail$ head$ )
 
        \ If the response line isn't empty, record that a queued line has been processed
-       -cr   ?dup  if  -line  then                   ( tail$ head$ )
+       -cr   dup  if                                 ( tail$ head$ )
+          -line                                      ( tail$ head$ )
 
-       2dup  " ok"  compare  if                      ( tail$ head$ )
-          \ Display error lines
-          type cr                                    ( tail$ )
-       else                                          ( tail$ head$ )
-          \ Show ok acks only if asked to
-	  show-ack?  if  type cr  else  2drop  then  ( tail$ )
-       then                                          ( tail$ )
+          2dup  " ok"  compare  if                   ( tail$ head$ )
+             \ Display error lines
+             type cr                                 ( tail$ )
+          else                                       ( tail$ head$ )
+             \ Show ok acks only if asked to
+             show-ack?  if  type cr  else  2drop  then  ( tail$ )
+          then                                       ( tail$ )
+       else                                          ( tail$ )
+          2drop                                      ( )
+       then
 
        \ If there is any trailing data in the response buffer, move it to the beginning
        to #response  response-buf #response move     ( )
@@ -114,7 +154,7 @@ true value show-time?     \ Show the elapsed time in seconds
 ;
 
 \ Wait until there is room in GRBLs Rx buffer, meanwhile handling events
-: wait-ready  ( -- )   begin  handle-rx   bufavail 0>  until  ;
+: wait-ready  ( -- )   begin  handle-ui-events  handle-rx   bufavail 0>  until  ;
 
 0 value fid
 0 value linelen
@@ -128,13 +168,13 @@ true value show-time?     \ Show the elapsed time in seconds
    wait-ready                                         ( )
    show-gcode?  if  the-line linelen type  then       ( )
    the-line linelen send-gcode-line                   ( )
-   .stats                                             ( )
+   show-stats                                         ( )
    false                                              ( false )
 ;
 
 \ Send a GCode file to GRBL
+: send-lines  ( -- )   begin  depth 0<  if ." Stack Underflow !!!" cr  bye then  send-line until  ;
 : $send-file  ( filename$ -- )
-   open-grbl
 
    0 to #queued-lines
    0 to sent-line#
@@ -143,10 +183,17 @@ true value show-time?     \ Show the elapsed time in seconds
    get-msecs to time0
 
    r/o open-file abort" Can't open input file" to fid
-   begin  send-line  until
-   fid close-file drop
+
+   open-grbl
+   ['] send-lines  catch       ( aborted? )
+   dup  if  reset-grbl  then   ( aborted? )
+   close-grbl                  ( aborted? )
+   
+   fid close-file drop         ( aborted? )
+   throw
 ;
 
 : send  ( "filename" -- )  safe-parse-word $send-file  ;
 
 : t " LogoArray.gcode" $send-file  ;
+
