@@ -6,7 +6,7 @@ false value show-gcode?   \ Show GCode lines as they are sent
 false value show-ack?     \ Show OK/Error ack lines as they are received
 false value show-line#?   \ Show how many lines have been executed and how many are queued
 false value show-buf?     \ Show the space left in GRBL's Rx buffer
-true value show-time?     \ Show the elapsed time in seconds
+false value show-time?     \ Show the elapsed time in seconds
 
 -1 value comport  \ File handle for serial port
 
@@ -36,7 +36,6 @@ defer handle-ui-events
    " "(18)" send-gcode-line
    #1000 flush-grbl
    #1000 flush-grbl
-
    " $X"n" send-gcode-line
    #1000 flush-grbl
    #1000 flush-grbl
@@ -195,5 +194,4 @@ defer show-stats
 
 : send  ( "filename" -- )  safe-parse-word $send-file  ;
 
-: t " LogoArray.gcode" $send-file  ;
-
+: t " GCode/LogoArray.gcode" $send-file  ;
