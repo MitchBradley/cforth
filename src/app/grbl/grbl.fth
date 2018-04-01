@@ -72,6 +72,7 @@ defer handle-ui-events
 0 value time0                  \ Start time in milliseconds
 
 \ Show some statistics
+: .q  ." q "   #queued-lines 0 ?do  linelens i na+ @ .d   loop  ;
 defer show-stats
 : type-stats  ( -- )
    show-line#?  if  executed-line# .d  sent-line# executed-line# - .d   then
@@ -127,7 +128,7 @@ defer show-stats
              type cr                                 ( tail$ )
           else                                       ( tail$ head$ )
              \ Show ok acks only if asked to
-             show-ack?  if  type cr  else  2drop  then  ( tail$ )
+             show-ack?  if  cr type cr  else  2drop  then  ( tail$ )
           then                                       ( tail$ )
        else                                          ( tail$ )
           2drop                                      ( )
@@ -144,7 +145,8 @@ defer show-stats
 
 \ Handle GRBL response if available
 : handle-rx  ( -- )
-   response-buf  /rxbuf #response -  #1 comport timed-read-com  dup 0<  if  ( actual | -1 )
+   response-buf /rxbuf  #response /string    ( adr len )
+   #1 comport timed-read-com  dup 0<  if     ( actual | -1 )
       drop                          ( )
    else                             ( actual )
       #response +  to #response     ( )
