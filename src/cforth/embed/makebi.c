@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <inttypes.h>
 #include "config.h"
 
 int
@@ -38,7 +39,7 @@ void cells_to_file(char *filename, FILE *infile, int len, u_cell *dsizep, u_cell
         if (i == 5) {
             *usizep = val;
         }
-        fprintf(outfile, "0x%tx, ", val);
+        fprintf(outfile, "0x%" PRIxPTR ", ", val);
     }
     fputc('\n', outfile);
     fclose(outfile);
