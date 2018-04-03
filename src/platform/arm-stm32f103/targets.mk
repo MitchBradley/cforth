@@ -16,7 +16,12 @@ DEFS += -DSTM32F10X_MD
 DEFS += -DUSE_STDPERIPH_DRIVER
 
 DICTIONARY=ROM
-DICTSIZE=0x4000
+
+ifneq ($(findstring FLOATING,$(CONFIG)),)
+  DICTSIZE ?= 0x3000
+else
+  DICTSIZE ?= 0x4000
+endif
 
 CFLAGS += -m32 -march=i386
 
@@ -32,7 +37,6 @@ VPATH += $(SRC)/platform/$(MYNAME)
 VPATH += $(SRC)/lib
 VPATH += $(STMLIB)/Libraries/STM32F10x_StdPeriph_Driver/src
 VPATH += $(STMLIB)/Libraries/CMSIS/CM3/DeviceSupport/ST/STM32F10x/
-$(info VPATH = $(VPATH))
 
 # This directory, including board information
 INCS += -I$(SRC)/platform/$(MYNAME)
@@ -83,25 +87,27 @@ FORTH_OBJS = tembed.o ttextend.o
 
 LDSCRIPT = $(SRC)/platform/$(MYNAME)/stm32_flash.ld
 
-# space =
-# space +=
-# $(info LIBDIRS = $(LIBDIRS))
-# N=$(subst $(space),;,$(shell $(TCC) -print-libgcc-file-name))
-# DD=$(dir $N)
-# D=$(subst ;,$(space),$(DD))
-# $(info N = $N)
-# $(info DD = $(DD))
-# $(info D = $D)
-#LIBGCC = $(shell $(TCC) -print-libgcc-file-name)
-# "c:/program files (x86)/gnu tools arm embedded/6 2017-q2-update/bin/../lib/gcc/arm-none-eabi/6.3.1/"
-# LIBDIRS = -L"$(D)"
+TLDBODY = -T$(LDSCRIPT) $(FIRST_OBJ) $(PLAT_OBJS) $(FORTH_OBJS)
+ifneq ($(findstring FLOATING,$(CFLAGS)),)
+  # The software floating point library needs a few things from libc,
+  # most notably malloc, so we cannot easily do a tight libc-less link
+  # with ld.  Instead we link with gcc and let it work out the details.
+  LDCMD := $(TCC) $(CPU_VARIANT) \
+	   $(TLDBODY) \
+	   -lc -lgcc -lm -specs=nosys.specs
+else
+  LDCMD := $(TLD) $(TLFLAGS) \
+	   $(TLDBODY) \
+	   $(LIBDIRS) -lgcc
+endif
 
 app.elf: $(FIRST_OBJ) $(PLAT_OBJS) $(FORTH_OBJS)
 	@echo Linking $@ ... 
-	$(TLD) -o $@  $(TLFLAGS) -T$(LDSCRIPT) \
-	   $(FIRST_OBJ) $(PLAT_OBJS) $(FORTH_OBJS) \
-	   $(LIBDIRS) -lgcc
+	$(LDCMD) -o $@
 
+
+# LIBM := $(shell $(TCC) --print-file-name=libm.a)
+# LIBC := $(shell $(TCC) --print-file-name=libc.a)
 
 # This rule extracts the executable bits from an ELF file, yielding raw binary.
 

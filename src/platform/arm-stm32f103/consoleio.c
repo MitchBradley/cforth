@@ -73,3 +73,5 @@ int strlen(const char *s)
 	}
 	return p-s;
 }
+
+int __errno;
