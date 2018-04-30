@@ -2,6 +2,7 @@
 
 TOPDIR=../..
 
+CONFIG += -DBITS32
 LIBS += -lpthread
 
 include $(TOPDIR)/src/app/bluez/targets.mk
