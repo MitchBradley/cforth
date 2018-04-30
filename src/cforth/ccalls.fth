@@ -41,10 +41,17 @@ also ccalls definitions
    previous
 ;
 forth definitions
-: ccall:  \ name  { args } ( subroutine-address -- )
+: (ccall:)  \ name  { args } ( n -- )
    create , 0 here c!
    also ccalls
+;
+: ccall:  \ name  { args } ( entry# -- )
+   (ccall:)
    does>  dup na1+ swap @ ccall
+;
+: acall:  \ name  { args } ( subroutine-adr -- )
+   (ccall:)
+   does>  dup na1+ swap @ acall
 ;
 
 previous definitions
