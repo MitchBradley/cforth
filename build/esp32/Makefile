@@ -20,15 +20,17 @@ CROSS ?= $(XTGCCPATH)xtensa-esp32-elf-
 # ESP32 SDK
 IDF_PATH ?= $(TOPDIR)/../esp-idf
 
+CFORTH_PATH ?= $(abspath $(TOPDIR)/build/esp32)
+
 COMPORT ?= COM27
 
 include $(TOPDIR)/src/app/esp32/targets.mk
 
 forth.elf: app.o
-	@IDF_PATH=$(IDF_PATH) make --no-print-directory -C sdk_build
+	@IDF_PATH=$(IDF_PATH) CFORTH_PATH=$(CFORTH_PATH) make --no-print-directory -C sdk_build
 
 flash: app.o
-	@IDF_PATH=$(IDF_PATH) make --no-print-directory -C sdk_build flash
+	@IDF_PATH=$(IDF_PATH) CFORTH_PATH=$(CFORTH_PATH) make --no-print-directory -C sdk_build flash
 
 clean::
 	@rm -rf sdk_build/build

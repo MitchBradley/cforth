@@ -26,6 +26,12 @@ void emit(u_char c, cell *up)
     raw_emit(c);
 }
 
+void cprint(const char *str, cell *up)
+{
+    while (*str)
+        emit((u_char)*str++, up);
+}
+
 u_char key_is_avail = 0;
 u_char the_key;
 

@@ -1,6 +1,6 @@
 #
 # Main component makefile.
 
-# COMPONENT_OBJS := ../../../app.o main.o
+# COMPONENT_OBJS := $(CFORTH_PATH)/app.o main.o
 
-COMPONENT_OBJS := ../../../app.o interface.o
+COMPONENT_OBJS := $(CFORTH_PATH)/app.o interface.o
