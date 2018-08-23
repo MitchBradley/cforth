@@ -22,15 +22,22 @@ IDF_PATH ?= $(TOPDIR)/../esp-idf
 
 CFORTH_PATH ?= $(abspath $(TOPDIR)/build/esp32)
 
-COMPORT ?= COM27
-
 include $(TOPDIR)/src/app/esp32/targets.mk
 
 forth.elf: app.o
 	@IDF_PATH=$(IDF_PATH) CFORTH_PATH=$(CFORTH_PATH) make --no-print-directory -C sdk_build
 
+# If COMPORT is in the environment - e.g.  COMPORT=COM36 make flash
+# override the CONFIG_ESPTOOLPY_PORT setting in sdk_build/sdkconfig,
+# otherwise use that setting.
+# The following line forces COMPORT to be imported from the environment.
+COMPORT ?=
+ifneq ($(COMPORT),)
+	ESPPORT_OVERRIDE = ESPPORT=$(COMPORT)
+endif
+
 flash: app.o
-	@IDF_PATH=$(IDF_PATH) CFORTH_PATH=$(CFORTH_PATH) make --no-print-directory -C sdk_build flash
+	@IDF_PATH=$(IDF_PATH) CFORTH_PATH=$(CFORTH_PATH) $(ESPPORT_OVERRIDE) make --no-print-directory -C sdk_build flash
 
 clean::
 	@rm -rf sdk_build/build
