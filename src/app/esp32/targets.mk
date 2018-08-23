@@ -21,9 +21,9 @@ TOBJCOPY=$(CROSS)objcopy
 
 LIBDIRS=-L$(dir $(shell $(TCC) $(TCFLAGS) -print-libgcc-file-name))
 
+VPATH += $(APPPATH)
 VPATH += $(SRC)/cforth
 VPATH += $(SRC)/lib
-VPATH += $(APPPATH)
 INCS += -I$(APPPATH)
 
 include $(SRC)/common.mk
@@ -78,3 +78,4 @@ EXTRA_CLEAN += $(FORTH_OBJS) $(PLAT_OBJS)
 PREFIX += CBP=$(realpath $(TOPDIR)/src)
 
 include $(SRC)/cforth/embed/targets.mk
+

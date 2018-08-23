@@ -143,9 +143,9 @@ tsyscall.o: generic/syscall.c $(FINC)
 
 tfloatops.o: $(FINC) prims.h
 
-tccalls.fth: textend.c
+tccalls.fth: extend.c
 	./makeccalls <$< >tccalls.fth
 
-textend.o: textend.c $(FINC)
+textend.o: extend.c $(FINC)
 
 EXTRA_CLEAN += tembed.o
