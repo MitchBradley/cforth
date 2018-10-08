@@ -19,6 +19,12 @@ cell build_date_adr(void)
     return (cell)build_date;
 }
 
+#include <errno.h>
+cell errno_val(void) {  return (cell)errno;  }
+#include <string.h>
+// Above gets us strerror()
+
+
 // Many of the routines cited below are defined either directly
 // in the ESP32 SDK or in sdk_build/main/interface.c .  It is best
 // to avoid putting the definition of ESP-specific routines in
@@ -109,5 +115,8 @@ cell ((* const ccalls[])()) = {
 	C(fs_avail)		//c fs-avail       { -- i.bytes }
 
 	C(raw_emit)		//c m-emit         { i.char -- }
+
+	C(errno_val)		//c errno          { -- i.errno }
+	C(strerror)		//c strerror       { i.errno -- $.msg }
 };
 
