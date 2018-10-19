@@ -240,6 +240,11 @@ int get_nth_port(cell portnum, char ** resbuf)
 	return 0;
 }
 
+// The argument can be either
+// a) A small positive integer like 5 for /dev/ttyUSB5
+// b) A small negative integer like -2 for the nth system dependent serial port
+// c) A null-terminated string like "/dev/ttyFAKE" to name a specific device
+// This assumes that string addresses will never be small integers
 cell open_com(cell portnum)		// Open COM port
 {
 	cell res;
@@ -255,17 +260,19 @@ cell open_com(cell portnum)		// Open COM port
 	char *comname;
 	char comname_buf[32];
 
-	if (portnum < 0) {
+	if (portnum < 0 && portnum > -100) {
 		// ports numbered -1, -2, -3...
 		int res = get_nth_port(-1 - portnum, &comname);
 		if (res < 0) {
 			fprintf(stderr, "Unable to find a port with name like %s\n", port_nameish);
 			return (cell)res;
 		}
-	} else {
+	} else if ((u_cell)portnum < 200) {
 		snprintf(comname_buf, 31, "/dev/ttyUSB%ld", portnum);
 		comname = comname_buf;
-	}
+	} else {
+                comname = (char *)portnum;
+        }
 
 	return open_posix_com(comname);
 }
