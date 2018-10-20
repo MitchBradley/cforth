@@ -79,3 +79,19 @@ PREFIX += CBP=$(realpath $(TOPDIR)/src)
 
 include $(SRC)/cforth/embed/targets.mk
 
+ESP_IDF_REPO ?= https://github.com/espressif/esp-idf.git
+$(IDF_PATH):
+	(cd $(IDF_PARENT_PATH) \
+	&& git clone --recursive $(ESP_IDF_REPO) \
+	)
+
+XTGCC_ARCHIVE ?= xtensa-esp32-elf-linux64-1.22.0-73-ge28a011-5.2.0.tar.gz
+XTGCC_DOWNLOAD ?= https://dl.espressif.com/dl/$(XTGCC_ARCHIVE)
+$(XTGCCPATH):
+	(cd $(XTGCC_PARENT_PATH) \
+	&& wget $(XTGCC_DOWNLOAD) \
+	&& tar xvf $(XTGCC_ARCHIVE) \
+	&& rm $(XTGCC_ARCHIVE) \
+	)
+
+$(PLAT_OBJS): $(IDF_PATH) $(XTGCCPATH)
