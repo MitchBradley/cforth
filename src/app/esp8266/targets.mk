@@ -34,9 +34,9 @@ TOBJCOPY=$(CROSS)objcopy
 
 LIBDIRS=-L$(dir $(shell $(TCC) $(TCFLAGS) -print-libgcc-file-name))
 
+VPATH += $(APPPATH)
 VPATH += $(SRC)/lib
-VPATH += $(SRC)/app/esp8266
-INCS += -I$(SRC)/app/esp8266
+INCS += -I$(APPPATH)
 
 include $(SRC)/common.mk
 include $(SRC)/cforth/targets.mk
