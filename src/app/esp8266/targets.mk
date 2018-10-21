@@ -113,7 +113,15 @@ $(NODEMCU_PATH)/sdk: $(NODEMCU_PATH)
 
 $(PLAT_OBJS): $(NODEMCU_PATH)/sdk
 
-nodemcu-fw: app.o
+$(XTGCCPATH):
+	@echo Building Xtensa C cross compiler in 30 minutes or so
+	(cd $(SDK_PARENT_PATH) \
+	&& git clone --recursive https://github.com/pfalcon/esp-open-sdk.git \
+	&& cd $(SDK_PARENT_PATH)/esp-open-sdk \
+	&& make STANDALONE=n \
+	)
+
+nodemcu-fw: $(XTGCCPATH) app.o
 	(cd $(NODEMCU_PATH) && PATH=${PATH}:$(XTGCCPATH) make --no-print-directory)
 
 LOADCMD=tools/esptool.py --port $(COMPORT) -b 115200 write_flash -fm=dio -fs=32m 0x00000 bin/0x00000.bin 0x10000 bin/0x10000.bin
