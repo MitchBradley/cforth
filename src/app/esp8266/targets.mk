@@ -1,12 +1,14 @@
 # APPPATH is the path to the application code, i.e. this directory
-APPPATH=$(TOPDIR)/src/app/esp8266
+APPPATH ?= $(TOPDIR)/src/app/esp8266
 
 # APPLOADFILE is the top-level "Forth load file" for the application code.
-APPLOADFILE = app.fth
+APPLOADFILE ?= app.fth
 
 # APPSRCS is a list of Forth source files that the application uses,
 # i.e. the list of files that APPLOADFILE floads.  It's for dependency checking.
-APPSRCS = $(wildcard $(APPPATH)/*.fth)
+APPSRCS += $(wildcard $(APPPATH)/*.fth)
+
+TCPATH=$(TOPDIR)/src/app/esp8266
 
 default: nodemcu-fw
 
@@ -14,19 +16,9 @@ default: nodemcu-fw
 
 # Makefile fragment for the final target application
 
-# Include files from the SDK
-SDK_DIR:=$(NODEMCU_PATH)/sdk/esp_iot_sdk_v$(SDK_VER)
-INCS += -I$(TOP_DIR)/sdk-overrides/include -I$(SDK_DIR)/include
-
-INCS += -I$(NODEMCU_PATH)/app/include
-INCS += -I$(NODEMCU_PATH)/app/platform
-INCS += -I$(NODEMCU_PATH)/app/spiffs
-INCS += -I$(NODEMCU_PATH)/app/libc
-
 SRC=$(TOPDIR)/src
 
 # Target compiler definitions
-CROSS ?= /Volumes/case-sensitive/esp-open-sdk/xtensa-lx106-elf/bin/xtensa-lx106-elf-
 TCC=$(CROSS)gcc
 TLD=$(CROSS)ld
 TOBJDUMP=$(CROSS)objdump
@@ -34,12 +26,12 @@ TOBJCOPY=$(CROSS)objcopy
 
 LIBDIRS=-L$(dir $(shell $(TCC) $(TCFLAGS) -print-libgcc-file-name))
 
-VPATH += $(APPPATH)
-VPATH += $(SRC)/lib
-INCS += -I$(APPPATH)
+VPATH += $(TCPATH)
+INCS += -I$(TCPATH)
 
 include $(SRC)/common.mk
 include $(SRC)/cforth/targets.mk
+include $(TCPATH)/sdk.mk
 
 OPTIMIZE = -O2
 
@@ -95,49 +87,4 @@ PREFIX += BP=$(realpath /c/Users/wmb/Documents/svn/openfirmware)
 
 include $(SRC)/cforth/embed/targets.mk
 
-.PHONY: nodemcu-fw
-
-NODEMCU_REPO ?= https://github.com/nodemcu/nodemcu-firmware.git
-NODEMCU_COMMIT ?= 7b83bbb
-$(NODEMCU_PATH):
-	(cd $(NODEMCU_PARENT_PATH) \
-	&& git clone $(NODEMCU_REPO) \
-	&& cd $(abspath $(NODEMCU_PATH)) \
-	&& git branch cforth $(NODEMCU_COMMIT) \
-	&& git checkout cforth \
-	&& git apply $(abspath $(APPPATH))/*.patch \
-	)
-
-$(NODEMCU_PATH)/sdk: $(NODEMCU_PATH)
-	cd $(NODEMCU_PATH) && make --no-print-directory sdk_patched
-
-$(PLAT_OBJS): $(NODEMCU_PATH)/sdk
-
-$(XTGCCPATH):
-	@echo Building Xtensa C cross compiler in 30 minutes or so
-	(cd $(SDK_PARENT_PATH) \
-	&& git clone --recursive https://github.com/pfalcon/esp-open-sdk.git \
-	&& cd $(SDK_PARENT_PATH)/esp-open-sdk \
-	&& make STANDALONE=n \
-	)
-
-nodemcu-fw: $(XTGCCPATH) app.o
-	(cd $(NODEMCU_PATH) && PATH=${PATH}:$(XTGCCPATH) make --no-print-directory)
-
-LOADCMD=tools/esptool.py --port $(COMPORT) -b 115200 write_flash -fm=dio -fs=32m 0x00000 bin/0x00000.bin 0x10000 bin/0x10000.bin
-
-download: nodemcu-fw
-	(cd $(NODEMCU_PATH) && $(LOADCMD))
-
-
-# wmbdownload automatically disconnects the terminal emulator while downloading
-# It is used on Windows host systems with TeraTerm as the terminal emulator.
-# It further requires the "AutoHotkey" program, which is a scripting language
-# that is good at sending events to Windows programs.
-
-SCRIPTPATH=/c/Users/wmb/Desktop/
-AHKPATH=/c/Program\ Files/AutoHotKey/
-wmbdownload: nodemcu-fw
-	$(AHKPATH)AutoHotKey $(SCRIPTPATH)disconn_teraterm.ahk $(COMPORT)
-	(cd $(NODEMCU_PATH) && $(LOADCMD))
-	$(AHKPATH)AutoHotKey $(SCRIPTPATH)connect_teraterm.ahk $(COMPORT)
+# include autohotkey.mk
