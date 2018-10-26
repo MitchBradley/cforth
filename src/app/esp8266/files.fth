@@ -19,11 +19,16 @@ alias ls dir
 : read-fid  ( adr len -- actual )  fid read-file abort" File read error"  ;
 : read-line-fid  ( adr len -- len more? )  fid read-line abort" File read error"  ;
 
+also modem
 : xmodem-to-file:  ( "filename" -- )
-   rx   ( adr len )
-   safe-parse-word create-fid  write-fid  close-fid
+   safe-parse-word create-fid                  ( )
+   pad $800 start-receive                      ( )
+   begin  +receive  while  write-fid  repeat   ( adr len )
+   write-fid                                   ( )
+   close-fid                                   ( )
 ;
 alias rf xmodem-to-file:
+previous
 
 : $print-file  ( filename$ -- )
    open-fid

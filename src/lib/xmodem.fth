@@ -73,9 +73,15 @@ variable done?
 \ Receiving
 
 
+
 variable got-sector#
-: receive-setup  ( adr maxlen -- )
+: receive-setup  ( -- )
    0 got-sector# !   #naks off   #control-z's off
+;
+: update-sector#  ( byte -- )
+   dup  0=  if  $100 +  then         ( sector-offset )
+   got-sector# @  $ff invert and  +  ( sector# )
+   got-sector# !
 ;
 : receive-error ( -- ) \ eat rest of packet and send a nak
    gobble
@@ -98,6 +104,11 @@ variable got-sector#
 ;
 variable base-adr
 variable end-adr
+0 value chunk-sector#
+: buf$  ( -- adr len )
+   base-adr @   got-sector# @  chunk-sector# -  /sector *
+;
+/sector buffer: junk-buf
 : try-receive  ( -- )
    ( packet OK return:  none )
    ( retry return: throws -1 )
@@ -118,11 +129,16 @@ variable end-adr
    timed-in                throw     ( sec# )
    timed-in                throw     ( sec# ~sec# )
    h# ff xor over <>       throw     ( sec# )
-   dup got-sector# !                 ( sec# )
-   1- /sector *  base-adr @ +        ( adr )
+   update-sector#                    ( )
+   buf$ +  /sector -                 ( bottom-adr )
    dup end-adr @ u>=  if             ( adr )
       can m-emit 3 throw
    then                              ( adr )
+   \ This is in case of a resend of a previous sector
+   \ after we have moved on.
+   dup base-adr @ u<  if             ( adr )
+      drop junk-buf                  ( adr' )
+   then                              ( adr' )
    /sector  receive-data   throw     ( )
 
    ack m-emit
@@ -147,12 +163,11 @@ variable end-adr
       endcase   ( )
    again
 ;
-: (receive)  ( adr0 maxlen -- adr0 len )
-   over base-adr !                    ( adr maxlen )
-   + end-adr !                        ( )
-   receive-setup                      ( )
-   gobble  nak m-emit                 ( )
+: +receive  ( -- adr len more? )
+   got-sector# @  to chunk-sector#
    begin
+      buf$ +  end-adr @ =  if  buf$ true  exit  then   ( -- adr len more? )
+
       r2-msg
       ['] try-receive catch  case
          0 of   endof   \ Packet ok
@@ -162,8 +177,7 @@ variable end-adr
         -1 of  receive-error  endof
 
          1 of           \ Normal end of transmission
-            base-adr @  got-sector# @  /sector *  ( adr len )
-            remove-eofs  exit                     ( -- adr len )
+            buf$ remove-eofs false  exit   ( -- adr len more? )
          endof
          2 of           \ Canceled
             can-msg end-delay   2 throw
@@ -176,6 +190,13 @@ variable end-adr
       endcase
    again
 ;
+: start-receive  ( adr maxlen -- )
+   over base-adr !        ( adr maxlen )
+   + end-adr !            ( )
+   receive-setup  gobble	      
+   nak m-emit
+;
+: (receive)  ( adr maxlen -- adr len )  start-receive  +receive drop  ;
 
 \ Sending
 modem definitions
