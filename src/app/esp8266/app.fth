@@ -61,6 +61,8 @@ fl ${CBP}/lib/ssd1306.fth
    #20 0  do  i (u.)  fb-type "  Hello" fb-type  fb-cr  loop
 ;
 
+fl wemos-rgb-led.fth
+
 0 [if]
 \ Open Firmware stuff; omit if you don't need it
 fl ${CBP}/ofw/loadofw.fth      \ Mostly platform-independent

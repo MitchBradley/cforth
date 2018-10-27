@@ -45,6 +45,46 @@ void tcp_recv1();
 void tcp_poll1();
 void tcp_err1();
 
+
+// Mapping from Nodemcu pin numbers to ESP GPIO numbers
+                         //  0  1  2  3  4   5   6   7   8  9 10
+u_char nodemcu_pinmap[] = { 16, 5, 4, 0, 2, 14, 12, 13, 15, 3, 1};
+
+int short_spins, long_spins, ws2812b_gpio_mask;
+void ws2812b_init(cell longspins, cell shortspins, cell gpio) {
+    platform_gpio_mode(gpio, PLATFORM_GPIO_OUTPUT, 0);
+    platform_gpio_write(gpio, 0);                 // LOW is reset/idle state
+    ws2812b_gpio_mask = 1<<nodemcu_pinmap[gpio];
+    short_spins = shortspins;
+    long_spins = longspins;
+}
+
+void ICACHE_RAM_ATTR ws2812b_write(cell len, cell adr)
+{
+    u_char *p = (u_char *)adr;
+    ets_intr_lock();
+    while(len--) {
+	volatile int first, second;
+	u_char b;
+	b = *p++;
+	int bit;
+	for (bit=0x80; bit; bit >>= 1) {
+	    GPIO_REG_WRITE(GPIO_OUT_W1TS_ADDRESS, ws2812b_gpio_mask);  // HIGH
+	    if (b&bit) {
+		first = long_spins;
+		second = short_spins;
+	    } else {
+		first = short_spins;
+		second = long_spins;
+	    }
+	    while (first--) ;
+	    GPIO_REG_WRITE(GPIO_OUT_W1TC_ADDRESS, ws2812b_gpio_mask);  // LOW
+	    while (second--) ;
+	}
+    }
+    ets_intr_unlock();
+}
+
 #include "driver/i2c_master.h"
 cell i2c_send(cell byte)
 {
@@ -550,4 +590,7 @@ cell ((* const ccalls[])()) = {
   C(spi_end)                //c }spi  { -- }
   C(spi_transfer)           //c spi-transfer { a.outp a.inp i.size -- }
   C(spi_bits_in)            //c spi-bits@ { i.#bits -- i.bits }
+
+  C(ws2812b_init)	    //c init-ws2812b { i.gpio# i.short_spins i.long_spins -- }
+  C(ws2812b_write)	    //c write-ws2812b { a.adr i.len -- }
 };
