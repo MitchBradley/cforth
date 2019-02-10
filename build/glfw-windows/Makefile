@@ -15,10 +15,12 @@ CC = gcc
 #   include/libusb.h
 #   MinGW64/static/libusb-1.0.a
 
-FTDI = y
-INCS += -I.
-LIBS += -L.
-LIBS += -lusb-1.0
+# The inclusion of the FTDI libraries was for an old
+# project that abused an FTDI dongle as a GPIO port
+# FTDI = y
+# INCS += -I.
+# LIBS += -L.
+# LIBS += -lusb-1.0
 
 INCS += -I./glew-1.13.0/include
 
@@ -46,21 +48,10 @@ LIBS += -lglu32
 LIBS += -lgdi32
 
 CONFIG += -DBITS64 -m64
-CONFIG += -DFLOATING -DMOREFP
-CONFIG += -DOPENGL
 CONFIG += -DUSE_GLEW -DGLEW_STATIC
 
-MYOBJS += glops.o
-
-forth.o: glops.h
-
-glops.o: glops.c
-
-makegcalls: makegcalls.c
-	$(CC) -o $@ $<
-
 obj_to_gl: $(TOPDIR)/src/app/glfw/obj_to_gl.c
-	$(CC) -o $@ $<
+	$(CC) -o $@ $< -lm
 
 glfaces.bin: obj_to_gl
 
@@ -70,10 +61,4 @@ glfaces.bin: obj_to_gl
 glfaces.bin: ~/Downloads/test.obj
 	./obj_to_gl <$<
 
-glops.h: makegcalls
-
-glops.h: $(TOPDIR)/src/cforth/glops.c
-	./makegcalls <$<
-
 include $(TOPDIR)/src/app/glfw/targets.mk
-# include $(TOPDIR)/src/app/host-serial/targets.mk
