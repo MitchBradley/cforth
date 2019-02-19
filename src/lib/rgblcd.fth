@@ -1,7 +1,7 @@
 \ Interface to Adafruit RGB LCD plate for Raspberry Pi
 
-\needs mcp-set  fload mcp23017.fth
-\needs .color   fload colors.fth
+\needs mcp-set  fload ../../lib/mcp23017.fth
+\needs .color   fload ../../lib/colors.fth
 
 : setup-lcd  ( -- )
    $1f 0 mcp-w!  \ Set GPIO 4..0 as input (switches), others output
