@@ -1,8 +1,8 @@
-XTGCCPATH ?= $(SDK_PARENT_PATH)/esp-open-sdk/xtensa-lx106-elf/bin/
-CROSS ?= $(XTGCCPATH)xtensa-lx106-elf-
-
 NODEMCU_PATH ?= $(NODEMCU_PARENT_PATH)/nodemcu-firmware
 SDK_VER:=1.5.4.1
+
+XTGCCPATH ?= $(NODEMCU_PATH)/esp-open-sdk/xtensa-lx106-elf/bin/
+CROSS ?= $(XTGCCPATH)xtensa-lx106-elf-
 
 # Include files from the SDK
 SDK_DIR:=$(NODEMCU_PATH)/sdk/esp_iot_sdk_v$(SDK_VER)
@@ -23,7 +23,8 @@ $(NODEMCU_PATH):
 	&& cd $(abspath $(NODEMCU_PATH)) \
 	&& git branch cforth $(NODEMCU_COMMIT) \
 	&& git checkout cforth \
-	&& git apply $(abspath $(APPPATH))/*.patch \
+	&& git apply --whitespace=fix $(abspath $(APPPATH))/*.patch \
+	&& tar -xzf tools/esp-open-sdk.tar.gz
 	)
 
 $(NODEMCU_PATH)/sdk: $(NODEMCU_PATH)
@@ -33,7 +34,7 @@ $(PLAT_OBJS): $(NODEMCU_PATH)/sdk
 
 BUILDDIR := $(realpath .)
 
-nodemcu-fw: app.o
+nodemcu-fw: $(NODEMCU_PATH)/sdk app.o
 	(cd $(NODEMCU_PATH) && PATH=${PATH}:$(XTGCCPATH) FORTHOBJS=$(BUILDDIR)/app.o make --no-print-directory)
 	cp $(NODEMCU_PATH)/bin/*.bin .
 
