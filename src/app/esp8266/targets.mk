@@ -10,7 +10,7 @@ APPSRCS += $(wildcard $(APPPATH)/*.fth)
 
 TCPATH=$(TOPDIR)/src/app/esp8266
 
-default: nodemcu-fw
+default: 0x00000.bin 0x10000.bin
 
 # default: app.o
 

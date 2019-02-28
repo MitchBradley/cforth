@@ -13,8 +13,6 @@ INCS += -I$(NODEMCU_PATH)/app/platform
 INCS += -I$(NODEMCU_PATH)/app/spiffs
 INCS += -I$(NODEMCU_PATH)/app/libc
 
-.PHONY: nodemcu-fw
-
 NODEMCU_REPO ?= https://github.com/nodemcu/nodemcu-firmware.git
 NODEMCU_COMMIT ?= 7b83bbb
 $(NODEMCU_PATH):
@@ -34,11 +32,11 @@ $(PLAT_OBJS): $(NODEMCU_PATH)/sdk
 
 BUILDDIR := $(realpath .)
 
-nodemcu-fw: $(NODEMCU_PATH)/sdk app.o
+0x10000.bin 0x00000.bin: $(NODEMCU_PATH)/sdk app.o
 	(cd $(NODEMCU_PATH) && PATH=${PATH}:$(XTGCCPATH) FORTHOBJS=$(BUILDDIR)/app.o make --no-print-directory)
-	cp $(NODEMCU_PATH)/bin/*.bin .
+	mv $(NODEMCU_PATH)/bin/*.bin .
 
-LOADCMD=tools/esptool.py --port $(COMPORT) -b 115200 write_flash -fm=dio -fs=32m 0x00000 bin/0x00000.bin 0x10000 bin/0x10000.bin
+LOADCMD=$(NODEMCU_PATH)/tools/esptool.py --port $(COMPORT) -b 115200 write_flash -fm=dio -fs=32m 0x00000 0x00000.bin 0x10000 0x10000.bin
 
-download: nodemcu-fw
-	(cd $(NODEMCU_PATH) && $(LOADCMD))
+download: 0x00000.bin 0x10000.bin
+	$(LOADCMD)
