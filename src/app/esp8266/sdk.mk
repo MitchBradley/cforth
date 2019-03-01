@@ -21,7 +21,7 @@ $(NODEMCU_PATH):
 	&& cd $(abspath $(NODEMCU_PATH)) \
 	&& git branch cforth $(NODEMCU_COMMIT) \
 	&& git checkout cforth \
-	&& git apply --whitespace=fix $(abspath $(APPPATH))/*.patch \
+	&& git apply --whitespace=fix $(abspath $(TOPDIR))/src/app/esp8266/*.patch \
 	&& tar -xzf tools/esp-open-sdk.tar.gz \
 	)
 
