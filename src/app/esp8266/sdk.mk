@@ -22,7 +22,7 @@ $(NODEMCU_PATH):
 	&& git branch cforth $(NODEMCU_COMMIT) \
 	&& git checkout cforth \
 	&& git apply --whitespace=fix $(abspath $(APPPATH))/*.patch \
-	&& tar -xzf tools/esp-open-sdk.tar.gz
+	&& tar -xzf tools/esp-open-sdk.tar.gz \
 	)
 
 $(NODEMCU_PATH)/sdk: $(NODEMCU_PATH)
