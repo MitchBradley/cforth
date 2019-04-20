@@ -23,6 +23,14 @@ struct header {
 extern struct header file_hdr;
 extern const struct header builtin_hdr;
 
+struct stacks {
+  cell sp;
+  cell sp0;
+  cell rp;
+  cell rp0;
+};
+void switch_stack(struct stacks *old, struct stacks *new);
+
 #define FTHERROR(s)   alerror(s, sizeof(s)-1, up)
 
 #ifdef BITS64

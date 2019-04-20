@@ -1,10 +1,25 @@
 // Forth interface to LWIP raw API
 
-#include "config.h"
+#include "forth.h"
 extern cell *callback_up;
 
 #include "esp_stdint.h"
 #include "lwip/tcp.h"
+
+#define LWIP_DATA_CELLS 30
+#define LWIP_RETURN_CELLS 30
+cell lwip_data_stack[LWIP_DATA_CELLS];
+cell lwip_return_stack[LWIP_RETURN_CELLS];
+struct stacks lwip_stacks_save;
+struct stacks lwip_stacks = {
+  (cell)&lwip_data_stack[LWIP_DATA_CELLS-2],
+  (cell)&lwip_data_stack[LWIP_DATA_CELLS-2],
+  (cell)&lwip_return_stack[LWIP_RETURN_CELLS],
+  (cell)&lwip_return_stack[LWIP_RETURN_CELLS]
+};
+
+#define SWITCH_STACKS(m) switch_stacks(&lwip_stacks_save, &lwip_stacks, up);
+#define RESTORE_STACKS  switch_stacks(&lwip_stacks, &lwip_stacks_save, up);
 
 xt_t gethostbyname_forth_cb;
 void gethostbyname_cb(char *name, struct ip_addr *ipaddr, void *arg)
@@ -13,11 +28,13 @@ void gethostbyname_cb(char *name, struct ip_addr *ipaddr, void *arg)
   if (!gethostbyname_forth_cb) {
     return;
   }
+  SWITCH_STACKS("gh");
   spush(arg, up);
   spush((cell)ipaddr, up);
   spush((cell)name, up);
 
   execute_xt(gethostbyname_forth_cb, up);
+  RESTORE_STACKS;
 }
 
 extern err_t dns_gethostbyname(const char *hostname, struct ip_addr *addr, void *found, void *callback_arg);
@@ -40,11 +57,14 @@ err_t accept_cb(void *arg, struct tcp_pcb *newpcb, err_t err)
   if (!accept_forth_cb) {
     return 0;
   }
+  SWITCH_STACKS("ac");
   spush((cell)err, up);
   spush((cell)newpcb, up);
   spush(arg, up);
-  
-  return execute_xt_pop(accept_forth_cb, up);
+
+  err_t retval = execute_xt_pop(accept_forth_cb, up);
+  RESTORE_STACKS;
+  return retval;
 }
 void tcp_accept1(struct tcp_pcb *pcb, xt_t callback)
 {
@@ -67,7 +87,7 @@ err_t connect_cb(void *arg, struct tcp_pcb *newpcb, err_t err)
   spush((cell)err, up);
   spush((cell)newpcb, up);
   spush(arg, up);
-  
+
   return execute_xt_pop(connect_forth_cb, up);
 }
 void tcp_connect1(struct tcp_pcb *pcb, struct ip_addr *ipaddr, u16_t port, xt_t callback)
@@ -83,11 +103,14 @@ err_t sent_cb(void *arg, struct tcp_pcb *tpcb, u16_t len)
   if (!sent_forth_cb) {
     return 0;
   }
+  SWITCH_STACKS("sent");
   spush((cell)len, up);
   spush((cell)tpcb, up);
   spush(arg, up);
-  
-  return execute_xt_pop(sent_forth_cb, up);
+
+  err_t retval = execute_xt_pop(sent_forth_cb, up);
+  RESTORE_STACKS;
+  return retval;
 }
 
 void tcp_sent1(struct tcp_pcb *pcb, xt_t callback)
@@ -102,11 +125,14 @@ err_t continuation_cb(void *arg, struct tcp_pcb *tpcb, u16_t len)
   if (!sent_forth_cb) {
     return 0;
   }
+  SWITCH_STACKS("cont");
   spush((cell)len, up);
   spush((cell)tpcb, up);
   spush(arg, up);
-  
-  return inner_interpreter(up);
+
+  err_t retval = inner_interpreter(up);
+  RESTORE_STACKS;
+  return retval;
 }
 
 void tcp_sent_continues(struct tcp_pcb *pcb)
@@ -118,15 +144,19 @@ xt_t recv_forth_cb;
 err_t recv_cb(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t err)
 {
   cell *up = callback_up;
+
   if (!recv_forth_cb) {
     return 0;
   }
+  SWITCH_STACKS("recv");
   spush((cell)err, up);
   spush((cell)p, up);
   spush((cell)tpcb, up);
   spush(arg, up);
-  
-  return execute_xt_pop(recv_forth_cb, up);
+
+  err_t retval = execute_xt_pop(recv_forth_cb, up);
+  RESTORE_STACKS;
+  return retval;
 }
 
 void tcp_recv1(struct tcp_pcb *pcb, xt_t callback)
@@ -142,10 +172,13 @@ err_t poll_cb(void *arg, struct tcp_pcb *tpcb)
   if (!poll_forth_cb) {
     return 0;
   }
+  SWITCH_STACKS("poll");
   spush((cell)tpcb, up);
   spush(arg, up);
-  
-  return execute_xt_pop(poll_forth_cb, up);
+
+  err_t retval = execute_xt_pop(poll_forth_cb, up);
+  RESTORE_STACKS;
+  return retval;
 }
 void tcp_poll1(struct tcp_pcb *pcb, xt_t callback, u8_t interval)
 {
@@ -161,10 +194,12 @@ void err_cb(void *arg, err_t err)
     return;
   }
 
+  SWITCH_STACKS("err");
   spush((cell)err, up);
   spush(arg, up);
-  
+
   execute_xt(err_forth_cb, up);
+  RESTORE_STACKS;
 }
 
 void tcp_err1(struct tcp_pcb *pcb, xt_t callback)

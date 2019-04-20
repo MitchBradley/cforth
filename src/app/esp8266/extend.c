@@ -206,20 +206,49 @@ static void start_ms(cell ms)
   ets_timer_arm_new(&delay_timer, ms, 0, 1);
 }
 
+#define ALARM_DATA_CELLS 100
+#define ALARM_RETURN_CELLS 50
+cell alarm_data_stack[ALARM_DATA_CELLS];
+cell alarm_return_stack[ALARM_RETURN_CELLS];
+struct stacks alarm_stacks_save;
+struct stacks alarm_stacks = {
+  (cell)&alarm_data_stack[ALARM_DATA_CELLS-2],
+  (cell)&alarm_data_stack[ALARM_DATA_CELLS-2],
+  (cell)&alarm_return_stack[ALARM_RETURN_CELLS],
+  (cell)&alarm_return_stack[ALARM_RETURN_CELLS]
+};
+
 static os_timer_t alarm_timer;
 
 static void alarm_callback(void *arg)
 {
+  switch_stacks(&alarm_stacks_save, &alarm_stacks, callback_up);
   execute_xt((xt_t)arg, callback_up);
+  switch_stacks(NULL, &alarm_stacks_save, callback_up);
 }
 
 static void alarm(cell ms, cell xt)
 {
-  ets_timer_setfn(&alarm_timer, alarm_callback, (void *)xt);
-  ets_timer_arm_new(&alarm_timer, ms, 0, 1);
+  if (xt && ms) {
+    ets_timer_setfn(&alarm_timer, alarm_callback, (void *)xt);
+    ets_timer_arm_new(&alarm_timer, ms, 0, 1);
+  } else {
+    ets_timer_disarm(&alarm_timer);
+  }
+}
+
+static void repeat_alarm(cell ms, cell xt)
+{
+  if (xt && ms) {
+    ets_timer_setfn(&alarm_timer, alarm_callback, (void *)xt);
+    ets_timer_arm_new(&alarm_timer, ms, 1, 1);
+  } else {
+    ets_timer_disarm(&alarm_timer);
+  }
 }
 
 #if 0  // Doesn't work; counts milliseconds despite the 0 final argument
+// Actually, it does work after you call "reinit-timer"
 static void start_us(cell us)
 {
   ets_timer_setfn(&delay_timer, delay_callback, NULL);
@@ -296,8 +325,13 @@ void gpio_callback(unsigned pin, unsigned level)
   if (!gpio_callback_xt[pin])
     return;
   cell *up = callback_up;
+  // We assume that a GPIO callback cannot interrupt an alarm
+  // callback, nor can one GPIO callback interrupt another.
+  // If that is incorrect, everything would need separate stacks
+  switch_stacks(&alarm_stacks_save, &alarm_stacks, up);
   spush(level, up);
   execute_xt((xt_t)gpio_callback_xt[pin], up);
+  switch_stacks(NULL, &alarm_stacks_save, up);
 }
 
 void gpio_set_callback(unsigned pin, xt_t cb_xt)
@@ -553,6 +587,7 @@ cell ((* const ccalls[])()) = {
   C(ets_delay_us)           //c us          { i.usecs -- }
 
   C(alarm)                  //c set-alarm   { i.xt i.ms -- }
+  C(repeat_alarm)           //c repeat-alarm   { i.xt i.ms -- }
 
   C(spi_flash_get_id)       //c flash-id    { -- i.id }
   C(spi_flash_erase_sector) //c flash-erase { i.sector -- i.result }

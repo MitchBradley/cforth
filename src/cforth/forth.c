@@ -1355,6 +1355,20 @@ default:    /* DOES> word */
   } /* End of while (1) */
 }
 
+void switch_stacks(struct stacks *old, struct stacks *new, cell *up)
+{
+  if (old) {
+    old->sp = V(XSP);
+    old->sp0 = V(SPZERO);
+    old->rp = V(XRP);
+    old->rp0 = V(RPZERO);
+  }
+  V(XSP) = new->sp;
+  V(SPZERO) = new->sp0;
+  V(XRP) = new->rp;
+  V(RPZERO) = new->rp0;
+}
+
 void spush(cell n, cell *up)
 {
     V(XSP) -= sizeof(cell);
