@@ -21,8 +21,11 @@ fl hcsr04.fth
 
 fl wifi.fth
 
-fl ../../lib/redirect.fth
 fl tcpnew.fth
+
+fl ../../lib/redirect.fth
+fl sendfile.fth
+fl server.fth
 
 fl ../../lib/url.fth
 \ fl serve-sensors.fth

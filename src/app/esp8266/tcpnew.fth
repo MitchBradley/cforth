@@ -1,8 +1,3 @@
-: wifi-on  ( -- )
-   2 wifi-opmode!   \ AP mode
-   .ssid  space  ipaddr@ .ipaddr
-;
-
 #0 constant ERR_OK              \ No error, everything OK.
 #-1 constant ERR_MEM            \ Out of memory error.
 #-2 constant ERR_BUF            \ Buffer error.
@@ -30,9 +25,13 @@ create inet-addr-none  $ffffffff l,
 
 : close-connection  ( pcb -- )
    0 0 2 pick tcp-poll  ( pcb )
-   0 over tcp-err   ( pcb )
-   0 over tcp-recv  ( pcb )
-   0 over tcp-sent  ( pcb )
+
+   \ We leave these handlers installed because browsers tend to reuse
+   \ connections from some time after our side has signaled "close"
+   \ 0 over tcp-err   ( pcb )
+   \ 0 over tcp-recv  ( pcb )
+   \ 0 over tcp-sent  ( pcb )
+
    tcp-close        ( err )
    \ err could be ERR_MEM if there was insufficient memory to do the
    \ close, in which case we are supposed to retry later via either a
@@ -47,11 +46,12 @@ create inet-addr-none  $ffffffff l,
    r> 2 la+ w@       ( adr thislen totlen )
 ;
 
-defer handle-data  ( adr len -- )
-' type to handle-data
+defer handle-peer-data  ( adr len peer -- )
+: type-peer-data  ( adr len peer -- )  drop  type  ;
+' type-peer-data to handle-peer-data
 
-defer respond   ( pcb -- close? )
-: null-respond  ( pcb -- close?)  drop true  ;
+defer respond   ( -- close? )
+: null-respond  ( -- close?)  true  ;
 ' null-respond to respond
 
 \ : .rs  ( -- )  rp0 @  rp@  ?do  i l@ .x  /l +loop cr  ;
@@ -97,7 +97,7 @@ defer respond   ( pcb -- close? )
    rx-pcb tcp-recved            ( pbuf adr len )
 
    \ Give the data to the application code
-   handle-data                  ( pbuf )
+   rx-pcb handle-peer-data      ( pbuf )
 
    \ Release the data buffer
    pbuf-free drop               ( )
@@ -155,36 +155,17 @@ defer respond   ( pcb -- close? )
 \ len,pcb,fh on the stack.  This is like a blocking send, except that
 \ the "blocking" happens in the LWIP stack.
 
-: tcp-write-wait  ( adr len -- )
-   rx-pcb tcp-write     ( stat )
-   ?dup  if             ( stat )
+
+: tcp-send  ( adr len pcb -- )
+   tcp-write  ?dup  if  ( stat )
       ." tcp-write returned " .d cr
    then                 ( )
    ERR_OK continuation  ( len pcb arg )
    swap to rx-pcb       ( len arg )
-   2drop                ( )
+   2drop
 ;
 
-' tcp-write-wait to reply-send
-
-: ct  ( -- close? )
-   reply{
-   ." Hello" cr
-   ." Goodbye" cr
-   ." You say yes" cr
-   ." I say no" cr
-   ." You say goodbye" cr
-   ." And I say hello" cr
-   ." I don't know why you say goodbye I say hello" cr
-   ." Some of us are incredibly smelly beasts that can only be mitigated with acid" cr
-   ." Some of us are incredibly smelly beasts that can only be mitigated with acid" cr
-   ." Some of us are incredibly smelly beasts that can only be mitigated with acid" cr
-   ." Some of us are incredibly smelly beasts that can only be mitigated with acid" cr
-   ." Some of us are incredibly smelly beasts that can only be mitigated with acid" cr
-   }reply
-   true
-;
-' ct to respond
+: tcp-write-wait  ( adr len -- )  rx-pcb tcp-send  ;
 
 : continuation-test  ( -- close? )
    " Hello"r"n" tcp-write-wait
@@ -197,10 +178,8 @@ defer respond   ( pcb -- close? )
    true
 ;
 
-\ ' continuation-test to respond
+' continuation-test to respond
 
-
-fl sendfile.fth
 
 : simple-connected  ( err pcb arg -- stat )
    drop nip
