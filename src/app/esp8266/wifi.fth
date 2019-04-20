@@ -58,19 +58,36 @@ constant /ap-config
    endcase
    abort
 ;
+: ap-mode?  ( -- flag )  wifi-opmode@ 2 =  ;
+: wifi-config  ( -- adr )
+   pad ap-mode?  if
+      wifi-ap-config@ drop
+   else
+      wifi-sta-config@ drop
+   then
+   pad
+;
+\ Station config structure
+\ +0.b[32] is SSID
+\ +32.b[64] is password
+\ +96.b is bssid_set (0 to ignore bssid, 1 to match it)
+\ +97.b[6] is bssid
+
+\ AP config structure
+\ +0.b[32] is SSID
+\ +32.b[64] is password
+\ +96.b is ssid_len
+\ +97.b is channel
+\ +100.l is auth_mode
+\ +104.b is hidden
+\ +105.b is max_connection
+\ +106.w is beacon_interval
+: ssid$  ( -- $ )  wifi-config cscount #32 min ;
+: wifi-password$  ( -- $ )  wifi-config #32 + cscount  #64 min  ;
 : .ssid  ( -- )
-   pad wifi-ap-config@ drop
-   pad  pad #96 + c@  type
-   pad #32 + c@  if  ." Password: " pad #32 + cscount type  then
-   \ pad+96.b is ssid_len
-   \ pad+97.b is channel
-   \ pad+100.l is auth_mode
-   \ pad+104.b is hidden
-   \ pad+105.b is max_connection
-   \ pad+106.w is beacon_interval
+   ssid$ type
 ;
 
-: ap-mode?  ( -- flag )  wifi-opmode@ 2 =  ;
 : ipaddr@  ( -- 'ip )
    pad  ap-mode? 1 and  wifi-ip-info@ drop  pad
 ;
