@@ -13,11 +13,19 @@
    swap 2 pick  move   ( adr len-n )
 ;
 : url%  ( $ -- $' )
-   dup 3 <  if  exit  then          ( adr len )
+   dup 3 <  if                      ( adr len )
+      \ If the string is too short we leave the % as-is
+      1 /string exit
+   then                             ( adr len )
    over 1+ 2                        ( adr len  number$ )
    push-hex $number pop-base  if    ( adr len n )
+      \ If the number is bad we leave the % as-is
       1 /string                     ( adr' len' )
    else                             ( adr len n )
+      \ Otherwise we replace the % with the character
+      \ corresponding to the number, advance past that
+      \ character, and shorten the string to remove the
+      \ two numeric characters
       2 pick c!                     ( adr len )
       1 /string                     ( adr' len' )
       2 collapse$                   ( adr' len' )
@@ -35,3 +43,4 @@
    repeat                ( adr rem-adr )
    over -                ( adr len )
 ;
+
