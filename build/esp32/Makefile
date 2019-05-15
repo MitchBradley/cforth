@@ -15,7 +15,8 @@ CC := gcc
 
 # Change these to reflect the locations of external stuff on your system,
 # either here or on the command line
-XTGCCPATH ?= $(UPDIR)/xtensa-esp32-elf/bin/
+XTGCC_PARENT_PATH ?= $(UPDIR)
+XTGCCPATH ?= $(XTGCC_PARENT_PATH)/xtensa-esp32-elf/bin/
 CROSS ?= $(XTGCCPATH)xtensa-esp32-elf-
 
 # ESP32 SDK

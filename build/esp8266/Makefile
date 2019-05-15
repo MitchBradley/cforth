@@ -16,4 +16,6 @@ SDK_PARENT_PATH ?= $(UPDIR)
 NODEMCU_PARENT_PATH ?= $(UPDIR)
 COMPORT ?= COM36
 
+XT_COMPILER = $(UPDIR)/xtensa
+
 include $(TOPDIR)/src/app/esp8266/targets.mk

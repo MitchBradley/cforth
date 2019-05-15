@@ -83,6 +83,7 @@ ESP_IDF_REPO ?= https://github.com/espressif/esp-idf.git
 $(IDF_PATH):
 	(cd $(IDF_PARENT_PATH) \
 	&& git clone --recursive $(ESP_IDF_REPO) \
+	&& python -m pip install --user -r esp-idf/requirements.txt \
 	)
 
 XTGCC_ARCHIVE ?= xtensa-esp32-elf-linux64-1.22.0-73-ge28a011-5.2.0.tar.gz
