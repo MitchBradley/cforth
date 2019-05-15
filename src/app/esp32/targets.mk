@@ -86,7 +86,7 @@ $(IDF_PATH):
 	&& python -m pip install --user -r esp-idf/requirements.txt \
 	)
 
-XTGCC_ARCHIVE ?= xtensa-esp32-elf-linux64-1.22.0-73-ge28a011-5.2.0.tar.gz
+XTGCC_ARCHIVE ?= xtensa-esp32-elf-linux64-1.22.0-80-g6c4433a-5.2.0.tar.gz
 XTGCC_DOWNLOAD ?= https://dl.espressif.com/dl/$(XTGCC_ARCHIVE)
 $(XTGCCPATH):
 	(cd $(XTGCC_PARENT_PATH) \
