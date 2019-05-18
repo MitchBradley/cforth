@@ -26,7 +26,7 @@ EXTRACT_TOOLVERSIONS := grep SUPPORTED_TOOLCHAIN $(IDF_PATH)/make/project.mk \
 
 $(TOOLVERSIONS):
 	@echo Getting esp-idf
-	(cd $(IDF_PARENT_PATH) \
+	(cd $(ESP_IDF_PARENT_PATH) \
 	&& wget $(ESP_IDF_URL) \
 	&& echo Unzipping esp-idf \
 	&& unzip -q $(ESP_IDF_ARCHIVE) \
