@@ -16,12 +16,12 @@ CC := gcc
 # Change these to reflect the locations of external stuff on your system,
 # either here or on the command line
 XTGCC_PARENT_PATH ?= $(UPDIR)
-XTGCCPATH ?= $(XTGCC_PARENT_PATH)/xtensa-esp32-elf/bin/
-CROSS ?= $(XTGCCPATH)xtensa-esp32-elf-
+# XTGCCPATH ?= $(XTGCC_PARENT_PATH)/xtensa-esp32-elf/bin/
 
 # ESP32 SDK
-IDF_PARENT_PATH ?= $(UPDIR)
-IDF_PATH ?= $(IDF_PARENT_PATH)/esp-idf
+ESP_IDF_PARENT_PATH ?= $(UPDIR)
+ESP_IDF_VERSION ?= v3.1.4
+IDF_PATH ?= $(ESP_IDF_PARENT_PATH)/esp-idf-$(ESP_IDF_VERSION)/
 
 CFORTH_PATH ?= $(abspath $(TOPDIR)/build/esp32)
 
