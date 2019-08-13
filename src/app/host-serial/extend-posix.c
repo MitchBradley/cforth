@@ -4,6 +4,8 @@
 #include <stdlib.h>
 #include <poll.h>
 #include <fcntl.h>
+#define _GNU_SOURCE
+#define __USE_GNU
 #include <string.h>
 #include <termios.h>
 #include <sys/ioctl.h>
