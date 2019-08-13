@@ -105,8 +105,8 @@ typedef uint8_t u_char;
 #endif
 #if defined(BITS32)
  #define CELLBITS (32)
- typedef __int64_t double_t;
- typedef __uint64_t u_double_t;
+ typedef long long double_t;
+ typedef unsigned long long u_double_t;
 #endif
 #if defined(BITS16)
  #define CELLBITS (16)
