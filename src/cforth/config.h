@@ -84,7 +84,7 @@ typedef uint8_t u_char;
  #ifdef T16
   typedef uint16_t token_t;
   typedef int16_t branch_t;
-typedef uint16_t unum_t;
+  typedef uint16_t unum_t;
  #else
   typedef uintptr_t token_t;
   typedef intptr_t branch_t;
@@ -92,23 +92,26 @@ typedef uint16_t unum_t;
  #endif
 #else
  // 16-bit case, now largely uninteresting
- #define token_t unsigned int
- #define cell int
- #define unum_t unsigned int
- #define branch_t int
+ typedef unsigned int token_t;
+ typedef int cell;
+ typedef unsigned int unum_t;
+ typedef int branch_t;
 #endif
 
 #if defined(BITS64)
  #define CELLBITS (64)
- typedef __int128_t double_cell_t;
+ typedef __int128_t double_t;
+ typedef __uint128_t u_double_t;
 #endif
 #if defined(BITS32)
  #define CELLBITS (32)
- typedef long long double_cell_t;
+ typedef __int64_t double_t;
+ typedef __uint64_t u_double_t;
 #endif
 #if defined(BITS16)
  #define CELLBITS (16)
- typedef long double_cell_t;
+ typedef __int32_t double_t;
+ typedef __uint32_t u_double_t;
 #endif
 
 typedef token_t *xt_t;

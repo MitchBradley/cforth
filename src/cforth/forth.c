@@ -58,11 +58,10 @@ u_char bit[8] = { 128, 64, 32, 16, 8, 4, 2, 1 };
 #endif
 const u_char nullrelmap[1] = { 0 };
 
-#if defined(BITS64) || defined(BITS32)
-#else
-  #define LOW(a) ((a) & 0xffff)
-  #define HIGH(a)((a) >> 16)
-#endif
+// Move a cell to the high half of a double cell
+#define TOHIGH(a) (((u_double_t)(a)) << CELLBITS)
+// Move the high half of a double cell to a cell
+#define HIGH(a)((a) >> CELLBITS)
 
 void udot(u_cell u, cell *up);
 void udotx(u_cell u, cell *up);
@@ -86,10 +85,8 @@ inner_interpreter(up)
     cell scr;
     u_char *ascr;
     u_char *ascr1;
-#if defined(BITS64) || defined(BITS32)
-#else
-    long lscr, lscr1;
-#endif
+    double_t dscr, dscr1;
+    u_double_t udscr;
 
     while(1) {
 #ifdef DEBUGGER
@@ -206,44 +203,17 @@ doprim:
 /*$p 2+ */      case TWO_PLUS:     tos += 2;     next;
 /*$p 2- */      case TWO_MINUS:    tos -= 2;     next;
 /*$p um* */     case U_M_TIMES:
-
-#if defined(BITS64) || defined(BITS32)
-    --sp;
-    umtimes((u_cell *)sp, (u_cell *)sp+1,
-            (u_cell)*(sp+1), (u_cell)tos);
-    loadtos;
-#else
-    lscr = ((unsigned long)(*(u_cell *)sp));
-    lscr = (unsigned long)lscr * (u_cell)tos;
-    *sp  = (u_cell)LOW(lscr);
-    tos  = (u_cell)HIGH(lscr);
-#endif
+    udscr = (u_double_t)*(u_cell *)sp;
+    udscr *= (u_cell)tos;
+    *sp  = (u_cell)udscr;
+    tos  = (u_cell)HIGH(udscr);
     next;
 
 /*$p m* */      case M_TIMES:
-
-#if defined(BITS64) || defined(BITS32)
-    scr = 1;        /* Sign */
-    if (*sp < 0) {
-        *sp = -*sp;
-        scr = -1;
-    }
-    if (tos < 0) {
-        tos = -tos;
-        scr = -scr;
-    }
-    --sp;
-    umtimes((u_cell *)sp, (u_cell *)sp+1,
-            (u_cell)*(sp+1), (u_cell)tos);
-    loadtos;
-    if (scr < 0)      /* 2's complement dnegate */
-        tos = ~tos + ((*sp = -*sp) == 0);
-#else
-    lscr = ((long)((int)*sp));
-    lscr = (long)lscr * tos;
-    *sp  = (cell)LOW(lscr);
-    tos  = (cell)HIGH(lscr);
-#endif
+    dscr = (double_t)*sp;
+    dscr *= tos;
+    *sp  = dscr;
+    tos  = HIGH(dscr);
     next;
 
 /*$p m%/ */     case M_TIMDIV:
@@ -889,115 +859,41 @@ execute:
     next;
 
 /*$p dnegate */ case DNEGATE:
-#if defined(BITS64) || defined(BITS32)
     tos = ~tos + ((*sp = -*sp) == 0);  /* 2's complement */
-#else
-    lscr = ((long)((int)tos)) << 16;
-    lscr = -((unsigned long)lscr + (unsigned int)(*sp));
-    *sp  = (u_cell)LOW(lscr);
-    tos  = (u_cell)HIGH(lscr);
-#endif
     next;
 
 /*$p d- */      case DMINUS:
-
-#if defined(BITS64) || defined(BITS32)
-/* Borrow calculation assumes 2's complement arithmetic */
-#define BORROW(a,b)  ((u_cell)a < (u_cell)b)
-
-#define al scr
-#define bl tos
-    { cell ah, bh;
-        bh  = tos;      bl  = *sp++;
-        ah  = *sp++;    al  = *sp;
-        *sp = al - bl;  tos = ah - bh - BORROW(al, bl);
-    }
-#undef al
-#undef bl
-#undef BORROW
-
-#else
-    lscr1 = ((long)((int)tos)) << 16;
-    lscr1 = (unsigned long)lscr + (unsigned int)(*sp++);
-    lscr  = ((long)((int)*sp++)) << 16;
-    lscr  = (unsigned long)lscr1 + (unsigned int)(*sp);
-    lscr -= lscr1;
-    *sp   = (u_cell)LOW(lscr);
-    tos   = (u_cell)HIGH(lscr);
-#endif
+    dscr1  = TOHIGH(tos);
+    dscr1 += (u_cell)*sp++;
+    dscr   = TOHIGH(*sp++);
+    dscr  += (u_cell)*sp;
+    dscr -= dscr1;
+    *sp   = (u_cell)dscr;
+    tos   = HIGH(dscr);
     next;
 
 /*$p d+ */      case DPLUS:
-#if defined(BITS64) || defined(BITS32)
-
-/* Carry calculation assumes 2's complement arithmetic. */
-#define CARRY(res,b)  ((u_cell)res < (u_cell)b)
-
-#define al scr
-#define bl tos
-    { cell ah, bh;
-        bh  = tos;      bl  = *sp++;
-        ah  = *sp++;    al  = *sp;
-        *sp = al += bl;  tos = ah + bh + CARRY(al, bl);
-    }
-#undef al
-#undef bl
-#undef CARRY
-
-#else
-    lscr  = ((long)((int)tos)) << 16;
-    lscr  = (unsigned long)lscr + (unsigned int)(*sp++);
-    lscr1 = ((long)((int)*sp++)) << 16;
-    lscr1 = (unsigned long)lscr1 + (unsigned int)(*sp);
-    lscr += lscr1;
-    *sp   = (u_cell)LOW(lscr);
-    tos   = (u_cell)HIGH(lscr);
-#endif
+    dscr   = TOHIGH(tos);
+    dscr  += (u_cell)*sp++;
+    dscr1  = TOHIGH(*sp++);
+    dscr1 += (u_cell)*sp;
+    dscr += dscr1;
+    *sp   = (u_cell)dscr;
+    tos   = HIGH(dscr);
     next;
 
 /*$p um/mod */  case U_M_DIVIDE_MOD:
-#if defined(BITS64) || defined(BITS32)
-    (void)umdivmod((u_cell *)sp, (u_cell *)sp+1, (u_cell)tos);
-    loadtos;
-#else
-    lscr = ((long)((int)*sp++)) << 16;
-    lscr = (unsigned long)lscr + (unsigned int)(*sp);
-    *sp  = (cell)((unsigned long)lscr % (u_cell)tos);
-    tos  =   (cell)((unsigned long)lscr / (u_cell)tos);
-#endif
+    udscr = TOHIGH(*sp++);
+    udscr += (u_cell)*sp;
+    *sp  = (u_cell)(udscr % (u_cell)tos);
+    tos  = (u_cell)(udscr / (u_cell)tos);
     next;
 
 /*$p sm/rem */  case S_M_DIVIDE_REM:
-#if defined(BITS64) || defined(BITS32)
-    scr = 0;        /* Sign */
-
-    if (*sp < 0) {  /* dividend */
-        *sp = ~*sp + ((sp[1] = -sp[1]) == 0);
-        scr = 1;        /* dividend is negative */
-    }
-    if (tos < 0) {
-        tos = -tos;
-        scr += 2;       /* divisor is negative */
-    }
-
-    (void)umdivmod((u_cell *)sp, (u_cell *)sp+1, (u_cell)tos);
-    loadtos;
-
-    /* Fix up signs of results */
-    switch (scr) {
-    case 0:  break;       /* +dividend, +divisor */
-    case 1:  *sp = -*sp;  /* -dividend, +divisor : Negate remainder, fall */
-    case 2:  tos = -tos;  /* +dividend, -divisor : Negate quotient */
-        break;
-    case 3:  *sp = -*sp;  /* -dividend, -divisor : Negate remainder*/
-        break;
-    }
-#else
-    lscr = ((long)((int)*sp++)) << 16;
-    lscr = (long)lscr + (unsigned int)(*sp);
-    *sp  = (cell)((long)lscr % tos);
-    tos  = (cell)((long)lscr / tos);
-#endif
+    dscr = TOHIGH(*sp++);
+    dscr += (u_cell)(*sp);
+    *sp  = dscr % tos;
+    tos  = dscr / tos;
     next;
 
 /*$p digit */   case DIGIT:
@@ -1662,7 +1558,7 @@ alnumber(char *adr, cell len, cell *nhigh, cell *nlow, cell *up)
     int isminus = 0;
 
     // accum is twice the cell width
-    double_cell_t accum = 0;
+    double_t accum = 0;
 
     V(DPL) = -100;
     if ( len >= 3 && adr[0] == '\'' && adr[len-1] == '\'') {
@@ -1701,7 +1597,7 @@ alnumber(char *adr, cell len, cell *nhigh, cell *nlow, cell *up)
     if (isminus)
 	accum = -accum;
     *nlow  = accum & (u_cell)-1LL;
-    *nhigh = (accum >> CELLBITS) & (u_cell)-1LL;
+    *nhigh = HIGH(accum) & (u_cell)-1LL;
     return( len ? 0 : -1 );
 }
 
@@ -1723,30 +1619,6 @@ void udotx(u_cell u, cell *up) {
 #define CARRY(res,b)  ((u_cell)res < (u_cell)b)
 
 void
-dplus(dhighp, dlowp, shigh, slow)
-    register cell *dhighp, *dlowp, shigh, slow;
-{
-    register cell lowres;
-
-    lowres   = *dlowp + slow;
-    *dhighp += shigh + CARRY(lowres, slow);
-    *dlowp   = lowres;
-}
-
-/* Borrow calculation assumes 2's complement arithmetic */
-#define BORROW(a,b)  ((u_cell)a < (u_cell)b)
-
-void
-dminus(cell *dhighp, cell *dlowp, cell shigh, cell slow)
-{
-    register cell lowres;
-
-    lowres   = *dlowp - slow;
-    *dhighp  = *dhighp - shigh - BORROW(*dlowp, slow);
-    *dlowp   = lowres;
-}
-
-void
 mplus(cell *dhighp, cell *dlowp, cell n)
 {
     register cell lowres;
@@ -1756,34 +1628,15 @@ mplus(cell *dhighp, cell *dlowp, cell n)
     *dlowp   = lowres;
 }
 
-#define HALFBITS (CELLBITS/2)
-// u_cell HALFMASK() { return ((1 << HALFBITS) - 1); }
-#define HALFMASK (u_cell)((1LL << HALFBITS) - 1)
-
 void
 umtimes(u_cell *dhighp, u_cell *dlowp, u_cell u1, u_cell u2)
 {
-#if defined(BITS64) || defined(BITS32)
-    u_cell ah, al, bh, bl, tmp;
+    u_double_t udscr;
 
-    ah = u1>>HALFBITS;  al = u1 & HALFMASK;
-    bh = u2>>HALFBITS;  bl = u2 & HALFMASK;
-
-    *dhighp = ah*bh;  *dlowp = al*bl;
-
-    tmp = ah*bl;
-    dplus((cell *)dhighp, (cell *)dlowp, (cell)(tmp>>HALFBITS), (cell)(tmp<<HALFBITS));
-
-    tmp = al*bh;
-    dplus((cell *)dhighp, (cell *)dlowp, (cell)(tmp>>HALFBITS), (cell)(tmp<<HALFBITS));
-#else
-    unsigned long ulscr;
-
-    ulscr = ((unsigned long)u1);
-    ulscr = ulscr * u2;
-    *dlowp   = (u_cell)LOW(ulscr);
-    *dhighp  = (u_cell)HIGH(ulscr);
-#endif
+    udscr = u1;
+    udscr *= u2;
+    *dlowp   = udscr;
+    *dhighp  = HIGH(udscr);
 }
 
 void
@@ -1815,63 +1668,10 @@ dutimes(u_cell *dhighp, u_cell *dlowp, u_cell u)
 static void
 umdivmod(u_cell *dhighp, u_cell *dlowp, u_cell u)
 {
-    register u_cell ulow, uhigh;
-    register u_cell guess;
-    u_cell errhigh, errlow;
-    u_cell thigh, tlow;
-
-    /* XXX the speed of this should be compared to a bit-banging divide loop */
-
-    errhigh = *dhighp; errlow = *dlowp;
-
-    if (errhigh >= u) {                 /* Overflow */
-        if (u == 0)
-            errhigh = 1 / u;            /* Force a divide by 0 trap */
-        *dhighp = (u_cell)-1;
-        *dlowp  = 0;
-        return;
-    }
-
-    uhigh = u >> HALFBITS; ulow = u & HALFMASK;
-
-    if (uhigh == 0) {
-        guess = ((errhigh << HALFBITS) + (errlow >> HALFBITS)) / ulow;
-
-        *dhighp = guess << HALFBITS;
-        umtimes(&thigh, &tlow, u, guess<<HALFBITS);
-        dminus((cell *)&errhigh, (cell *)&errlow, (cell)thigh, (cell)tlow);
-        guess = errlow / ulow;
-        *dhighp += guess;
-        *dlowp = (errlow - (ulow * guess));
-        return;
-    }
-
-    guess = *dhighp / uhigh;
-    if (guess == (1LL<<HALFBITS))       /* This can happen! */
-        guess = guess-1;
-    umtimes(&thigh, &tlow, u, guess<<HALFBITS);
-    dminus((cell *)&errhigh, (cell *)&errlow, (cell)thigh, (cell)tlow);
-    while (((cell)errhigh) < 0) {
-        --guess;
-        dplus((cell *)&errhigh, (cell *)&errlow, (cell)uhigh, (cell)(ulow << HALFBITS));
-    }
-    /* dhighp, dlowp are dead now */
-    *dhighp = guess << HALFBITS;              /* High word of quotient */
-
-    guess = ((errhigh << HALFBITS) + (errlow >> HALFBITS)) / uhigh;
-    if (guess == (1LL<<HALFBITS))       /* This can happen! */
-        guess = guess-1;
-    umtimes(&thigh, &tlow, u, guess);
-    dminus((cell *)&errhigh, (cell *)&errlow, (cell)thigh, (cell)tlow);
-    while (((cell)errhigh) < 0) {
-        --guess;
-/* XXX Should this be mplus ? */
-/*      dplus((cell *)&errhigh, (cell *)&errlow, (cell)0, (cell)u); */
-        mplus((cell *)&errhigh, (cell *)&errlow, (cell)u);
-
-    }
-    *dhighp += guess;
-    *dlowp = errlow;
+    u_double_t numerator;
+    numerator = TOHIGH(*dhighp) | *dlowp;
+    *dhighp = (u_cell)(numerator / u);
+    *dlowp = (u_cell)(numerator % u);
 }
 
 static void
