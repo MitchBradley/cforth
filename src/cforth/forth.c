@@ -1660,15 +1660,9 @@ alnumber(char *adr, cell len, cell *nhigh, cell *nlow, cell *up)
     u_char c;
     int d;
     int isminus = 0;
-#ifdef BITS64
-    __int128_t accum = 0;
-#else
-  #ifdef BITS32
-    long long accum = 0;
-  #else
-    long accum = 0;
-  #endif
-#endif
+
+    // accum is twice the cell width
+    double_cell_t accum = 0;
 
     V(DPL) = -100;
     if ( len >= 3 && adr[0] == '\'' && adr[len-1] == '\'') {
@@ -1706,18 +1700,8 @@ alnumber(char *adr, cell len, cell *nhigh, cell *nlow, cell *up)
         V(DPL) = -1;
     if (isminus)
 	accum = -accum;
-#ifdef BITS64
-    *nlow  = accum & 0xffffffffffffffff;
-    *nhigh = (accum >> 64) & 0xffffffffffffffff;
-#else
-  #ifdef BITS32
-    *nlow  = accum & 0xffffffff;
-    *nhigh = (accum >> 32) & 0xffffffff;
-  #else
-    *nlow  = accum & 0xffff;
-    *nhigh = (accum >> 16) & 0xffff;
-  #endif
-#endif
+    *nlow  = accum & (u_cell)-1LL;
+    *nhigh = (accum >> CELLBITS) & (u_cell)-1LL;
     return( len ? 0 : -1 );
 }
 
@@ -1772,36 +1756,26 @@ mplus(cell *dhighp, cell *dlowp, cell n)
     *dlowp   = lowres;
 }
 
+#define HALFBITS (CELLBITS/2)
+// u_cell HALFMASK() { return ((1 << HALFBITS) - 1); }
+#define HALFMASK (u_cell)((1LL << HALFBITS) - 1)
+
 void
 umtimes(u_cell *dhighp, u_cell *dlowp, u_cell u1, u_cell u2)
 {
-#if defined(BITS64)
+#if defined(BITS64) || defined(BITS32)
     u_cell ah, al, bh, bl, tmp;
 
-    ah = u1>>32;  al = u1 & 0xffffffff;
-    bh = u2>>32;  bl = u2 & 0xffffffff;
+    ah = u1>>HALFBITS;  al = u1 & HALFMASK;
+    bh = u2>>HALFBITS;  bl = u2 & HALFMASK;
 
     *dhighp = ah*bh;  *dlowp = al*bl;
 
     tmp = ah*bl;
-    dplus((cell *)dhighp, (cell *)dlowp, (cell)(tmp>>32), (cell)(tmp<<32));
+    dplus((cell *)dhighp, (cell *)dlowp, (cell)(tmp>>HALFBITS), (cell)(tmp<<HALFBITS));
 
     tmp = al*bh;
-    dplus((cell *)dhighp, (cell *)dlowp, (cell)(tmp>>32), (cell)(tmp<<32));
-#else
-#if defined(BITS32)
-    u_cell ah, al, bh, bl, tmp;
-
-    ah = u1>>16;  al = u1 & 0xffff;
-    bh = u2>>16;  bl = u2 & 0xffff;
-
-    *dhighp = ah*bh;  *dlowp = al*bl;
-
-    tmp = ah*bl;
-    dplus((cell *)dhighp, (cell *)dlowp, (cell)(tmp>>16), (cell)(tmp<<16));
-
-    tmp = al*bh;
-    dplus((cell *)dhighp, (cell *)dlowp, (cell)(tmp>>16), (cell)(tmp<<16));
+    dplus((cell *)dhighp, (cell *)dlowp, (cell)(tmp>>HALFBITS), (cell)(tmp<<HALFBITS));
 #else
     unsigned long ulscr;
 
@@ -1809,7 +1783,6 @@ umtimes(u_cell *dhighp, u_cell *dlowp, u_cell u1, u_cell u2)
     ulscr = ulscr * u2;
     *dlowp   = (u_cell)LOW(ulscr);
     *dhighp  = (u_cell)HIGH(ulscr);
-#endif
 #endif
 }
 
@@ -1854,17 +1827,18 @@ umdivmod(u_cell *dhighp, u_cell *dlowp, u_cell u)
     if (errhigh >= u) {                 /* Overflow */
         if (u == 0)
             errhigh = 1 / u;            /* Force a divide by 0 trap */
-        *dhighp = 0xffffffff;
+        *dhighp = (u_cell)-1;
         *dlowp  = 0;
         return;
     }
 
-    uhigh = u >> 16; ulow = u & 0xffff;
+    uhigh = u >> HALFBITS; ulow = u & HALFMASK;
 
     if (uhigh == 0) {
-        guess = ((errhigh << 16) + (errlow >> 16)) / ulow;
-        *dhighp = guess << 16;
-        umtimes(&thigh, &tlow, u, guess<<16);
+        guess = ((errhigh << HALFBITS) + (errlow >> HALFBITS)) / ulow;
+
+        *dhighp = guess << HALFBITS;
+        umtimes(&thigh, &tlow, u, guess<<HALFBITS);
         dminus((cell *)&errhigh, (cell *)&errlow, (cell)thigh, (cell)tlow);
         guess = errlow / ulow;
         *dhighp += guess;
@@ -1873,19 +1847,19 @@ umdivmod(u_cell *dhighp, u_cell *dlowp, u_cell u)
     }
 
     guess = *dhighp / uhigh;
-    if (guess == 0x10000)       /* This can happen! */
+    if (guess == (1LL<<HALFBITS))       /* This can happen! */
         guess = guess-1;
-    umtimes(&thigh, &tlow, u, guess<<16);
+    umtimes(&thigh, &tlow, u, guess<<HALFBITS);
     dminus((cell *)&errhigh, (cell *)&errlow, (cell)thigh, (cell)tlow);
     while (((cell)errhigh) < 0) {
         --guess;
-        dplus((cell *)&errhigh, (cell *)&errlow, (cell)uhigh, (cell)(ulow << 16));
+        dplus((cell *)&errhigh, (cell *)&errlow, (cell)uhigh, (cell)(ulow << HALFBITS));
     }
     /* dhighp, dlowp are dead now */
-    *dhighp = guess << 16;              /* High word of quotient */
+    *dhighp = guess << HALFBITS;              /* High word of quotient */
 
-    guess = ((errhigh << 16) + (errlow >> 16)) / uhigh;
-    if (guess == 0x10000)       /* This can happen! */
+    guess = ((errhigh << HALFBITS) + (errlow >> HALFBITS)) / uhigh;
+    if (guess == (1LL<<HALFBITS))       /* This can happen! */
         guess = guess-1;
     umtimes(&thigh, &tlow, u, guess);
     dminus((cell *)&errhigh, (cell *)&errlow, (cell)thigh, (cell)tlow);

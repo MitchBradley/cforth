@@ -98,6 +98,19 @@ typedef uint16_t unum_t;
  #define branch_t int
 #endif
 
+#if defined(BITS64)
+ #define CELLBITS (64)
+ typedef __int128_t double_cell_t;
+#endif
+#if defined(BITS32)
+ #define CELLBITS (32)
+ typedef long long double_cell_t;
+#endif
+#if defined(BITS16)
+ #define CELLBITS (16)
+ typedef long double_cell_t;
+#endif
+
 typedef token_t *xt_t;
 
 #define ALIGN_BOUNDARY (sizeof(token_t))
