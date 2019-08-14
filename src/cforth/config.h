@@ -100,18 +100,18 @@ typedef uint8_t u_char;
 
 #if defined(BITS64)
  #define CELLBITS (64)
- typedef __int128_t double_t;
- typedef __uint128_t u_double_t;
+ typedef __int128_t double_cell_t;
+ typedef __uint128_t u_double_cell_t;
 #endif
 #if defined(BITS32)
  #define CELLBITS (32)
- typedef long long double_t;
- typedef unsigned long long u_double_t;
+ typedef long long double_cell_t;
+ typedef unsigned long long u_double_cell_t;
 #endif
 #if defined(BITS16)
  #define CELLBITS (16)
- typedef __int32_t double_t;
- typedef __uint32_t u_double_t;
+ typedef __int32_t double_cell_t;
+ typedef __uint32_t u_double_cell_t;
 #endif
 
 typedef token_t *xt_t;

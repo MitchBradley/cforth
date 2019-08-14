@@ -59,7 +59,7 @@ u_char bit[8] = { 128, 64, 32, 16, 8, 4, 2, 1 };
 const u_char nullrelmap[1] = { 0 };
 
 // Move a cell to the high half of a double cell
-#define TOHIGH(a) (((u_double_t)(a)) << CELLBITS)
+#define TOHIGH(a) (((u_double_cell_t)(a)) << CELLBITS)
 // Move the high half of a double cell to a cell
 #define HIGH(a)((a) >> CELLBITS)
 
@@ -85,8 +85,8 @@ inner_interpreter(up)
     cell scr;
     u_char *ascr;
     u_char *ascr1;
-    double_t dscr, dscr1;
-    u_double_t udscr;
+    double_cell_t dscr, dscr1;
+    u_double_cell_t udscr;
 
     while(1) {
 #ifdef DEBUGGER
@@ -203,14 +203,14 @@ doprim:
 /*$p 2+ */      case TWO_PLUS:     tos += 2;     next;
 /*$p 2- */      case TWO_MINUS:    tos -= 2;     next;
 /*$p um* */     case U_M_TIMES:
-    udscr = (u_double_t)*(u_cell *)sp;
+    udscr = (u_double_cell_t)*(u_cell *)sp;
     udscr *= (u_cell)tos;
     *sp  = (u_cell)udscr;
     tos  = (u_cell)HIGH(udscr);
     next;
 
 /*$p m* */      case M_TIMES:
-    dscr = (double_t)*sp;
+    dscr = (double_cell_t)*sp;
     dscr *= tos;
     *sp  = dscr;
     tos  = HIGH(dscr);
@@ -1558,7 +1558,7 @@ alnumber(char *adr, cell len, cell *nhigh, cell *nlow, cell *up)
     int isminus = 0;
 
     // accum is twice the cell width
-    double_t accum = 0;
+    double_cell_t accum = 0;
 
     V(DPL) = -100;
     if ( len >= 3 && adr[0] == '\'' && adr[len-1] == '\'') {
@@ -1631,7 +1631,7 @@ mplus(cell *dhighp, cell *dlowp, cell n)
 void
 umtimes(u_cell *dhighp, u_cell *dlowp, u_cell u1, u_cell u2)
 {
-    u_double_t udscr;
+    u_double_cell_t udscr;
 
     udscr = u1;
     udscr *= u2;
@@ -1668,7 +1668,7 @@ dutimes(u_cell *dhighp, u_cell *dlowp, u_cell u)
 static void
 umdivmod(u_cell *dhighp, u_cell *dlowp, u_cell u)
 {
-    u_double_t numerator;
+    u_double_cell_t numerator;
     numerator = TOHIGH(*dhighp) | *dlowp;
     *dhighp = (u_cell)(numerator / u);
     *dlowp = (u_cell)(numerator % u);
