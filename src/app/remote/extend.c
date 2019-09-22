@@ -7,6 +7,7 @@ extern cell *callback_up;
 
 #include "esp_stdint.h"
 #include "platform.h"
+extern void raw_putchar(unsigned char c);
 
 cell deep_sleep(cell us, cell type)
 {
@@ -389,29 +390,79 @@ void set_pwm(int pin, int on_us, int off_us) {
     do_pwm_on(NULL);
   }
 }
-void ICACHE_RAM_ATTR ir_cycles(int gpio, int cycles)
+
+uint32_t ir_tx_mask = 0;
+int ir_tx_hardwire;
+
+void ICACHE_RAM_ATTR ir_pulse(uint32_t on_us, uint32_t off_us)
 {
-  int mask = 1<<nodemcu_pinmap[gpio];
-  while (cycles--) {
-    ets_delay_us(13);
-    GPIO_REG_WRITE(GPIO_OUT_W1TS_ADDRESS, mask);  // HIGH
-    ets_delay_us(12);
-    GPIO_REG_WRITE(GPIO_OUT_W1TC_ADDRESS, mask);  // LOW
+  if (ir_tx_hardwire) {
+    // If the ESP8266 GPIO is directly connected to the
+    // input of an IR decoder, we generate one active-low
+    // pulse for the on time.
+    GPIO_REG_WRITE(GPIO_OUT_W1TC_ADDRESS, ir_tx_mask);  // LOW
+    ets_delay_us(on_us);    // End of start sequence
+    GPIO_REG_WRITE(GPIO_OUT_W1TS_ADDRESS, ir_tx_mask);  // HIGH
+  } else {
+    // If the ESP8266 GPIO drives an IR LED, we generate a
+    // 38 kHz pulse train for the on time.
+    while (on_us > 0) {
+      ets_delay_us(13);
+      GPIO_REG_WRITE(GPIO_OUT_W1TS_ADDRESS, ir_tx_mask);  // HIGH
+      ets_delay_us(12);
+      GPIO_REG_WRITE(GPIO_OUT_W1TC_ADDRESS, ir_tx_mask);  // LOW
+      on_us -= 26;
+    }
   }
+  // In either case, we then leave the GPIO line at the idle
+  // state for the off time
+  ets_delay_us(off_us);
 }
 
-void ICACHE_RAM_ATTR ir_packet(int gpio, uint32_t data)
+void ICACHE_RAM_ATTR ir_repeat()
+{
+    // Send end/repeat code
+    ets_intr_lock();
+    ets_delay_us(40000);
+    ir_pulse(9000, 2250);  // Start repeat
+    ir_pulse(562, 0);      // Stop bit for repeat
+    ets_intr_unlock();
+}
+
+// This version is for connecting an ESP8266 GPIO directly
+// to the IR receiver input of an IR decoder.
+void ICACHE_RAM_ATTR ir_tx(uint32_t data)
 {
     ets_intr_lock();
-    ir_cycles(gpio, 348);  // Start pulse
-    ets_delay_us(4500);    // End of start sequence
+    ir_pulse(9000, 4500);
     int i;
-    for (i = 31; i >= 0; i--) {
-      ir_cycles(gpio, 23);
-      ets_delay_us(data & (1<<i) ? 1600 : 640);
+    for (i = 0; i < 32; i++) {
+      ir_pulse(562, (data & (1<<i)) ? 1687 : 562);
     }
-    ir_cycles(gpio, 23);  // Stop bit
+    ir_pulse(562, 0);  // Stop bit
     ets_intr_unlock();
+}
+
+// Setup communications so the ESP8266 can send NEC-protocol
+// IR packets.  If hardwire is true, the ESP8266 GPIO is
+// directly connected to the IR decoder, instead of the
+// decoder having an IR receiver module, with the GPIO
+// going low for the active state.  If hardwire is
+// false, the ESP8266 drives an IR LED - GPIO high for LED on.
+// The LED is typically driven via a FET or BJT, since the drive
+// current is higher than GPIOs can handle.
+void ir_tx_attach(int gpio, int hardwire)
+{
+  ir_tx_mask = 1<<nodemcu_pinmap[gpio];
+  ir_tx_hardwire = !!hardwire;
+  if (ir_tx_hardwire) {
+    platform_gpio_mode(gpio, PLATFORM_GPIO_OPENDRAIN, 0);
+  } else {
+    platform_gpio_mode(gpio, PLATFORM_GPIO_OUTPUT, 0);
+  }
+  // Direct connect idles high like the output of an IR receiver.
+  // Otherwise, IR LED idles low
+  platform_gpio_write(gpio, ir_tx_hardwire);
 }
 
 xt_t gpio_callback_xt[NUM_GPIO];
@@ -459,23 +510,24 @@ void gpio_set_callback(unsigned pin, xt_t cb_xt)
   ETS_GPIO_INTR_ATTACH(platform_gpio_intr_dispatcher, (void *)gpio_callback);
 }
 
+#ifdef DEBUG_IR
+unsigned debug_pin = 3;
+unsigned debug_value = 1;
+#endif
 unsigned last_value;
 unsigned got_value;
 unsigned value;
-unsigned ir_pin;
+unsigned ir_pin = NUM_GPIO; // Initially unset; NUM_GPIO is invalid
 unsigned last_edge;
 unsigned delta;
-unsigned state;
+int state;
 enum {
-  ERROR=-4,
-  IDLE=-3,
-  START0=-2,
-  START1=-1,
-  SEND=64,
-  REPEAT0=66,
-  REPEAT1=67,
-  REPEAT2=68,
-  REPEAT3=69
+  ERROR=-2,
+  IDLE=-1,
+  START=0,
+  SEND=32,
+  REPEAT0=33,
+  REPEAT1=33,
 };
 
 unsigned v_delta() { return delta; }
@@ -489,85 +541,109 @@ void notify()
   last_value = value;
 }
 
-cell read_value()
+cell ir_rx()
 {
   if (got_value) {
     got_value = 0;
     return last_value;
   }
-  return -1;
+  return 0;
 }
 
 void ir_decode(unsigned pin, unsigned level)
 {
-  unsigned bit;
-  unsigned this_edge;
   if (pin != ir_pin)
     return;
+
+#ifdef DEBUG_IR
+  platform_gpio_write(debug_pin, debug_value);
+  debug_value = !debug_value;
+#endif
+
   delta = system_get_time() - last_edge;
   last_edge += delta;
-  if (level) { // rising edge
-    if (delta < 500) {
-      state = ERROR;
-    } else if (delta < 700) {
-      if (state == REPEAT2) {
+  if (delta < 600) {
+    state = ERROR;
+  } else if (delta < 1500) { // nominal: 600 + 600 = 1200
+    if (state >= 0 && state <= 31) {
+#ifdef DEBUG_IR
+      platform_gpio_write(debug_pin, 0);
+#endif
+      if (++state == 32) {
+        notify();
         state = IDLE;
-      } else {
-        state++;
-        if (state == SEND) {
-          notify();
-        }
       }
-    } else if (delta < 8500) {
-      state = ERROR;
-    } else if (delta < 9500) {
-      state = state == REPEAT0 ? REPEAT1 : START0;
     } else {
       state = ERROR;
     }
-  } else { // falling edge
-    if (delta < 500) {
-      state = ERROR;
-    } else if (delta < 700) {
-      state++;
-      bit = 0;
-    } else if (delta < 1700) {
-      state = ERROR;
-    } else if (delta < 1900) {
-      state++;
-      bit = 1;
-    } else if (delta < 2400) {
-      state = state == REPEAT1 ? REPEAT2 : ERROR;
-    } else if (delta < 4400) {
-      state = ERROR;
-    } else if (delta < 4700) {
-      value = 0;
-      state = state == START0 ? START1 : ERROR;
-    } else if (delta < 38000) {
-      state = ERROR;
-    } else if (delta < 41000) {
-      state = REPEAT0;
+  } else if (delta < 2800) { // nominal: 600 + 1800 = 2400
+    if (state >= 0 && state <= 31) {
+      value |= 1 << state;
+#ifdef DEBUG_IR
+      platform_gpio_write(debug_pin, 1);
+#endif
+      if (++state == 32) {
+        notify();
+        state = IDLE;
+      }
     } else {
       state = ERROR;
     }
-    if (state > 0 && state < 64) {
-      if ((state & 1) == 0) {
-        state = ERROR;
-      } else {
-        value |= bit << (state >> 1);
-      }
-    }
+  } else if (delta < 10000) {
+    state = ERROR;
+  } else if (delta < 12000) {  // nominal: 9000 + 2200 = 11200
+    state = state == REPEAT0 ? REPEAT1 : ERROR;
+  } else if (delta < 14000) {  // nominal 9000 + 4500 = 12500
+#ifdef DEBUG_IR
+    debug_value = 1;
+#endif
+    value = 0;
+    state = START;
+#ifdef DEBUG_IR
+    platform_gpio_write(debug_pin, 0);
+#endif
+  } else if (delta < 38000) {
+    state = ERROR;
+  } else if (delta < 41000) {
+    state = REPEAT0;
+  } else {
+    state = ERROR;
   }
+#ifdef DEBUG_IR
+  if (state == IDLE || state == ERROR | state == REPEAT1) {
+    platform_gpio_write(debug_pin, 1);
+  }
+#endif
 }
 
-void ir_attach(unsigned pin)
+void ir_rx_attach(unsigned pin)
 {
   if (pin >= NUM_GPIO)
     return;
   ir_pin = pin;
-  platform_gpio_mode(pin, PLATFORM_GPIO_INT, 0);
+#ifdef DEBUG_IR
+  platform_gpio_mode(debug_pin, PLATFORM_GPIO_OUTPUT, 0);
+#endif
+  platform_gpio_mode(ir_pin, PLATFORM_GPIO_INT, 0);
   ETS_GPIO_INTR_ATTACH(platform_gpio_intr_dispatcher, (void *)ir_decode);
-  platform_gpio_intr_init(pin, 3); // anyedge
+  platform_gpio_intr_init(ir_pin, GPIO_PIN_INTR_NEGEDGE);
+}
+void ir_rx_detach()
+{
+  if (ir_pin >= NUM_GPIO) {
+    return;
+  }
+  // The following disables the GPIO interrupt
+  platform_gpio_mode(ir_pin, PLATFORM_GPIO_INPUT, 0);
+  ir_pin = NUM_GPIO;
+}
+void ir_rx_pause()
+{
+  ETS_GPIO_INTR_DISABLE();
+}
+void ir_rx_resume()
+{
+  ETS_GPIO_INTR_ENABLE();
 }
 
 void i2c_setup(cell sda, cell scl)
@@ -587,7 +663,6 @@ cell dirent_size(void *);
 cell dirent_name(void *);
 
 // extern void SPIRead(void);
-extern void raw_putchar(unsigned char c);
 
 #include "driver/onewire.h"
 
@@ -848,13 +923,17 @@ cell ((* const ccalls[])()) = {
 
   C(set_pwm)                //c set-pwm  { i.off_us i.on_us i.pin -- }
 
-  C(ir_cycles)              //c ir-cycles  { i.cycles i.pin -- }
-  C(ir_packet)              //c ir-packet  { i.data i.pin -- }
+  C(ir_tx_attach)           //c ir-tx-attach  { i.hardwire? i.pin -- }
+  C(ir_tx)                  //c ir-tx { i.data -- }
+  C(ir_repeat)              //c ir-repeat  { -- }
 
   C(v_delta)                //c ir-delta  { -- i.ticks }
   C(v_last_edge)            //c ir-last-edge  { -- i.ticks }
   C(v_value)                //c ir-value  { -- i.value }
   C(v_state)                //c ir-state  { -- i.value }
-  C(ir_attach)              //c ir-attach { i.pin -- }
-  C(read_value)             //c ir-read  { -- value | -1 }
+  C(ir_rx_attach)           //c ir-rx-attach { i.pin -- }
+  C(ir_rx_detach)           //c ir-rx-detach { -- }
+  C(ir_rx_pause)            //c ir-rx-pause { -- }
+  C(ir_rx_resume)           //c ir-rx-resume { -- }
+  C(ir_rx)                  //c ir-rx  { -- value | 0 }
 };
