@@ -36,7 +36,11 @@ BUILDDIR := $(realpath .)
 	(cd $(NODEMCU_PATH) && PATH=${PATH}:$(XTGCCPATH) FORTHOBJS=$(BUILDDIR)/app.o make --no-print-directory)
 	mv $(NODEMCU_PATH)/bin/*.bin .
 
-LOADCMD=$(NODEMCU_PATH)/tools/esptool.py --port $(COMPORT) -b 115200 write_flash -fm=dio -fs=32m 0x00000 0x00000.bin 0x10000 0x10000.bin
+# Use FS=1m FM=dout for most Sonoff devices
+FS?=32m
+FM?=dio
+
+LOADCMD=$(NODEMCU_PATH)/tools/esptool.py --port $(COMPORT) -b 115200 write_flash -fm=$(FM) -fs=$(FS) 0x00000 0x00000.bin 0x10000 0x10000.bin
 
 download: 0x00000.bin 0x10000.bin
 	$(LOADCMD)

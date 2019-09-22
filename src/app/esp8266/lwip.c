@@ -122,9 +122,7 @@ void tcp_sent1(struct tcp_pcb *pcb, xt_t callback)
 err_t continuation_cb(void *arg, struct tcp_pcb *tpcb, u16_t len)
 {
   cell *up = callback_up;
-  if (!sent_forth_cb) {
-    return 0;
-  }
+
   SWITCH_STACKS("cont");
   spush((cell)len, up);
   spush((cell)tpcb, up);

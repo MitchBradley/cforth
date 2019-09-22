@@ -115,8 +115,28 @@ defer respond   ( -- close? )
    2 pick  ." Sent " .d cr
    3drop  ERR_OK
 ;
+\needs string-array fl ${CBP}/lib/stringar.fth
+string-array tcp-errors
+  ," No error"
+  ," Out of memory"
+  ," Buffer error"
+  ," Timeout"
+  ," Routing"
+  ," In progress"
+  ," Illegal value"
+  ," Would block"
+  ," Connection aborted"
+  ," Connection reset"
+  ," Connection closed"
+  ," Not connected"
+  ," Illegal argument"
+  ," Already connected"
+end-string-array
+
 : error-handler  ( err arg -- )
-   ." Error " swap .d " with arg " .d cr
+   nip  ?dup  if  ( err )
+      ." TCP: "  negate tcp-errors count type
+   then
 ;
 0 value listen-pcb
 : accepter  ( err new-pcb arg -- err )

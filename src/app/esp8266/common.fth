@@ -48,3 +48,5 @@ alias id: \
 ;
 
 fl gpio.fth
+
+: load-startup-file  ( -- )  " start" included   ;

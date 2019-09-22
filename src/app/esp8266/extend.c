@@ -597,7 +597,7 @@ cell ((* const ccalls[])()) = {
   C(rtc_get_reset_reason)   //c reset-reason { -- i.reason }
   C(xthal_get_ccount)       //c xthal_get_ccount  { -- i.count }
 
-  C(dns_gethostbyname1)     //c dns-gethostbyname { a.arg i.xt a.ipaddr a.hostname -- i.stat }
+  C(dns_gethostbyname1)     //c dns-gethostbyname { a.arg i.xt a.ipaddr $.hostname -- i.stat }
 
   C(tcp_write_sw)           //c tcp-write  { a.adr i.len a.pcb -- i.stat }
   C(tcp_new)                //c tcp-new  { -- a.pcb }
