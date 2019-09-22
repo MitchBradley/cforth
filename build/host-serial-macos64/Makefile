@@ -57,6 +57,7 @@ endif
 INCS += $(shell pkg-config --cflags glfw3)
 LIBS += $(shell pkg-config --static --libs glfw3)
 
+CC ?= gcc
 
 GCALLS += gcalls.fth
 
