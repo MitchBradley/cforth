@@ -1,0 +1,18 @@
+Sonoff S20 - WiFi mains switch with ESP8266 inside
+
+FM=dout FS=8m make download
+
+FM=dio will appear to download but the firmware won't run
+
+Pins:
+NodeMCU# ESP# Usage
+
+D3    GPIO0   Pushbutton.  Also for downloading
+D6    GPIO12  Relay and associated Red LED, active high
+D7    GPIO13  Green LED, active low
+TX    GPIO1   TX, can be reconfigured as GPIO
+RX    GPIO2   RX, can be reconfigured as GPIO
+
+Sonoff TH adds:
+
+D5    GPIO14  Sensor input
