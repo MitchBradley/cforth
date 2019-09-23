@@ -135,3 +135,17 @@ network that is always on (or is on when you want to send
 data from the scale).  I run it on my WiFi router, which
 runs the open source "OpenWrt" routing code and can
 host other programs like stunnel.
+
+## Acknowledgment
+
+I got the basic recipe for how to log to a Google spreadsheet from
+
+https://wp.josh.com/2014/06/04/using-google-spreadsheets-for-logging-sensor-data/
+
+His script is very flexible and will automatically create columns
+based on the URL parameters.  I simplified it to do only what I
+need, adding the date stamp automatically, propagating the
+averaging column formula and returning its value.
+
+That page tells you how to set things up and get the ID
+that goes into spreadsheet-url-prefix in app.fth .

@@ -1,0 +1,3 @@
+\ Edit this and make a wifi-on file in the ESP8266
+\ file system with its contents
+" MySSID" " MyPassword" station-connect

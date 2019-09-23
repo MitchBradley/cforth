@@ -86,7 +86,6 @@ fl ../../app/esp8266/tcpnew.fth
 : spreadsheet-url-prefix  ( -- $ )
    " https://script.google.com/macros/s/AKfycbzoqDrfzZnZxK-xu28QzirvZDwbjd3pXztE_2H9XA/exec?Weight="
 ;
-: wifi-connect  ( -- )  " OpenWrt-Bradley" " BunderditBaby" station-connect  ;
 
 : dns-handler  ( 'buf 'ipaddr 'name -- )
    drop  ?dup  if  ( 'buf 'ipaddr ) swap 4 move  else  ( buf ) on  then
@@ -249,9 +248,7 @@ false value tcp-connected?
 ;
 
 : send-weight-to-sheets  ( -- )
-   ['] wifi-connect  catch  if
-      
-   then
+   " wifi-on" included
 
    resolve-host
 
@@ -270,10 +267,6 @@ false value tcp-connected?
 ;
 
 0 value time-limit
-0 value hard-limit
-: set-hard-time-limit  ( -- )
-   timer@ #60000000 + to hard-limit
-;
 : reset-time  ( seconds -- )  #1000000 * timer@ + to time-limit  ;
 : ?reset-time  ( lbs -- lbs )  dup 2 >  if  #5 reset-time  then  ;
 : show-weight  ( -- )
@@ -299,7 +292,6 @@ false value tcp-connected?
       then
       #100 ms
       time-limit timer@ - 0<  if  slumber  then
-\      hard-limit timer@ - 0<  if  slumber  then
    key? until
    quit
 ;
