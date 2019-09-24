@@ -44,7 +44,7 @@ decimal
 : 0<= ( n -- flag )  dup 0=  swap 0<  or  ;
 : 0>= ( n -- flag )  0< 0=  ;
 : (s  ( -- )  postpone (  ; immediate
-: pad  ( -- adr )  here 100 +  ;
+: pad  ( -- adr )  here 140 +  ;  \ Enough for 128 bits of binary plus a few
 
 \ : c,  ( char -- )   here  1 allot  c!  ;
 
