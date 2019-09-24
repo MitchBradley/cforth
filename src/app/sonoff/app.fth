@@ -86,9 +86,6 @@ previous definitions
 
    " wifi-on" included
 
-   " mqtt-host$" evaluate resolve
-   host-ip to mqtt-server-ip
-
    mqtt-start
    green-led-on
    subscribe-relay

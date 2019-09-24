@@ -55,3 +55,19 @@ previous
    2dup " *" $=  if  2drop rm*  else  delete-file  then
 ;
 
+\ Create a new file and accept lines from the terminal,
+\ copying them to the file until a line with a single
+\ "." is entered.
+: new-file:  ( "filename" -- )
+   safe-parse-word create-fid
+   ." Enter lines, finish with a . on a line by itself" cr
+   begin
+      ." > "
+      pad #100 accept     ( len )
+      pad swap            ( adr len )
+      2dup " ." compare   ( adr len more? )
+   while
+      write-fid  " "n" write-fid
+   repeat
+   2drop close-fid
+;

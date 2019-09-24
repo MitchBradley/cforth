@@ -52,19 +52,34 @@ to the serial adapter at 115200 baud, 8 data bits,
 window.  You should see an ok prompt indicating
 that Forth is ready to receive input.
 
-At that prompt, type
+At that prompt, enter your WiFi SSID and password,
+and MQTT server IP address like this:
 
-```ok rf wifi-on```
+```
+ok new-file: wifi-on
+Enter lines, finish with a . on a line by itself
+> " MySSID" " MyPassword" station-connect
+> : server$ " 192.168.2.11" ;
+> .
+ok
+```
 
-Then use the terminal emulator's XMODEM protocol
-to send the wifi-on file that you edited in a
-previous step.  To check that it worked, type
+Of course, you should replace MySSID, MyPassword,
+and 192.168.2.11 with the appropriate values for
+your network.  Afterwards, you can check that it
+worked with
 
 ```ok cat wifi-on```
 
-and you should see the contents of the file.
+The spaces after opening quotes are mandatory.  If
+you omit them and write, for example, "MySSID" without
+the initial space, it will not work.  There must not
+be a space before the closing quotes.
 
-Then, when you power cycle the device, it should connect to WiFi
+If you make a mistake or need to change the values,
+just repeat the recipe above.
+
+Power cycle the device and it should connect to WiFi
 and speak the Mosquitto protocol.  You can test with it powered
 from the USB serial adapter.  When it is working - switch sends
 On/Off change events, relay and LED can be controlled via MQTT -
