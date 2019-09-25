@@ -29,8 +29,8 @@ create digits
       8 cells  i over bounds ?do  i @ 9 u.r  cell +loop  cr
    +loop
 ;
-: <=  2dup < -rot  =  or  ;
-: >=  2dup > -rot  =  or  ;
+: <= ( n1 n2 -- flag )  > 0=  ;
+: >= ( n1 n2 -- flag )  < 0=  ;
 : between  ( n low high -- flag )  rot tuck >=  -rot <=  and  ;
 : printable?  ( n -- flag )  bl 7e between  ;
 : dump  ( adr len -- )
