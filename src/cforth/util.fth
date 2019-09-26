@@ -9,6 +9,12 @@
    then
 ; immediate
 
+: s(  
+   [char] ) parse ;
+
+: .(
+  s( type ;
+
 : ok ;
 : trigger  0 0 2>r 2r>  drop drop  ; immediate
 \ : [cr] cr ; immediate
