@@ -15,8 +15,8 @@ create digits
         0 base @ um/mod
         ?dup if rot recurse else swap 0 max spaces then                 
         digits + c@ emit ;
-
-: . 0 u.r  space ;
+: u.    ( u -- )   0 u.r  space ;
+: .     ( n -- )   u. ;             \ not really
 : bounds  ( start len -- end start )  over + swap  ;
 : ldump  ( adr len -- )
    bounds  ?do
