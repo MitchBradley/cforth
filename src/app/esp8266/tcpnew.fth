@@ -81,11 +81,13 @@ defer respond   ( -- close? )
       ERR_OK exit               ( -- err )
    then                         ( pbuf )
 
+[ifdef] notdef
    \ Set up the continuation mechanism so that, when tcp-write-wait
    \ returns to the OS via continuation, a subsequent tcp-sent callback
    \ will resume execution of Forth with the PCB on the stack, along
    \ with a couple of other values from the sent callback.
    rx-pcb tcp-sent-continues    ( pbuf )
+[then]
 
    \ Say that the data has been received, thus allowing the TCP
    \ stack to open the receive window.  The data is still safe
@@ -219,3 +221,57 @@ defer connected
 
 \ This is the default host IP for ESP8266's in softap mode
 create esp-ip  #192 c, #168 c, #4 c, #1 c,
+
+false value tcp-connected?
+: null-tcp-sent  ( len pcb arg -- err )
+   2drop  ( len )
+   drop
+   ERR_OK
+;
+: tcp-connected  ( err pcb arg -- stat )
+   drop to rx-pcb               ( err )
+   ?dup  if                     ( err )
+      ." Connect failed, err = " .x  cr
+   else                         ( )
+      true to tcp-connected?
+      ['] receiver      rx-pcb tcp-recv
+      ['] error-handler rx-pcb tcp-err
+      ['] null-tcp-sent rx-pcb tcp-sent
+   then
+
+   ERR_OK
+;
+\needs resolve fl ${CBP}/app/esp8266/resolve.fth
+
+: service>port  ( $ -- n )
+   push-decimal $number? pop-base  ( false | d true )
+   0= abort" Bad TCP port"         ( d )
+   drop                            ( n )
+;
+
+0 value tcp-rcv-msecs
+: stream-connect ( rcv-timeout-msecs port$ server$ -- fd|-error )
+   2>r 2>r                  ( timeout r: server$ port$ )
+   to tcp-rcv-msecs         ( r: server$ port$ )
+   false to tcp-connected?
+   ['] false to respond  \ Don't close the connection
+
+   tcp-new to rx-pcb      ( r: server$ port$ )
+
+   ['] tcp-connected      ( cb r: server$ port$ )
+   2r> service>port       ( cb port# r: server$ )
+   2r> resolve-host       ( cb port# 'host )
+   rx-pcb tcp-connect  ?dup  if  ( error )
+      nip negate exit     ( -- -error )
+   then                   ( )
+   \ Wait 10 seconds for a connection to be established, then give up
+   #1000  0  do           ( )
+      #10 ms  tcp-connected?  if  unloop rx-pcb exit  then
+   loop
+   -1
+;
+: tcp-poll  ( fd -- )
+   drop
+   tcp-rcv-msecs ms
+   \ The callback will handle the receive data if any
+;

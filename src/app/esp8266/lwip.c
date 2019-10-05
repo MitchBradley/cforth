@@ -47,7 +47,8 @@ err_t dns_gethostbyname1(char *hostname, struct ip_addr *ipaddr, xt_t callback, 
 
 cell tcp_write_sw(struct tcp_pcb *pcb, size_t len, uint8_t *adr)
 {
-  return tcp_write(pcb, adr, len, 0);
+  err_t err = tcp_write(pcb, adr, len, 0);
+  return err != ERR_OK ? err : len;
 }
 
 xt_t accept_forth_cb;

@@ -43,8 +43,6 @@ fl ../esp8266/gpio-switch.fth
 fl ../esp8266/wifi.fth
 fl ../esp8266/tcpnew.fth
 
-fl ../esp8266/resolve.fth
-
 \ The server name or IP address is read at startup
 \ time from the wifi-on file
 : mqtt-server$  ( -- $ )  " server$" evaluate  ;
@@ -57,7 +55,7 @@ fl ../esp8266/resolve.fth
 0 value mqtt-clean-session
 0 value mqtt-keepalive    \ seconds
 
-fl mqtt.fth
+fl ${CBP}/lib/mqtt.fth
 
 also mqtt-topics definitions
 : sonoff/relay  ( value$ -- )
@@ -70,7 +68,7 @@ also mqtt-topics definitions
 ;
 previous definitions
 
-: subscribe-relay  ( -- )
+: subscribe-all  ( -- )
    0 " sonoff/led"  0 " sonoff/relay"  2  #1234 mqtt-subscribe
 ;
 0 value last-switch
@@ -84,15 +82,13 @@ previous definitions
    green-led-on
    green-led-off
 
-   " wifi-on" included
-
    mqtt-start
    green-led-on
-   subscribe-relay
+   subscribe-all
    publish-switch
    #200 ms green-led-off
    begin
-      #100 ms
+      mqtt-fd tcp-poll  \ Handle input
       switch-changed?  if  publish-switch  then
    key? until
 ;
@@ -102,7 +98,7 @@ previous definitions
    interrupt?  if  quit  then
    ['] load-startup-file catch drop
    decimal
-   run
+   \ run
    quit
 ;
 

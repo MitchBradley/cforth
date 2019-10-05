@@ -293,7 +293,7 @@ cell wifi_open(cell timeout, char *password, char *ssid)
     return 0;
 }
 
-int stream_connect(char *host, char *port, int timeout)
+int stream_connect(char *host, char *port, int timeout_msecs)
 {
   struct addrinfo hints, *res, *res0;
   int error;
@@ -325,13 +325,16 @@ int stream_connect(char *host, char *port, int timeout)
     }
     break;  /* okay we got one */
   }
+  freeaddrinfo(res0);
   if (s < 0) {
     printf("%s", cause);
     return -2;
   }
-  freeaddrinfo(res0);
 
-  const struct timeval recv_timeout = {.tv_sec=timeout, .tv_usec=0};
+  struct timeval recv_timeout;
+  recv_timeout.tv_sec = timeout_msecs / 1000;
+  recv_timeout.tv_usec = (timeout_msecs % 1000) * 1000;
+
   error = setsockopt(s, SOL_SOCKET, SO_RCVTIMEO, &recv_timeout, sizeof(recv_timeout));
   if (error) {
     perror("unable to set receive timeout.");
