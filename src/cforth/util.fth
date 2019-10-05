@@ -1,5 +1,6 @@
+: pluck  ( x1 x2 x3 - x1 x2 x3 x1 )   2 pick ;
 : move  ( from to len -- )
-   -rot  2dup u< if  rot cmove>   else  rot  cmove then
+   pluck pluck u< if  cmove>  else  cmove then
 ;
 : ."  ( "string" -- )
    state @  if
@@ -10,7 +11,7 @@
 ; immediate
 
 : ok ;
-: trigger  0 0 2>r 2r>  drop drop  ; immediate
+: trigger  0 0 2>r 2r>  drop drop  ; immediate             \ what's that for? "magic" 0. return stack marker?
 \ : [cr] cr ; immediate
 \ : rep  [char] A emit cr foo hex 40 dump decimal cr  trigger  ; immediate
 \ : repb [char] B emit cr foo hex 40 dump decimal cr  trigger  ; immediate
@@ -49,7 +50,7 @@ decimal
 \ : c,  ( char -- )   here  1 allot  c!  ;
 
 : fm/mod  ( d.dividend n.divisor -- n.rem n.quot )
-   2dup xor 0<  if	    \ Fixup only if operands have opposite signs
+   2dup xor 0<  if       \ Fixup only if operands have opposite signs
       dup >r  sm/rem                                ( rem' quot' r: divisor )
       over  if  1- swap r> + swap  else  r> drop  then
       exit
@@ -64,7 +65,7 @@ decimal
 : noop  ( -- )  ;
 
 : laligned  ( adr -- aligned-adr )  3 +  -4 and  ;
-: lalign  ( -- )  here here laligned swap - allot  ;
+: lalign  ( -- )  here dup laligned swap - allot  ;
 
 : erase  ( adr count -- )  0 fill  ;
 : off  ( adr -- )  false swap !  ;
@@ -102,7 +103,7 @@ decimal
 : <<  ( n count -- n' )  shift  ;
 : >>  ( n count -- n' )  negate shift  ;
 
-: cf@  ( acf -- n )  
+: cf@  ( acf -- n )
 \t16 w@
 \t32  @
 \t64  @
@@ -188,7 +189,7 @@ decimal
 \   drop !
    drop body> to-hook
 ;
-: to  ( "name" [ val ] -- )	\ val is present only in interpret state
+: to  ( "name" [ val ] -- )   \ val is present only in interpret state
    state @  if   postpone ['] postpone (to)  else  ' (to)  then
 ; immediate
 
@@ -450,7 +451,7 @@ warning on
 : wdump  ( adr count -- )  bounds  ?do  i w@ .  2 +loop  ;
 : cdump  ( adr count -- )  bounds  ?do  i c@ .  loop  ;
 
-16 constant #vocs	\ Must agree with NVOCS in forth.h
+16 constant #vocs \ Must agree with NVOCS in forth.h
 1 constant #threads
 
 : vocabulary-noname  ( -- )
@@ -510,11 +511,9 @@ vocabulary root  root definitions
 variable largest
 : follow  ( voc -- )  >threads link@  largest link!  ;
 : another?  ( -- false | acf true )
-   largest link@  non-null?  if       ( acf )
-      dup >link link@  largest link!  ( acf )
-      true                            ( acf true )
-   else                               ( )
-      false                           ( false )
+   largest link@  non-null?
+   dup if       ( acf )
+      over >link link@  largest link!  ( acf )
    then
 ;
 
@@ -585,26 +584,28 @@ only forth also definitions
 1 constant write
 2 constant modify
 
+: 3drop  ( n1 n2 n3 -- )  2drop drop  ;
 : recurse  ( -- )  lastacf compile,  ; immediate
 alias not invert   ( x -- x' )
 : chars  ( -- )  ;
 : char+  ( adr -- adr' )  1+  ;
-: unloop  ( -- )  r>  r> drop r> drop  r> drop  >r  ;
+: unloop  ( -- )  r>  r> r> r> 3drop >r  ;
 : blank  ( c-addr u -- )  bl fill  ;
 
 \ alias " s"
 \ fload stresc.fth
 
 defer pause
-' noop to pause		\ No multitasking for now
+' noop to pause      \ No multitasking for now
 
-: 3drop  ( n1 n2 n3 -- )  2drop drop  ;
-
-: push-hex  ( -- )  r>  base @ >r  >r  hex  ;
-: push-decimal  ( -- )  r>  base @ >r  >r  decimal  ;
-: pop-base  ( -- )  r>  r> base !  >r  ;
-: .d  push-decimal . pop-base  ;
-: .h  push-hex u. pop-base  ;
+decimal
+\ : exchange ( x1 a -- x2)  dup @ -rot ! ;
+: pop-base  ( -- )      r>  r> base ! >r ;
+: push-base  ( -- )     2r>    base @ >r   2>r ;
+: push-decimal  ( -- )  push-base decimal ;
+: push-hex  ( -- )      push-base hex ;
+: .h  ( u -- )          push-hex     u. pop-base  ;
+: .d  ( n -- )          push-decimal  . pop-base  ;
 
 : .abort  ( -- )  'abort$ @ count type  ;
 : (.error)  ( throw-code -- )
@@ -628,8 +629,8 @@ decimal
 create nullstring 0 c,
 
 : $number  ( adr len -- n false | true )
-   $number?  if  drop false  else  true  then
-;
+   $number?  0= ?dup nip ;
+
 
 : u2/  ( n1 -- n2 )  1 rshift  ;
 

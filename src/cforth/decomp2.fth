@@ -32,9 +32,8 @@ d# 300 2* /n* constant /positions
    #out @ #line @ wljoin  decompiler-ip  rot 2!    ( )
 ;
 : ip>position  ( ip -- true | #out #line false )
-   find-position  if    ( )
-      true              ( true )
-   else                 ( adr )
+   find-position        ( )
+   ?dup 0= if
       2@ drop lwsplit   ( #out #line )
       false             ( #out #line false )
    then                 ( true | #out #line false )
@@ -45,7 +44,9 @@ d# 300 2* /n* constant /positions
 
 headers
 defer indent
-: (indent)  ( -- )  lmargin @ #out @ - 0 max spaces  ;
+: (indent)  ( -- )  lmargin @ #out @ -
+\ 0 max          \ unnecessary, as spaces does that too.
+   spaces  ;
 ' (indent) is indent
 headerless
 
@@ -122,10 +123,9 @@ variable break-type  variable break-addr   variable where-break
    -1 break-addr !   ( prime stack)
    end-breaks @  breaks  ?do
       i  2@ over   break-addr @ u<  if
-         break-type !  break-addr !  i where-break !
-      else
-         2drop
+         2dup break-type !  break-addr !  i where-break !
       then
+      2drop
    /n 2* +loop
    break-addr @  -1  <>  if  -1 -1 where-break @ 2!  then
 ;
@@ -142,7 +142,7 @@ variable break-type  variable break-addr   variable where-break
 : bare-if? ( ip-of-branch-target -- f )
    /branch - /token - dup token@  ( ip' possible-branch-acf )
    dup ['] branch  =    \ unconditional branch means else or repeat
-   if  drop drop false exit then  ( ip' acf )
+   if  2drop false exit then  ( ip' acf )
    ['] ?branch =        \ cond. forw. branch is for an IF THEN with null body
    if   forward-branch?  else  drop true  then
 ;
@@ -182,12 +182,11 @@ variable extent  extent off
    end-breaks @  breaks /breaks +  >=        ( adr,type full? )
    abort" Decompiler table overflow"         ( adr,type )
    end-breaks @ breaks >  if                 ( adr,type )
-      over end-breaks @ /n 2* - >r r@ 2@     ( adr,type  adr prev-adr,type )
+      over end-breaks @ /n 2* - dup >r 2@    ( adr,type  adr prev-adr,type )
       ['] .endof  =  -rot  =  and  if        ( adr,type )
-	 r@ 2@  2swap  r> 2!                 ( prev-adr,type )
-      else                                   ( adr,type )
-	 r> drop                             ( adr,type )
+         r@ 2@  2swap  r@ 2!                 ( prev-adr,type )
       then                                   ( adr,type )
+      r> drop                                ( adr,type )
    then                                      ( adr,type )
    end-breaks @ 2!  /n 2*  end-breaks +!     (  )
 ;
@@ -199,7 +198,7 @@ variable extent  extent off
       then
    /n 2*  +loop     ( break-address break-type not-found? )
 
-   if  add-break  else  2drop  then
+   if  2dup add-break  then 2drop
 ;
 
 : scan-of  ( ip-of-(of -- ip' )
@@ -297,9 +296,9 @@ variable extent  extent off
 : type#  ( $ -- )  \ render control characters as green #
    bounds ?do
       i c@ dup h# 20 < if
-	 drop green-letters ." #" red-letters
+    drop green-letters ." #" red-letters
       else
-	 emit
+    emit
       then
    loop
 ;
@@ -316,7 +315,7 @@ variable extent  extent off
 : pretty-. ( n -- )
    base @ d# 10 =  if  (.)  else  (u.)  then   ( adr len )
    dup 3 + ?line  indent  add-position
-   green-letters 
+   green-letters
    base @ case
       d# 10 of  ." #"  endof
       d# 16 of  ." $"  endof
@@ -452,7 +451,7 @@ also forth definitions
    ['] dummy ['] do-scan          (patch
    ['] dummy ['] .execution-class (patch
    ['] dummy ['] execution-class >body na1+
-	       dup [ #decomp-classes ] literal ta+ tsearch
+          dup [ #decomp-classes ] literal ta+ tsearch
    drop token!
 ;
 previous definitions
@@ -482,10 +481,10 @@ headers
       dup is decompiler-ip                            ( adr )
       ?cr                                             ( adr )
       break-addr @ over =  if                         ( adr )
-	 begin                                        ( adr )
-	    break-type @ execute                      ( adr )
-	    next-break  break-addr @ over <>          ( adr done? )
-	 until                                        ( adr )
+    begin                                        ( adr )
+       break-type @ execute                      ( adr )
+       next-break  break-addr @ over <>          ( adr done? )
+    until                                        ( adr )
       else                                            ( adr )
          .token                                       ( adr' )
       then                                            ( adr' )
@@ -571,7 +570,7 @@ also forth definitions
 : install-decomp-definer  ( definer-acf display-acf -- )
    ['] dummy ['] .definition-class (patch
    ['] dummy ['] definition-class >body na1+
-	       dup [ #definition-classes ] literal ta+ tsearch
+          dup [ #definition-classes ] literal ta+ tsearch
    drop token!
 ;
 previous definitions

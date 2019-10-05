@@ -9,19 +9,14 @@ create digits
 
 : space  bl emit  ;
 : spaces  0 max  0  ?do  space  loop  ;
-: u.r   ( n #digits -- )
-   0 >r  swap               ( #digits n r: 0 )
-   begin                    ( #digits n r: 0 ascii .. )
-      swap 1 - swap         ( #digits' n  r: 0 ascii .. )
-      dup 4 rshift swap f and  ( #digits rem n' 0 ascii .. )
-\      0 base @ um/mod swap ( #digits n' rem 0 ascii .. )
-      digits + c@ >r        ( #digits n r: ascii ... )
-   ?dup 0= until            ( #digits r: ascii )
-   ( #digits )
-   0 max spaces
-   begin  r> ?dup  while  emit  repeat
-;
-: . 0 u.r  space ;
+
+: u.r   ( n #digits -- )    \ radix max #16 because of digits table
+        1- swap
+        0 base @ um/mod
+        ?dup if rot recurse else swap 0 max spaces then                 
+        digits + c@ emit ;
+: u.    ( u -- )   0 u.r  space ;
+: .     ( n -- )   u. ;             \ not really
 : bounds  ( start len -- end start )  over + swap  ;
 : ldump  ( adr len -- )
    bounds  ?do
