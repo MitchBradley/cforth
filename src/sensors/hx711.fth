@@ -1,5 +1,7 @@
 \ Driver for HX711 load cell amplifier
 
+1 value hx711-polarity  \ or -1; depends on hookup
+
 5 value hx711-sck-pin
 6 value hx711-dout-pin
 : hx711-power-on  ( -- )  0 hx711-sck-pin gpio-pin!  ;
@@ -30,7 +32,7 @@
 ;
 : hx711-ready?  ( -- flag )  hx711-dout-pin gpio-pin@ 0=  ;
 : hx711-raw-sample  ( -- counts )
-   #30 0 do
+   #100 0 do
       hx711-ready?  if
          hx711-read unloop exit
       then
@@ -51,11 +53,13 @@
 : hx711-sample  ( -- counts )
    begin
       hx711-raw-sample  hx711-offset -    ( delta-counts )
+      hx711-polarity *                    ( delta-counts )
    dup 0<  while                          ( delta-counts )
       \ If the sample value is a little smaller than the offset,
       \ it is probably due to drift, so we adjust the offset
       \ and return 0.
       dup hx711-divisor / #-20 >  if      ( delta-counts )
+         hx711-polarity *                 ( delta-counts )
          hx711-offset +  to hx711-offset  ( )
          0 exit                           ( -- 0 )
       then                                ( delta-counts )

@@ -35,6 +35,8 @@ previous definitions
 ;
 
 : run  ( -- )
+   " wifi-on" included
+
    \ Start WiFi and establish a connection to the MQTT server
    mqtt-start
 
@@ -44,7 +46,7 @@ previous definitions
    \ Handle incoming events on subscribed topics
    \ and publish keystrokes typed on the serial console
    begin
-      mqtt-fd tcp-poll
+      mqtt-fd do-tcp-poll
       key?  if
          key dup $1b =  if  drop exit  then  \ Exit when ESC pressed
          publish-key

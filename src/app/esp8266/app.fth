@@ -27,7 +27,6 @@ fl ../../lib/redirect.fth
 fl sendfile.fth
 fl server.fth
 
-fl ../../lib/url.fth
 \ fl serve-sensors.fth
 
 fl car.fth
@@ -41,8 +40,6 @@ fl car.fth
 \ Replace 'quit' to make CForth auto-run some application code
 \ instead of just going interactive.
 \ : app  banner  hex init-i2c  showstack  quit  ;
-
-: load-startup-file  ( -- )  " start" included   ;
 
 : app
    banner  hex

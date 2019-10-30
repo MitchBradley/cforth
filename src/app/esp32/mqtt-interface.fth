@@ -2,7 +2,7 @@
 #256 constant /mqtt-buffer
 defer handle-peer-data
 /mqtt-buffer buffer: mqtt-buffer
-: tcp-poll  ( fd -- )
+: do-tcp-poll  ( fd -- )
    >r
    #50 ms
    mqtt-buffer /mqtt-buffer r@ lwip-read  ( count )

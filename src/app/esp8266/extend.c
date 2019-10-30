@@ -628,4 +628,12 @@ cell ((* const ccalls[])()) = {
 
   C(ws2812b_init)	    //c init-ws2812b { i.gpio# i.short_spins i.long_spins -- }
   C(ws2812b_write)	    //c write-ws2812b { a.adr i.len -- }
+
+  C(pwm_start)              //c pwm_start { -- }
+  C(pwm_set_duty)           //c pwm_set_duty { i.pin i.duty -- }
+  C(pwm_set_freq)           //c pwm_set_freq { i.freq i.pin -- }
+  C(pwm_exist)              //c pwm_exist { i.channel -- i.n }
+  C(pwm_delete)             //c pwm_delete { i.channel -- i }
+  C(pwm_add)                //c pwm_add  { i.channel -- i }
+  C(pwm_init)               //c pwm_init { i.duty i.freq -- }
 };

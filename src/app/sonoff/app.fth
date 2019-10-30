@@ -45,7 +45,8 @@ fl ../esp8266/tcpnew.fth
 
 \ The server name or IP address is read at startup
 \ time from the wifi-on file
-: mqtt-server$  ( -- $ )  " server$" evaluate  ;
+defer mqtt-server$
+\ Example: :noname " 192.168.2.11" ; to mqtt-server$
 : mqtt-client-id$  ( -- $ )  " Sonoff Switch Forth"  ;
 : mqtt-username$  ( -- $ )  " "  ;
 : mqtt-password$  ( -- $ )  " "  ;
@@ -57,40 +58,63 @@ fl ../esp8266/tcpnew.fth
 
 fl ${CBP}/lib/mqtt.fth
 
+false value blink-led?
+
 also mqtt-topics definitions
 : sonoff/relay  ( value$ -- )
-   2dup  " On"  $=  if  2drop relay-on exit  then
-   " Off" $=  if  relay-off  then
+   ." Relay " 2dup type cr
+   2dup  " On"  $=  if  2drop relay-on  exit  then
+   2dup  " Off" $=  if  2drop relay-off exit  then
+   2drop
 ;
 : sonoff/led  ( value$ -- )
-   2dup  " On"  $=  if  2drop green-led-on exit  then
-   " Off" $=  if  green-led-off  then
+   ." LED " 2dup type cr
+   2dup " On"     $=  if  2drop green-led-on  false to blink-led?  exit  then
+   2dup " Blink"  $=  if  2drop               true  to blink-led?  exit  then
+   2dup " Off"    $=  if  2drop green-led-off false to blink-led?  exit  then
+   2drop
 ;
 previous definitions
 
-: subscribe-all  ( -- )
-   0 " sonoff/led"  0 " sonoff/relay"  2  #1234 mqtt-subscribe
-;
 0 value last-switch
 : switch-changed?  ( -- flag )  switch? last-switch <>  ;
 : publish-switch  ( -- )
    switch? dup  if  " On"  else  " Off"  then  " sonoff/switch" 0 0 mqtt-publish-qos0
    to last-switch
 ;
+: blip  ( -- )  green-led-on #200 ms green-led-off #400 ms  ;
+: ?blink  ( -- )
+   blink-led?  if
+      timer@ #2000000 mod  ( n )
+      #1000000 >  if  green-led-on  else  green-led-off  then
+   then
+;
+: mqtt-loop  ( -- )
+   begin
+      mqtt-fd do-tcp-poll  \ Handle input
+      switch-changed?  if  publish-switch  then
+      ?blink
+   key? until
+;
 : run  ( -- )
    init-gpios
-   green-led-on
+   green-led-on #200 ms
+   " wifi-on" included
    green-led-off
 
-   mqtt-start
+   begin
+      ['] mqtt-start catch
+   while
+      blip
+      ." Waiting for MQTT server" cr
+      key?  if  exit  then
+   repeat
+
    green-led-on
    subscribe-all
    publish-switch
-   #200 ms green-led-off
-   begin
-      mqtt-fd tcp-poll  \ Handle input
-      switch-changed?  if  publish-switch  then
-   key? until
+   blip blip blip
+   mqtt-loop
 ;
 
 : app
@@ -98,7 +122,7 @@ previous definitions
    interrupt?  if  quit  then
    ['] load-startup-file catch drop
    decimal
-   \ run
+   run
    quit
 ;
 

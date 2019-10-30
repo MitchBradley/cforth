@@ -270,7 +270,7 @@ false value tcp-connected?
    loop
    -1
 ;
-: tcp-poll  ( fd -- )
+: do-tcp-poll  ( fd -- )
    drop
    tcp-rcv-msecs ms
    \ The callback will handle the receive data if any

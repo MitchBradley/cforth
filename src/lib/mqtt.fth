@@ -165,6 +165,15 @@ false value mqtt-connack?
    }mqtt
 ;
 
+: subscribe-all  ( -- )
+   ['] mqtt-topics follow
+   begin  another?  while
+      >name$
+      ." Subscribing to " 2dup type cr
+      0 -rot  1 #1234 mqtt-subscribe
+   repeat
+;
+
 : mqtt-unsubscribe  ( n*topic$ n id -- )
    $a0 mqtt{  mw,      ( n*topic$ n )
       0 do  m$,  loop  ( )
@@ -207,9 +216,10 @@ false value mqtt-connack?
       2drop exit
    then              ( adr len )
    >payload&topic    ( payload$ topic$ )
-   ['] mqtt-topics search-wordlist  if  ( payload$ xt )
-      execute                           ( )
-   else                                 ( payload$ )
+   2dup  ['] mqtt-topics search-wordlist  if  ( payload$ topic$ xt )
+      nip nip execute                         ( )
+   else                                       ( payload$ topic$ )
+      ." No MQTT handler for topic " type  cr ( payload$ )
       2drop
    then
 ;
@@ -293,11 +303,9 @@ false value mqtt-connack?
 : mqtt-start  ( -- )
    ['] mqtt-received to handle-peer-data
 
-   " wifi-on" included
-
    #50 mqtt-port$ mqtt-server$ stream-connect to mqtt-fd
    mqtt-fd 0< abort" Failed to connect to MQTT server"
 
    mqtt-connect
-   begin  mqtt-fd tcp-poll  mqtt-connack? until
+   begin  mqtt-fd do-tcp-poll  mqtt-connack? until
 ;
