@@ -13,7 +13,8 @@ CC := gcc
 # Change these to reflect the locations of external stuff on your system,
 # either here or on the command line, e.g. COMPORT=COM27 make download
 SDK_PARENT_PATH ?= $(UPDIR)
-NODEMCU_PARENT_PATH ?= $(UPDIR)COMPORT ?= COM36
+NODEMCU_PARENT_PATH ?= $(UPDIR)
+COMPORT ?= COM36
 
 APPPATH = $(TOPDIR)/src/app/$(lastword $(subst /, ,$(realpath .)))
 VPATH +=  $(APPPATH)

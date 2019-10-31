@@ -1,4 +1,4 @@
-# Builds CForth for ESP8266 with labeler code
+# Builds CForth for ESP8266 with application code in same-named source directory
 
 TOPDIR=../..
 UPDIR=$(realpath $(TOPDIR)/..)

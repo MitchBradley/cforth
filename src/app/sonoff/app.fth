@@ -77,10 +77,14 @@ also mqtt-topics definitions
 previous definitions
 
 0 value last-switch
-: switch-changed?  ( -- flag )  switch? last-switch <>  ;
 : publish-switch  ( -- )
-   switch? dup  if  " On"  else  " Off"  then  " sonoff/switch" 0 0 mqtt-publish-qos0
-   to last-switch
+   switch? dup  last-switch <>  if           ( switch )
+      dup  if  " On"  else  " Off"  then     ( switch $ )
+      " sonoff/switch" 0 0 mqtt-publish-qos0 ( switch )
+      to last-switch                         ( )
+   else
+      drop
+   then
 ;
 : blip  ( -- )  green-led-on #200 ms green-led-off #400 ms  ;
 : ?blink  ( -- )
@@ -92,7 +96,7 @@ previous definitions
 : mqtt-loop  ( -- )
    begin
       mqtt-fd do-tcp-poll  \ Handle input
-      switch-changed?  if  publish-switch  then
+      publish-switch
       ?blink
    key? until
 ;

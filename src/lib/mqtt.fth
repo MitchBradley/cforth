@@ -233,18 +233,7 @@ false value mqtt-connack?
 ;
 
 \ Called when a TCP packet is received
-: mqtt-received  ( adr len peer -- )
-   drop                 ( adr len )
-   dup 2 <  if          ( adr len )
-      ." Short MQTT packet" cr
-      2drop exit
-   then                        ( adr len )
-   over 1+ c@ 2+  over <>  if  ( adr len )
-      ." MQTT length mismatch " dup . cr
-      push-hex cdump pop-base  ( adr len )      
-      2drop exit
-   then                        ( adr len )
-
+: mqtt-handle-message  ( adr len -- )
    over c@  >r  2 /string  r>  ( adr' len' type )
    4 rshift  case              ( adr len )
       $2  of   \ CONNACK  $20 $02 sp ret
@@ -298,6 +287,15 @@ false value mqtt-connack?
       endof
       ( default )  nip nip
    endcase   
+;
+: mqtt-received  ( adr len peer -- )
+   drop                    ( adr len )
+   begin  dup 2 >=  while  ( adr len )
+      over 1+ c@ 2+ >r     ( adr len r: thislen )
+      over r@ mqtt-handle-message  ( adr len r: thislen )
+      r> /string           ( adr' len' )
+   repeat                  ( adr' len' )
+   2drop
 ;
 
 : mqtt-start  ( -- )

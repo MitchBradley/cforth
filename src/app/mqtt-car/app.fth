@@ -31,12 +31,8 @@ fl ../esp8266/server.fth
 
 fl carpwm.fth
 
-: wifi-on  ( -- )
-   " Bender" " " station-connect
-;
-
-: mqtt-server$  ( -- $ )  " 192.168.4.254"  ;
-: mqtt-client-id$  ( -- $ )  " Bender"  ;
+defer mqtt-server$
+: mqtt-client-id$  ( -- $ )  " Bender Car"  ;
 : mqtt-username$  ( -- $ )  " "  ;
 : mqtt-password$  ( -- $ )  " "  ;
 : mqtt-will$  ( -- msg$ topic$ )  " "  " "  ;
@@ -73,23 +69,35 @@ previous definitions
    0 " car/motors"  0 " car/led"  2  #1234 mqtt-subscribe
 ;
 
-: run  ( -- )
-   0 gpio-output LED-pin gpio-mode
-   \ init-car
-   wifi-on
-   ." WiFi on, AP is Bender" cr
-   begin
-      ['] mqtt-start catch
-   while
-      ." Waiting for MQTT server" cr
-      key?  if  exit  then
-   repeat
-   ." Connected to MQTT server" cr
-   subscribe-all
+: blip  led-on #200 ms led-off #400 ms  ;
+: mqtt-loop  ( -- )
    begin
       mqtt-fd do-tcp-poll  \ Handle input
       #10 ms
    key? until
+;
+: run  ( -- )
+   0 gpio-output LED-pin gpio-mode
+   blip
+   init-car
+   
+   #5000 ms
+
+   led-on
+   " wifi-on" included
+   led-off
+
+   begin
+      ['] mqtt-start catch
+   while
+      ." Waiting for MQTT server" cr
+      blip
+      key?  if  exit  then
+   repeat
+   ." Connected to MQTT server" cr
+   blip blip blip
+   subscribe-all
+   mqtt-loop
 ;
 
 \ Replace 'quit' to make CForth auto-run some application code
@@ -98,9 +106,9 @@ previous definitions
 
 : app
    banner  hex
-   interrupt?  if  quit  then
+   \ interrupt?  if  quit  then
    ['] load-startup-file catch drop
-   run
+   ['] run catch .error
    quit
 ;
 

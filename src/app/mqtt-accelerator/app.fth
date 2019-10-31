@@ -36,8 +36,8 @@ fl ../../sensors/hx711.fth
 3 to hx711-dout-pin
 -1 to hx711-polarity
 
-defer mqtt-server$  :noname " 192.168.4.254" ;  to mqtt-server$
-: mqtt-client-id$  ( -- $ )  " Bender"  ;
+defer mqtt-server$
+: mqtt-client-id$  ( -- $ )  " Bender Car Accelerator"  ;
 : mqtt-username$  ( -- $ )  " "  ;
 : mqtt-password$  ( -- $ )  " "  ;
 : mqtt-will$  ( -- msg$ topic$ )  " "  " "  ;
@@ -47,10 +47,6 @@ defer mqtt-server$  :noname " 192.168.4.254" ;  to mqtt-server$
 0 value mqtt-keepalive    \ seconds
 
 fl ${CBP}/lib/mqtt.fth
-
-: wifi-on  ( -- )
-   " wifi" included
-;
 
 : $>duty  ( speed$ -- speed )
    push-decimal
@@ -68,11 +64,22 @@ fl ${CBP}/lib/mqtt.fth
    then
 ;
 false value send-weight?
+false value blink-led?
+: ?blink-led  ( -- )
+   blink-led?  if
+      timer@ #2000000 mod
+      #1000000 >  if  $2200  else  0  then  led!
+   then
+;
 
 also mqtt-topics definitions
 \ Value is a color - black blue green red cyan yellow magenta white orange
 : accelerator/led  ( value$ -- )
    ." LED " 2dup type cr      ( value$ )
+   2dup " Blink" $=  if
+      2drop  true to blink-led?  exit
+   then
+   false to blink-led?
    hex?  if  led! exit  then  ( value$ )
    " %s-led" sprintf          ( cmd$ )
    $find  if  execute  else  2drop  then  ( )
@@ -85,26 +92,7 @@ also mqtt-topics definitions
 ;
 previous definitions
 
-: run  ( -- )
-   init-d1mini-led
-   init-wemos-led
-   init-hx711
-   led-on red-led
-   hx711-tare
-   led-off yellow-led
-   wifi-on
-   led-on  cyan-led
-   ." WiFi on, AP is Bender" cr
-   begin
-      ['] mqtt-start catch
-   while
-      ." Waiting for MQTT server" cr
-      key?  if  key drop exit  then
-   repeat
-   green-led #500 ms
-   led-off black-led
-   ." Connected to MQTT server" cr
-   subscribe-all
+: mqtt-loop  ( -- )
    begin
       mqtt-fd do-tcp-poll  \ Handle input
       hx711-sample >lbs$ 2dup type (cr  ( lbs$ )
@@ -113,10 +101,35 @@ previous definitions
       else
          2drop
       then
-
+      ?blink-led
       #10 ms
-   key? until
-   key drop
+   key? until  key drop
+;
+: blip  ( -- )  led-on #200 ms led-off #400 ms  ;
+: run  ( -- )
+   init-d1mini-led
+   init-wemos-led
+   init-hx711
+   led-on
+   hx711-tare
+
+   blip
+   " wifi-on" included
+   led-off
+
+   begin
+      ['] mqtt-start catch
+   while
+      blip
+      ." Waiting for MQTT server" cr
+      key?  if  key drop exit  then
+   repeat
+
+   led-on
+   subscribe-all
+
+   blip blip blip
+   mqtt-loop
 ;
 
 : app

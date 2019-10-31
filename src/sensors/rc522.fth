@@ -13,7 +13,7 @@
   1 rc522-nrst-pin gpio-pin!
   #100 ms
 ;
-: rc522-init  ( -- )
+: rc522-gpio-init  ( -- )
   0 true #2000000 -1 spi-open
   0 gpio-output rc522-nrst-pin gpio-mode
   rc522-hard-reset
@@ -253,15 +253,19 @@ alias w rc522-reg!
    then                                ( sn #bytes )
 ;
 
-: rst rc522-init  rc522-reset  ;
+: init-rc522  ( -- )  rc522-gpio-init  rc522-reset  ;
 
 #10 buffer: tag-sn
-: key-abort  ( -- )  key? abort" Aborted"  ;
-: try.tag  ( -- adr len )
-   begin  find-tag  0<  while  key-abort  #20 ms  repeat   
-   tag-sn select-tag-sn
+\ The result is an array of 4, 7 or 10 binary bytes
+: get-rfid-tag  ( -- false | adr len true )
+   find-tag 0<  if  false exit  then
+   tag-sn select-tag-sn    ( adr len )
+   dup 0<  if  2drop false exit  then
+   true
 ;
-: .tag  ( -- )
-   begin  try.tag  dup 0<  while  2drop  key-abort  #20 ms  repeat
+0 [if]
+: .tag  ( -- adr len )
+   begin  get-rfid-tag  0=  while  key? abort" Aborted"  #20 ms  repeat
    cdump
 ;
+[then]
