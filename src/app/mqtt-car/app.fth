@@ -7,8 +7,6 @@
 \ 2 constant left-speed-pin
 \ 3 constant right-direction-pin
 \ 4 constant left-direction-pin
-\
-\ Proximity sensor
 
 \ : fl safe-parse-word 2dup type cr included ;
 fl ../esp8266/common.fth
@@ -64,10 +62,6 @@ also mqtt-topics definitions
    " On"  $=  if  led-on  else  led-off  then
 ;
 previous definitions
-
-: subscribe-all  ( -- )
-   0 " car/motors"  0 " car/led"  2  #1234 mqtt-subscribe
-;
 
 : blip  led-on #200 ms led-off #400 ms  ;
 : mqtt-loop  ( -- )
