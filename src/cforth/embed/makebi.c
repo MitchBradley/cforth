@@ -57,6 +57,10 @@ void bytes_to_file(char *filename, FILE *infile, int len)
     }
     for (i = 0; i < len; i++) {
         c = fgetc(infile);
+        if (c == EOF) {
+            fprintf(stderr, "Short read from %s\n", filename);
+            exit(1);
+        }
         fprintf(outfile, "0x%02x, ", c);
         if ((i&7) == 7) {
             fputc('\n', outfile);
@@ -90,6 +94,11 @@ int main(argc, argv)
     cells_to_file("dicthdr.h", infile, 8, &dictsize, &uasize);
     bytes_to_file("dict.h", infile, dictsize);
     bytes_to_file("userarea.h", infile, uasize);
+
+    if (fgetc(infile) != EOF) {
+        fprintf(stderr, "Extra data in the input file %s\n", dictionary_file);
+        exit(1);
+    }
 
     fclose(infile);
     return 0;
