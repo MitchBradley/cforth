@@ -9,15 +9,15 @@ else
 include $(SRC)/cpu/arm/compiler.mk
 endif
 
+VPATH += $(SRC)/cpu/arm $(SRC)/lib
+VPATH += $(SRC)/platform/arm-xo-1.75
+INCS += -I$(SRC)/platform/arm-xo-1.75
+
 include $(SRC)/common.mk
 include $(SRC)/cforth/targets.mk
 include $(SRC)/cforth/embed/targets.mk
 
 DUMPFLAGS = --disassemble -z -x -s
-
-VPATH += $(SRC)/cpu/arm $(SRC)/lib
-VPATH += $(SRC)/platform/arm-xo-1.75
-INCS += -I$(SRC)/platform/arm-xo-1.75
 
 # Platform-specific object files for low-level startup and platform I/O
 
