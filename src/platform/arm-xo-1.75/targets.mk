@@ -2,8 +2,11 @@
 
 SRC=$(TOPDIR)/src
 
+CPU_VARIANT=-marm -mcpu=strongarm110
+
 # Target compiler definitions
 ifneq "$(findstring arm,$(shell uname -m))" ""
+TCFLAGS += $(CPU_VARIANT)
 include $(SRC)/cpu/host/compiler.mk
 else
 include $(SRC)/cpu/arm/compiler.mk
