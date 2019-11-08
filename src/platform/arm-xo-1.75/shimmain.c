@@ -8,7 +8,7 @@ void spi_read(cell offset, cell len, cell adr);
 
 void init_io(void);
 
-main()
+void main()
 {
     void *up;
 
