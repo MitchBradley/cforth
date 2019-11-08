@@ -17,6 +17,8 @@ include $(SRC)/common.mk
 include $(SRC)/cforth/targets.mk
 include $(SRC)/cforth/embed/targets.mk
 
+TCFLAGS += -fno-pie
+
 DUMPFLAGS = --disassemble -z -x -s
 
 # Platform-specific object files for low-level startup and platform I/O
