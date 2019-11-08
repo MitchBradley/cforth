@@ -65,22 +65,22 @@ defer inflate ' fast-inflate to inflate
       drop
    then
 ;
-variable file-size
+variable drop-in-size
 : load-drop-in  ( adr name$ -- )
    drop-in-location   ( adr offset base-len expanded-len )
    dup  if            ( adr offset base-len expanded-len )
       ." Reading ... "
-      file-size !     ( adr offset base-len )
+      drop-in-size !           ( adr offset base-len )
       'compressed swap rot     ( adr compressed-adr base-len offset )
       spi-read                 ( adr )
       ." Checksumming ... "
       test-checksum            ( adr )
       ." Decompressing "
       'compressed swap inflate     ( inflated-len )
-      file-size @  <> abort" Inflated dropin was the wrong size"   ( )
+      drop-in-size @  <> abort" Inflated dropin was the wrong size"   ( )
       cr
    else                            ( adr offset base-len expanded-len )
-      drop  tuck  file-size !      ( adr base-len offset )
+      drop  tuck  drop-in-size !   ( adr base-len offset )
       spi-read                     ( )
    then                            ( )
 ;
