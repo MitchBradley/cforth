@@ -1004,7 +1004,7 @@ int gamekeys[] = { // bit 8 implies 0xe0 prefix is needed
     0x067, // left
 };
 
-gamekey_send(int key, int release)
+void gamekey_send(int key, int release)
 {
     int e0, scode;
 
@@ -1023,7 +1023,7 @@ gamekey_send(int key, int release)
     run_queue();
 }
 
-gamekey_sendbits(unsigned int keybits, int down)
+void gamekey_sendbits(unsigned int keybits, int down)
 {
     unsigned int bit;
     int i;
