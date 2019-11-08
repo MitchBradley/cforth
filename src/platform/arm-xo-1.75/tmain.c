@@ -1,13 +1,12 @@
-#include "config.h"
-
 // Top-level routine for starting Forth
 
-main()
+#include "forth.h"
+#include "compiler.h"
+
+int main()
 {
     cell *up;
-
-    init_io();   // Perform platform-specific initialization
-
-    up = (cell *)init_forth();
+    init_io(0, (char **)0, (cell *)up);   // Perform platform-specific initialization
+    up = (void *)init_forth();
     execute_word("app", up);  // Call the top-level application word
 }

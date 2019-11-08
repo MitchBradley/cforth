@@ -134,7 +134,7 @@ int getkey()
     } while (1);
 }
 
-void init_io()
+void init_io(int argc, char **argv, cell *up)
 {
     dbg_uart_only = 0;
 
