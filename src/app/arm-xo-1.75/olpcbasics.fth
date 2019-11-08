@@ -1,4 +1,3 @@
-: alloc-mem  drop 0  ;  : free-mem 2drop  ;
 \ fl flashif.fth
 \ fl spiif.fth
 \ fl spiflash.fth
