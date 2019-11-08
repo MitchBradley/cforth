@@ -7,12 +7,20 @@ const struct header builtin_hdr = {
 #include "dicthdr.h"
 };
 
-u_char variables[MAXUSER] = {
-#include "userarea.h"
+u_char variables[
+sizeof((u_char []){
+#  include "userarea.h"
+}) > MAXUSER ? -1 : MAXUSER
+] = {
+#  include "userarea.h"
 };
 
-u_char dictionary[MAXDICT] = {
-#include "dict.h"
+u_char dictionary[
+sizeof((u_char []){
+#  include "dict.h"
+}) > MAXDICT ? -1 : MAXDICT
+] = {
+#  include "dict.h"
 };
 
 extern u_char *origin;
