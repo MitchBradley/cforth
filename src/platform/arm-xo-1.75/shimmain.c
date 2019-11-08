@@ -1,5 +1,9 @@
 // Top-level routine for starting Forth
 
+#if CFORTHSIZE > SHIMBASE - RAMBASE
+#    error "cforth.img is too large"
+#endif
+
 #define cell long
 void spi_read(cell offset, cell len, cell adr);
 
@@ -14,7 +18,7 @@ void main()
 
     init_io();   // Perform platform-specific initialization
 
-    spi_read(0x2000, 0x18000, 0xd1000000);
+    spi_read(0x2000, SHIMBASE - RAMBASE, 0xd1000000);
     ((void (*)())0xd1000000)();
 }
 

@@ -35,6 +35,14 @@ FORTH_OBJS = ttmain.o tembed.o textend.o  tspiread-simpler.o tconsoleio.o tinfla
 
 SHIM_OBJS = tshimmain.o tspiread.o
 
+SHIM_CFLAGS += -DCFORTHSIZE=$(shell stat -c%s cforth.img)
+SHIM_CFLAGS += -DRAMBASE=$(RAMBASE)
+SHIM_CFLAGS += -DSHIMBASE=$(SHIMBASE)
+
+tshimmain.o: shimmain.c cforth.img
+	@echo TCC $<
+	@$(TCC) $(INCS) $(DEFS) $(TCFLAGS) $(TCPPFLAGS) $(SHIM_CFLAGS) -c $< -o $@
+
 # Recipe for linking the final image
 
 # On XO-1.75, a masked-ROM loader copies CForth from SPI FLASH into SRAM
