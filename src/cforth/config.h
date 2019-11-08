@@ -113,6 +113,9 @@ typedef uint8_t u_char;
  typedef __int32_t double_cell_t;
  typedef __uint32_t u_double_cell_t;
 #endif
+#ifndef CELLBITS
+# error "BITS16, BITS32 or BITS64 not defined"
+#endif
 
 typedef token_t *xt_t;
 
