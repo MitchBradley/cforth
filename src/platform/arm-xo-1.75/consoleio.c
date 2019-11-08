@@ -53,7 +53,7 @@ void txdbg(char c)
 {
     tx1(c);
 }
-void tx(char c)
+void raw_putchar(char c)
 {
     txdbg(c);
     if (dbg_uart_only)
