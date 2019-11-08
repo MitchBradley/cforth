@@ -1,5 +1,3 @@
-alias purpose: \
-
 fl ../../lib/misc.fth
 fl ../../lib/dl.fth
 fl ../../lib/random.fth
