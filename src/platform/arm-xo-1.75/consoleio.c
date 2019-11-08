@@ -1118,3 +1118,11 @@ void gamekey_handle(int is_timer)
 	sched_debounce();
     }
 }
+
+int strlen(const char *s)
+{
+        const char *p;
+        for (p=s; *p != '\0'; *p++) {
+        }
+        return p-s;
+}
