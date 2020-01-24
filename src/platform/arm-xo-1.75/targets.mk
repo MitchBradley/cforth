@@ -74,6 +74,7 @@ cforth.elf: version $(PLAT_OBJS) $(FORTH_OBJS)
 	    $(PLAT_OBJS) $(FORTH_OBJS) date.o \
 	    $(LIBDIRS) $(LIBGCC)
 	@$(TOBJDUMP) $(DUMPFLAGS) $@ >$(@:.elf=.dump)
+	@if egrep -q '^\S{8}:\s\S{4}\s' $(@:.elf=.dump); then echo 'PJ1 has no Thumb support. Wrong libgcc?'; rm $@; exit 1; fi
 	@nm -n $@ >$(@:.elf=.nm)
 
 shim.elf: $(PLAT_OBJS) $(SHIM_OBJS)
