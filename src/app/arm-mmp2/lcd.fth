@@ -91,6 +91,8 @@ d# 16 constant bpp
    0 h# 138 lcd!   \ Color key V
 ;
 
+: third  ( a b c -- a b c a )  2 pick  ;
+
 : centered  ( w h -- )
    hdisp third - 2/               ( w h x )    \ X centering offset
    vdisp third - 2/               ( w h x y )  \ Y centering offset
