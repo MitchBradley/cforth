@@ -1,4 +1,4 @@
-[ifdef] cl4
+[ifdef] mmp3
 \ This value has the same effect as the value below.  The
 \ difference is that the SCLK_SOURCE_SELECT field added a
 \ low-order bit (bit 29), so the high nibble changed from

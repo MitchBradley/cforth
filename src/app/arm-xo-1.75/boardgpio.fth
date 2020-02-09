@@ -24,7 +24,7 @@ purpose: Board-specific setup details - pin assigments, etc.
    led-storage-gpio#    gpio-dir-out
 [then]
 
-[ifdef] cl4
+[ifdef] mmp3
    vid2-gpio#           gpio-out-set
 [else]
    vid2-gpio#           gpio-out-clr
