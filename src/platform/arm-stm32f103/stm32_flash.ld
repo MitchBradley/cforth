@@ -61,6 +61,12 @@ SECTIONS
 /* XXX   _exit = .; */
   } >FLASH
 
+  .ARM.exidx :
+  {
+    *(.ARM.exidx*)
+    *(.gnu.linkonce.armexidx.*)
+  } >FLASH
+
   /* used by the startup to initialize data */
   _sidata = .;
 

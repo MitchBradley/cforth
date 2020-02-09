@@ -27,8 +27,12 @@ CFLAGS += -m32 -march=i386
 
 TCFLAGS += -Os
 
+# Use thumb instruction set to save a little space
+TCFLAGS += -mthumb
+
 # Omit unreachable functions from output
 
+TCFLAGS += -ffunction-sections -fdata-sections
 TCFLAGS += -ffunction-sections -fdata-sections
 TLFLAGS += --gc-sections
 
@@ -80,7 +84,7 @@ PLAT_OBJS += $(EXTEND_OBJS)
 
 # Object files for the Forth system and application-specific extensions
 
-FORTH_OBJS = tembed.o ttextend.o
+FORTH_OBJS = tembed.o textend.o
 
 
 # Recipe for linking the final image
