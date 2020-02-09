@@ -1,4 +1,4 @@
-create cl4  \ OLPC XO-CL4
+create mmp3  \ MMP3-based OLPC XO-CL4
 
 h#   10.0000 constant /rom
 h# 08fe.0000 constant dlofw-base
