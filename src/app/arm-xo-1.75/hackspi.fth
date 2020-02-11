@@ -184,7 +184,7 @@ h# 1010.0000 constant spi-mem-base
 : sec-trg  ( -- )  sec-trg-gpio# gpio-set  ;
 
 : protect-fw  ( -- )  secure?  if  spi-protect sec-trg  then  ;
-[endif]
+[then]
 
 \ Assumes offset is block-aligned
 : write-setup-dance  ( -- )
