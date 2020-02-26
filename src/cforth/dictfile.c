@@ -4,9 +4,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-cell variables[MAXVARS];
+static cell variables[MAXVARS];
 
-int
+static int
 is_readable(char *name)
 {
     FILE *fd;
@@ -16,7 +16,7 @@ is_readable(char *name)
     return 1;
 }
 
-int
+static int
 read_dictionary(char *name, u_char *dictbase, cell *up)
 {
     FILE *fd;
@@ -155,7 +155,7 @@ prepare_dictionary(int *argcp, char *(*argvp[]))
 }
 
 #ifdef notdef
-int
+static int
 move_dictionary()
 {
     if (builtin_hdr.magic != MAGIC)
@@ -171,7 +171,8 @@ move_dictionary()
 }
 #endif
 
-void fatal(char *str, cell *up)
+void
+fatal(char *str, cell *up)
 {
     alerror(str, strlen(str), up);
     (void)exit(1);

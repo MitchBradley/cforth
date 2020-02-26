@@ -6,20 +6,21 @@
 
 extern void exit();
 
-char *infile;   // e.g. "interp.fth"
-char *outfile;  // e.g. "kernel.dic"
+static char *infile;   // e.g. "interp.fth"
+static char *outfile;  // e.g. "kernel.dic"
 
-cell stack;	/* One-element stack, used for arguments to `constant' */
+static cell stack;	/* One-element stack, used for arguments to `constant' */
 
-cell variables[MAXVARS];
+static cell variables[MAXVARS];
 
-cell *xsp;
+static cell *xsp;
 #define META_PS_SIZE 10
-cell ps[META_PS_SIZE];
+static cell ps[META_PS_SIZE];
 
-int next_prim = 1;
+static int next_prim = 1;
 
-void query(cell *up)
+static void
+query(cell *up)
 {
     V(NUM_SOURCE) = caccept((char *)V(TICK_SOURCE), (cell)TIBSIZE, up);
     V(TO_IN) = 0;
@@ -39,7 +40,8 @@ void query(cell *up)
 /* the next word could be immediate, but this simplified */
 /* metacompiler is only intended to compile very limited code */
 
-void doprim(cell *up)
+static void
+doprim(cell *up)
 {
 	create_word((token_t)next_prim, up);
     tokstore(T(LASTP), (xt_t)V(TORIGIN) + next_prim);
@@ -50,58 +52,67 @@ void doprim(cell *up)
 	next_prim++;
 }
 
-void doiprim(cell *up)	   { doprim(up); makeimmediate(up); }
+static void doiprim(cell *up)	   { doprim(up); makeimmediate(up); }
 
-void doimmed(cell *up)	   { makeimmediate(up); }
-void donuser(cell *up)
+static void doimmed(cell *up)	   { makeimmediate(up); }
+
+static void
+donuser(cell *up)
 {
 	create_word((token_t)DOUSER, up);
 	unumcomma(V(NUM_USER));
 	V(NUM_USER) += sizeof(cell);
 }
 
-void dotuser(cell *up)
+static void
+dotuser(cell *up)
 {
 	create_word((token_t)DOUSER, up);
 	unumcomma(V(NUM_USER));
 	V(NUM_USER) += sizeof(cell);
 }
 
-void dodefer(cell *up)
+static void
+dodefer(cell *up)
 {
 	create_word((token_t)DODEFER, up);
 	unumcomma(V(NUM_USER));
 	V(NUM_USER) += sizeof(cell);
 }
 
-void dodefer_init(cell *up)
+static void
+dodefer_init(cell *up)
 {
 	create_word((token_t)DODEFER, up);
 	unumcomma(V(NUM_USER));
 	V(NUM_USER) += sizeof(cell);
 }
 
-void doconstant(cell *up)
+static void
+doconstant(cell *up)
 {
 	create_word((token_t)DOCON, up);
 	ncomma(stack);
 }
 
-void docftok(cell *up)
+static void
+docftok(cell *up)
 {
 	create_word((token_t)DOCON, up);
 	ncomma(next_prim);  // Don't do ++ here because ncomma has side effects
 	++next_prim;
 }
 
-void doload(cell *up)
+static void
+doload(cell *up)
 {
 	V(BOUNDARY) = V(DP) - V(TORIGIN);
 	V(NUM_USER) = NEXT_VAR*sizeof(cell);
 	name_input(infile, up);
 }
 
-void dostore(cell *up)	   {
+static void
+dostore(cell *up)	   {
     xt_t xt;
     cell adr;
     cell len;
@@ -111,7 +122,8 @@ void dostore(cell *up)	   {
 }
 
 /* Place a string in the dictionary */
-void alcomma_string(u_char *adr, cell len, cell *up)
+static void
+alcomma_string(u_char *adr, cell len, cell *up)
 {
     register u_char *rdp = (u_char *)V(DP);
 
@@ -124,20 +136,20 @@ void alcomma_string(u_char *adr, cell len, cell *up)
     align(up);
 }
 
-void doparen(cell *up)     { cell adr; (void) parse(')', &adr, up);  }
-void dobackslash(cell *up) { cell adr; (void) parse('\n', &adr, up); }
-void dobractick(cell *up)  { compile(PAREN_TICK); }
-void dobraccomp(cell *up)  { }
-void docolon(cell *up)     { create_word((token_t)DOCOLON, up); V(STATE) = 1;}
-void dosemicol(cell *up)   { compile(UNNEST); V(STATE) = 0;}
-void doif(cell *up)        { compile(QUES_BRANCH); forw_mark; }
-void doelse(cell *up)      { compile(PBRANCH); forw_mark;  but;  forw_resolve; }
-void dothen(cell *up)      { forw_resolve; }
-void dobegin(cell *up)     { back_mark; }
-void dowhile(cell *up)     { compile(QUES_BRANCH); forw_mark; but; }
-void dorepeat(cell *up)    { compile(PBRANCH); back_resolve; forw_resolve; }
-void doagain(cell *up)     { compile(PBRANCH); back_resolve; }
-void dountil(cell *up)     { compile(QUES_BRANCH); back_resolve; }
+static void doparen(cell *up)     { cell adr; (void) parse(')', &adr, up);  }
+static void dobackslash(cell *up) { cell adr; (void) parse('\n', &adr, up); }
+static void dobractick(cell *up)  { compile(PAREN_TICK); }
+static void dobraccomp(cell *up)  { }
+static void docolon(cell *up)     { create_word((token_t)DOCOLON, up); V(STATE) = 1;}
+static void dosemicol(cell *up)   { compile(UNNEST); V(STATE) = 0;}
+static void doif(cell *up)        { compile(QUES_BRANCH); forw_mark; }
+static void doelse(cell *up)      { compile(PBRANCH); forw_mark;  but;  forw_resolve; }
+static void dothen(cell *up)      { forw_resolve; }
+static void dobegin(cell *up)     { back_mark; }
+static void dowhile(cell *up)     { compile(QUES_BRANCH); forw_mark; but; }
+static void dorepeat(cell *up)    { compile(PBRANCH); back_resolve; forw_resolve; }
+static void doagain(cell *up)     { compile(PBRANCH); back_resolve; }
+static void dountil(cell *up)     { compile(QUES_BRANCH); back_resolve; }
 
 /* The metacompiler doesn't need interactive mode so we stub these out */
 void keymode() {}
@@ -145,7 +157,7 @@ void linemode() {}
 /* ARGSUSED */
 int find_local(char *adr, int plen, xt_t *xtp, cell *up) { return 0; }
 
-struct metatab {  char *name; void (*func)(); } metawords[] = {
+static struct metatab {  char *name; void (*func)(); } metawords[] = {
 	"(",		doparen,
 	"\\",		dobackslash,
 	"[']",		dobractick,
@@ -175,7 +187,8 @@ struct metatab {  char *name; void (*func)(); } metawords[] = {
 	"",		0,
 };
 
-int ismagic(char *str, cell *up)		/* Returns true if string was handled "magically" */
+static int
+ismagic(char *str, cell *up)		/* Returns true if string was handled "magically" */
 {
     struct metatab *p;
 
@@ -194,7 +207,8 @@ int ismagic(char *str, cell *up)		/* Returns true if string was handled "magical
  * is "magic", and is executed directly by this metacompiler.
  * It doesn't handle numbers either.
  */
-int interpret_word(u_char *adr, cell len, cell *up)
+static int
+interpret_word(u_char *adr, cell len, cell *up)
 {
     char strbuf[32];
     char *cstr = altocstr((char *)adr, len, strbuf, 32);
@@ -232,9 +246,11 @@ int interpret_word(u_char *adr, cell len, cell *up)
     return(0);
 }
 
-int main(int argc, char **argv)
+static void init_dictionary(cell *up);
+
+int
+main(int argc, char **argv)
 {
-    extern void init_dictionary(cell *up);
     u_char *origin;
 
     if (argc != 3) {
@@ -254,7 +270,8 @@ int main(int argc, char **argv)
 }
 
 
-void init_variables(int unum, cell *up)
+static void
+init_variables(int unum, cell *up)
 {
     V(TO_IN) = V(BLK) = V(NUM_SOURCE) = 0;
     V(NUM_USER) = unum;
@@ -273,7 +290,8 @@ void init_variables(int unum, cell *up)
     V(LESSIP) = V(CNT) = 0;
 }
 
-void cinterpret(cell *up)
+static void
+cinterpret(cell *up)
 {
     u_char *thisword;
     cell len;
@@ -283,7 +301,8 @@ void cinterpret(cell *up)
     }
 }
 
-void init_entries(cell *up)
+static void
+init_entries(cell *up)
 {
     xsp = &ps[META_PS_SIZE];
     name_input(INIT_FILENAME, up);
@@ -294,7 +313,7 @@ void init_entries(cell *up)
     }
 }
 
-void
+static void
 init_dictionary(cell *up)
 {
     /* reserve space for an array of tokens to the cfa of prim headers */
