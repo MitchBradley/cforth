@@ -24,6 +24,7 @@ RELOCATE=
 CONFIG += $(INCS) $(FP) $(RELOCATE) $(SYSCALL) -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=0
 
 CFLAGS += -g $(OPTIMIZE) $(CONFIG)
+CFLAGS += -fno-common
 
 FINC=config.h forth.h vars.h 
 
