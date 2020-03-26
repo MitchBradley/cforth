@@ -56,5 +56,8 @@ flash: app.o
 download: app.o
 	@(cd sdk_build/build && python $(IDF_PATH)/components/esptool_py/esptool/esptool.py --chip esp32 --port $(COMPORT) --baud 115200 --before default_reset --after hard_reset write_flash -u --flash_mode dio --flash_freq 40m --flash_size detect 0x1000 bootloader/bootloader.bin 0x10000 forth.bin 0x8000 partitions.bin)
 
+dlonly:
+	@(cd sdk_build/build && python $(IDF_PATH)/components/esptool_py/esptool/esptool.py --chip esp32 --port $(COMPORT) --baud 115200 --before default_reset --after hard_reset write_flash -u --flash_mode dio --flash_freq 40m --flash_size detect 0x1000 bootloader/bootloader.bin 0x10000 forth.bin 0x8000 partitions.bin)
+
 clean::
 	@rm -rf sdk_build/build
