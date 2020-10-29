@@ -2,12 +2,9 @@
 // See "ccalls" below.
 
 #include "forth.h"
+#include "compiler.h"
 //#include "i2c-ifce.h"
 #include "interface.h"
-
-extern cell *callback_up;
-extern void gpio_matrix_out();
-extern cell gpio_matrix_in();
 
 cell version_adr(void)
 {
@@ -25,7 +22,6 @@ cell build_date_adr(void)
 cell errno_val(void) {  return (cell)errno;  }
 #include <string.h>
 // Above gets us strerror()
-
 
 // Many of the routines cited below are defined either directly
 // in the ESP32 SDK or in sdk_build/main/interface.c .  It is best
@@ -47,8 +43,100 @@ extern void adc1_config_channel_atten(void);
 extern void adc1_get_voltage(void);
 extern void hall_sensor_read(void);
 
+extern void mcpwm_gpio_init(void);
+extern void mcpwm_init(void);
+extern void mcpwm_set_frequency(void);
+extern void mcpwm_set_duty_in_us(void);
+extern void mcpwm_set_duty_type(void);
+extern void mcpwm_get_frequency(void);
+extern void mcpwm_set_signal_high(void);
+extern void mcpwm_set_signal_low(void);
+extern void mcpwm_start(void);
+extern void mcpwm_stop(void);
+
 int xTaskGetTickCount(void);
 void raw_emit(char c);
+
+#define ALARM_DATA_CELLS 100
+#define ALARM_RETURN_CELLS 50
+cell alarm_data_stack[ALARM_DATA_CELLS];
+cell alarm_return_stack[ALARM_RETURN_CELLS];
+struct stacks alarm_stacks_save;
+struct stacks alarm_stacks = {
+  (cell)&alarm_data_stack[ALARM_DATA_CELLS-2],
+  (cell)&alarm_data_stack[ALARM_DATA_CELLS-2],
+  (cell)&alarm_return_stack[ALARM_RETURN_CELLS],
+  (cell)&alarm_return_stack[ALARM_RETURN_CELLS]
+};
+
+#include "esp_timer.h"
+
+static esp_timer_handle_t alarm_timer;
+
+// It would be nice to pass this through the timer callback arg,
+// but to do that, you must set it when the timer is created.
+// It is a lot of trouble to create and destroy timers based on
+// when the argument changes.  It is easer to use this variable.
+xt_t alarm_xt;
+
+extern cell *callback_up;
+
+static void alarm_callback(void* arg)
+{
+  switch_stacks(&alarm_stacks_save, &alarm_stacks, callback_up);
+  execute_xt(alarm_xt, callback_up);
+  switch_stacks(NULL, &alarm_stacks_save, callback_up);
+}
+
+static esp_timer_handle_t alarm_timer;
+
+static void create_timer() {
+    if (alarm_timer) {
+        return;
+    }
+    const esp_timer_create_args_t alarm_timer_args = {
+            .callback = &alarm_callback,
+    };
+    esp_timer_create(&alarm_timer_args, &alarm_timer);
+}
+
+static void alarm_us_64(uint64_t us, xt_t xt)
+{
+    create_timer();
+    alarm_xt = xt;
+    if (xt && us) {
+        esp_timer_start_once(alarm_timer, us);
+    } else {
+        esp_timer_stop(alarm_timer);
+    }
+}
+static void alarm_us(uint32_t us, xt_t xt)
+{
+    alarm_us_64((uint64_t)us, xt);
+}
+static void alarm(uint32_t ms, xt_t xt)
+{
+    alarm_us((uint64_t)ms * 1000, xt);
+}
+
+static void repeat_alarm_us_64(uint64_t us, xt_t xt)
+{
+    create_timer();
+    alarm_xt = xt;
+    if (xt && us) {
+        esp_timer_start_periodic(alarm_timer, us);
+    } else {
+        esp_timer_stop(alarm_timer);
+    }
+}
+static void repeat_alarm_us(uint32_t us, xt_t xt)
+{
+    repeat_alarm_us_64((uint64_t)us, xt);
+}
+static void repeat_alarm(uint32_t ms, xt_t xt)
+{
+    repeat_alarm_us((uint64_t)ms * 1000, xt);
+}
 
 cell ((* const ccalls[])()) = {
 	C(build_date_adr)       //c 'build-date     { -- a.value }
@@ -80,10 +168,11 @@ cell ((* const ccalls[])()) = {
 	C(gpio_is_input)	//c gpio-is-input { i.gpio# -- }
 	C(gpio_is_input_pu)	//c gpio-is-input-pullup { i.gpio# -- }
 	C(gpio_is_input_pd)	//c gpio-is-input-pulldown { i.gpio# -- }
+	C(gpio_mode)    	//c gpio-mode { i.pullup? i.direction i.gpio# -- }
 
 	C(wifi_open)		//c wifi-open { $ssid $password i.timeout -- i.error? }
 
-	C(esp_log_level_set)	//c log-level! { i.level $component -- }
+	C(set_log_level)	//c log-level! { i.level $component -- }
 
   // LWIP sockets
   // Like Posix sockets but the socket descriptor space is not
@@ -123,4 +212,21 @@ cell ((* const ccalls[])()) = {
 
         C(gpio_matrix_out)      //c gpio-matrix-out { i.inven i.invout i.fun i.pin -- }
         C(gpio_matrix_in)       //c gpio-matrix-in  { i.invert i.fun i.pin -- }
+
+        C(mcpwm_gpio_init)       //c mcpwm_gpio_init  { i.gpio# i.io_signal i.pwm# -- e.err? }
+        C(mcpwm_init)            //c mcpwm_init  { a.conf i.timer# i.pwm# -- e.err? }
+        C(mcpwm_set_frequency)   //c mcpwm_set_frequency  { i.freq i.timer# i.pwm# -- e.err? }
+        C(mcpwm_set_duty_in_us)  //c mcpwm_set_duty_in_us  { i.duty i.op# i.timer# i.pwm# -- e.err? }
+C(mcpwm_set_duty_type)           //c mcpwm_set_duty_type { i.duty# i.op# i.timer# i.pwm# -- i.err? }
+C(mcpwm_get_frequency)           //c mcpwm_get_frequency { i.timer# i.pwm# -- i.freq }
+        C(mcpwm_set_signal_high) //c mcpwm_set_signal_high { i.op# i.timer# i.pwm# -- i.err? }
+        C(mcpwm_set_signal_low)  //c mcpwm_set_signal_low { i.op# i.timer# i.pwm# -- i.err? }
+        C(mcpwm_start)           //c mcpwm_start { i.timer# i.pwm# -- i.err? }
+        C(mcpwm_stop)            //c mcpwm_stop { i.timer# i.pwm# -- i.err? }
+
+        C(alarm)                 //c set-alarm   { i.xt i.ms -- }
+        C(repeat_alarm)          //c repeat-alarm   { i.xt i.ms -- }
+        C(alarm_us)              //c set-alarm-us   { i.xt i.us -- }
+        C(repeat_alarm_us)       //c repeat-alarm-us   { i.xt i.us -- }
+        C(us)                    //c us { i.us -- }
 };

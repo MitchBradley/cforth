@@ -1,4 +1,4 @@
-\ Load file for robot car controlled from MQTT
+\ Load file for bucket filler
 \ Pin Assignment
 \
 \ Buzzer
