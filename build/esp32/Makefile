@@ -1,4 +1,4 @@
-# Builds CForth for ESP8266
+# Builds CForth for ESP32
 
 default: forth.elf
 
@@ -27,7 +27,7 @@ CFORTH_PATH ?= $(abspath $(TOPDIR)/build/esp32)
 
 include $(TOPDIR)/src/app/esp32/targets.mk
 
-ESP_IDF_PATHS:=IDF_PATH=$(IDF_PATH) CFORTH_PATH=$(CFORTH_PATH) PATH=$(PATH):$(XTGCCPATH)
+ESP_IDF_PATHS:=IDF_PATH="$(IDF_PATH)" CFORTH_PATH="$(CFORTH_PATH)" PATH="$(PATH):$(XTGCCPATH)"
 
 forth.elf: app.o
 	@$(ESP_IDF_PATHS) make --no-print-directory -C sdk_build
@@ -54,10 +54,10 @@ flash: app.o
 # rules), and copying the command line.
 # Usage: COMPORT=/dev/ttyS5 make download
 download: app.o
-	@(cd sdk_build/build && python $(IDF_PATH)/components/esptool_py/esptool/esptool.py --chip esp32 --port $(COMPORT) --baud 115200 --before default_reset --after hard_reset write_flash -u --flash_mode dio --flash_freq 40m --flash_size detect 0x1000 bootloader/bootloader.bin 0x10000 forth.bin 0x8000 partitions.bin)
+	@(cd sdk_build/build && python "$(IDF_PATH)/components/esptool_py/esptool/esptool.py" --chip esp32 --port $(COMPORT) --baud 921600 --before default_reset --after hard_reset write_flash -u --flash_mode dio --flash_freq 40m --flash_size detect 0x1000 bootloader/bootloader.bin 0x10000 forth.bin 0x8000 partitions.bin)
 
 dlonly:
-	@(cd sdk_build/build && python $(IDF_PATH)/components/esptool_py/esptool/esptool.py --chip esp32 --port $(COMPORT) --baud 115200 --before default_reset --after hard_reset write_flash -u --flash_mode dio --flash_freq 40m --flash_size detect 0x1000 bootloader/bootloader.bin 0x10000 forth.bin 0x8000 partitions.bin)
+	@(cd sdk_build/build && python "$(IDF_PATH)/components/esptool_py/esptool/esptool.py" --chip esp32 --port $(COMPORT) --baud 921600 --before default_reset --after hard_reset write_flash -u --flash_mode dio --flash_freq 40m --flash_size detect 0x1000 bootloader/bootloader.bin 0x10000 forth.bin 0x8000 partitions.bin)
 
 clean::
 	@rm -rf sdk_build/build

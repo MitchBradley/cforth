@@ -83,11 +83,13 @@ $3c value ssd-i2c-slave
 : ssd-cmd  ( cmd -- )
    0 ssd-i2c-slave i2c-b! abort" SSD1306 I2C write failed"
 ;
+[ifndef] ssd-ram{
 : ssd-ram{   ( -- )
    $40 ssd-i2c-slave i2c-start-write abort" ssd-ram{ failed"
 ;
 : }ssd-ram   ( -- )  i2c-stop  ;
 : ssd-ram!  ( b -- )  i2c-byte! abort" ssd-ram! failed"  ;
+[then]
 
 : ssd-startline!  ( y-pixel# -- )
    dup ssd-#scanlines >=  if  ssd-#scanlines -  then  ( y-pixel#' )

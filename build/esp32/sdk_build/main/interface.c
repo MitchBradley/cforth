@@ -2,11 +2,23 @@
 
 typedef int cell;
 
+#include <string.h>
+
 #include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "freertos/event_groups.h"
 #include "esp_system.h"
+#include "esp_wifi.h"
+#include "esp_event_loop.h"
+#include "esp_log.h"
+#include "esp_event.h"
 #include "nvs_flash.h"
+
+#include "lwip/err.h"
+#include "lwip/sys.h"
+#include "lwip/netdb.h"
+
 #include "driver/uart.h"
-#include "string.h"
 
 extern void forth(void);
 
@@ -186,7 +198,7 @@ cell i2c_le_ww(cell slave, cell reg, cell value)
     return i2c_write_read(0, slave, 0, 0, 3, buf);
 }
 
-#include <driver/gpio.h>
+#include "driver/gpio.h"
 cell gpio_pin_fetch(cell gpio_num)
 {
     return gpio_get_level(gpio_num) ? -1 : 0;
@@ -231,20 +243,19 @@ void gpio_is_input_pd(cell gpio_num)
     gpio_set_direction(gpio_num, GPIO_MODE_INPUT);
 }
 
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "freertos/event_groups.h"
-#include "esp_system.h"
-#include "esp_wifi.h"
-#include "esp_event_loop.h"
-#include "esp_log.h"
-#include "nvs_flash.h"
-
-#include "lwip/err.h"
-#include "lwip/sockets.h"
-#include "lwip/sys.h"
-#include "lwip/netdb.h"
-#include "lwip/dns.h"
+// For compatibility with ESP8266 interface
+// 1 constant gpio-input
+// 2 constant gpio-output
+// 6 constant gpio-opendrain
+void gpio_mode(cell gpio_num, cell direction, cell pull)
+{
+    gpio_set_direction(gpio_num, direction);
+    if (pull) {
+        gpio_pullup_en(gpio_num);
+    } else {
+        gpio_pullup_dis(gpio_num);
+    }
+}
 
 /* FreeRTOS event group to signal when we are connected & ready to make a request */
 static EventGroupHandle_t wifi_event_group;
@@ -293,54 +304,59 @@ cell wifi_open(cell timeout, char *password, char *ssid)
     return 0;
 }
 
-int stream_connect(char *host, char *port, int timeout_msecs)
+void set_log_level(char *component, int level)
 {
-  struct addrinfo hints, *res, *res0;
-  int error;
-  int s;
-  const char *cause = NULL;
+    esp_log_level_set(component, level);
+}
 
-  memset(&hints, 0, sizeof(hints));
-  hints.ai_family = AF_UNSPEC;
-  hints.ai_socktype = SOCK_STREAM;
+int stream_connect(char *host, char *portstr, int timeout_msecs)
+{
+    struct addrinfo hints, *res, *res0;
+    int error;
+    int s;
+    const char *cause = NULL;
 
-  error = getaddrinfo(host, port, &hints, &res0);
-  if (error) {
-    perror("getaddrinfo");
-    return -1;
-  }
-  s = -1;
-  for (res = res0; res; res = res->ai_next) {
-    s = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
+    memset(&hints, 0, sizeof(hints));
+    hints.ai_family = AF_UNSPEC;
+    hints.ai_socktype = SOCK_STREAM;
+
+    error = getaddrinfo(host, portstr, &hints, &res0);
+    if (error) {
+        perror("getaddrinfo");
+        return -1;
+    }
+    s = -1;
+    for (res = res0; res; res = res->ai_next) {
+        s = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
+        if (s < 0) {
+            cause = "socket";
+            continue;
+        }
+
+        if (connect(s, res->ai_addr, res->ai_addrlen) < 0) {
+            cause = "connect";
+            close(s);
+            s = -1;
+            continue;
+        }
+        break;  /* okay we got one */
+    }
+    freeaddrinfo(res0);
     if (s < 0) {
-      cause = "socket";
-      continue;
+        printf("%s", cause);
+        return -2;
     }
 
-    if (connect(s, res->ai_addr, res->ai_addrlen) < 0) {
-      cause = "connect";
-      close(s);
-      s = -1;
-      continue;
+    struct timeval recv_timeout;
+    recv_timeout.tv_sec = timeout_msecs / 1000;
+    recv_timeout.tv_usec = (timeout_msecs % 1000) * 1000;
+
+    error = setsockopt(s, SOL_SOCKET, SO_RCVTIMEO, &recv_timeout, sizeof(recv_timeout));
+    if (error) {
+        perror("unable to set receive timeout.");
+        return -3;
     }
-    break;  /* okay we got one */
-  }
-  freeaddrinfo(res0);
-  if (s < 0) {
-    printf("%s", cause);
-    return -2;
-  }
-
-  struct timeval recv_timeout;
-  recv_timeout.tv_sec = timeout_msecs / 1000;
-  recv_timeout.tv_usec = (timeout_msecs % 1000) * 1000;
-
-  error = setsockopt(s, SOL_SOCKET, SO_RCVTIMEO, &recv_timeout, sizeof(recv_timeout));
-  if (error) {
-    perror("unable to set receive timeout.");
-    return -3;
-  }
-  return s;
+    return s;
 }
 
 cell start_server(cell port)
@@ -466,6 +482,7 @@ void rename_file(char *new, char *old)
 
     rename(expand_path(old), path);
 }
+
 cell fs_avail(void)
 {
   u32_t total, used;
@@ -476,4 +493,15 @@ cell fs_avail(void)
 void delete_file(char *name)
 {
     remove(expand_path(name));
+}
+
+void restart(void)
+{
+    esp_restart();
+}
+
+#include <rom/ets_sys.h>
+void us(cell us)
+{
+    ets_delay_us(us);
 }

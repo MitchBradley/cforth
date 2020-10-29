@@ -8,6 +8,9 @@ extern cell *callback_up;
 #include "esp_stdint.h"
 #include "platform.h"
 
+#include "w5500.h"
+#include "w5500_debug.h"
+
 cell deep_sleep(cell us, cell type)
 {
   // XXX need to save the state in the user area
@@ -395,12 +398,7 @@ cell build_date_adr(void)
     return (cell)build_date;
 }
 
-void spi_open();
-void spi_close();
-void spi_begin();
-void spi_end();
-void spi_transfer();
-void spi_bits_in();
+#include "esp_spi.h"
 
 cell ((* const ccalls[])()) = {
   C(build_date_adr)   //c 'build-date     { -- a.value }
@@ -631,9 +629,15 @@ cell ((* const ccalls[])()) = {
 
   C(pwm_start)              //c pwm_start { -- }
   C(pwm_set_duty)           //c pwm_set_duty { i.pin i.duty -- }
-  C(pwm_set_freq)           //c pwm_set_freq { i.freq i.pin -- }
+  C(pwm_set_freq)           //c pwm_set_freq { i.pin i.freq -- }
+  C(pwm_get_duty)           //c pwm_get_duty { i.pin -- i.duty }
+  C(pwm_get_freq)           //c pwm_get_freq { i.pin -- i.freq }
   C(pwm_exist)              //c pwm_exist { i.channel -- i.n }
   C(pwm_delete)             //c pwm_delete { i.channel -- i }
   C(pwm_add)                //c pwm_add  { i.channel -- i }
   C(pwm_init)               //c pwm_init { i.duty i.freq -- }
+
+  C(w5500_netif_begin)      //c open-ethernet { a.macaddr i.cs -- i.err? }
+  C(w5500_end)              //c close-ethernet { -- }
+  C(w5500_ip_addr)          //c ethernet-ip { a.ip -- }
 };

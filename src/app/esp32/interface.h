@@ -15,10 +15,14 @@ void gpio_is_output_od(cell gpio_num);
 void gpio_is_input(cell gpio_num);
 void gpio_is_input_pu(cell gpio_num);
 void gpio_is_input_pd(cell gpio_num);
+void gpio_mode(cell gpio_num, cell direction, cell pull);
+
+void gpio_matrix_out();
+cell gpio_matrix_in();
 
 cell wifi_open(char *password, char *ssid);
 
-void esp_log_level_set(char *component, int level);
+void set_log_level(char *component, int level);
 
 cell lwip_socket(cell family, cell type, cell proto);
 cell lwip_bind_r(cell handle, void *addr, cell len);
@@ -50,3 +54,5 @@ char *dirent_name(void *ent);
 void rename_file(char *new, char *old);
 void delete_file(char *path);
 cell fs_avail(void);
+
+void us(cell us);

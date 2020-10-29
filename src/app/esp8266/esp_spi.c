@@ -2,6 +2,7 @@ extern void *callback_up;
 
 // #include "stdint.h"
 // #include "stdlib.h"
+#include <string.h>
 #include "pin_map.h"
 
 #define NOPULL 0
@@ -293,7 +294,7 @@ void spi_close()
     }
 }
 
-static inline 
+static inline
 void spi_wait_while_busy()
 {
     while(HSPI_CMD & SPI_BUSY) {}
@@ -338,10 +339,13 @@ int spi_bits_in(int num)
     }
 }
 
-// in and out must to be 32-bit aligned
-void spi_transfer(uint32_t remaining, uint8_t * in, uint32_t * out)
+void spi_transfer(uint32_t remaining, uint8_t *in, uint8_t *out)
 {
-    while(remaining) {
+    uint32_t buf[16];
+    int cnt;
+    uint32_t *ptr;
+
+    while (remaining) {
 	int this_size = remaining > 64 ? 64 : remaining;
 	remaining -= this_size;
 
@@ -351,15 +355,21 @@ void spi_transfer(uint32_t remaining, uint8_t * in, uint32_t * out)
 	setDataBits(this_size * 8);
 
 	volatile uint32_t * fifoPtr = &HSPI_DATA;
-	uint8_t dataSize = ((this_size + 3) / 4);
 
-	if(out) {
-	    while(dataSize--) {
-		*fifoPtr++ = *out++;
+	if (out) {
+            if ((int)out & 3) {
+                memcpy(buf, out, this_size);
+                ptr = buf;
+            } else {
+                ptr = (uint32_t *)out;
+            }
+            for (cnt = this_size; cnt > 0; cnt -= 4) {
+		*fifoPtr++ = *ptr++;
 	    }
+            out += this_size;
 	} else {
 	    // Send dummy data if no real data to send
-	    while(dataSize--) {
+	    for (cnt = this_size; cnt > 0; cnt -= 4) {
 		*fifoPtr++ = 0xffffffff;
 	    }
 	}
@@ -367,12 +377,22 @@ void spi_transfer(uint32_t remaining, uint8_t * in, uint32_t * out)
 	HSPI_CMD |= SPI_BUSY;
 	spi_wait_while_busy();
 
-	if(in) {
-	    volatile uint8_t * fifoPtr8 = (volatile uint8_t *) &HSPI_DATA;
-	    dataSize = this_size;
-	    while(dataSize--) {
-		*in++ = *fifoPtr8++;
-	    }
+	if (in) {
+            ptr = ((int)in & 3) ? buf : (uint32_t *)in;
+
+            for (fifoPtr = &HSPI_DATA, cnt = this_size; cnt >= 4; cnt -= 4) {
+                *ptr++ = *fifoPtr++;
+            }
+
+            volatile uint8_t *fifoPtr8;
+            uint8_t *ptr8 = (uint8_t*)ptr;
+            for (fifoPtr8 = (volatile uint8_t *)fifoPtr; cnt; cnt--) {
+                *(uint8_t *)ptr8++ = *fifoPtr8++;
+            }
+            if ((int)in & 3) {
+                memcpy(in, buf, this_size);
+            }
+            in += this_size;
 	}
     }
 }

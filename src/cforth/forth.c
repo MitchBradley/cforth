@@ -916,7 +916,7 @@ execute:
 
 /*$p standalone? */     case STANDALONEQ:  push(isstandalone());   next;
 /*$p interactive? */    case INTERACTIVEQ: push(isinteractive());  next;
-/*$p more-input? */     case MOREINPUT:    push(moreinput());      next;
+/*$p more-input? */     case MOREINPUT:    push(moreinput(up));    next;
 /*$p origin */          case ORIGIN:       push(V(TORIGIN));       next;
 /*$p unused */          case UNUSED:       push(V(LIMIT)-V(DP));   next;
 /*$p /token */          case SLASH_TOKEN:  push(sizeof(token_t));  next;

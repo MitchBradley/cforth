@@ -12,6 +12,7 @@ INCS += -I$(NODEMCU_PATH)/app/include
 INCS += -I$(NODEMCU_PATH)/app/platform
 INCS += -I$(NODEMCU_PATH)/app/spiffs
 INCS += -I$(NODEMCU_PATH)/app/libc
+INCS += -I$(NODEMCU_PATH)/app/netif
 
 NODEMCU_REPO ?= https://github.com/nodemcu/nodemcu-firmware.git
 NODEMCU_COMMIT ?= 7b83bbb
@@ -33,7 +34,7 @@ $(PLAT_OBJS): $(NODEMCU_PATH)/sdk
 BUILDDIR := $(realpath .)
 
 0x10000.bin 0x00000.bin: $(NODEMCU_PATH)/sdk app.o
-	(cd $(NODEMCU_PATH) && PATH=${PATH}:$(XTGCCPATH) FORTHOBJS=$(BUILDDIR)/app.o make --no-print-directory)
+	(cd $(NODEMCU_PATH) && PATH="${PATH}:$(XTGCCPATH)" FORTHOBJS=$(BUILDDIR)/app.o make --no-print-directory)
 	mv $(NODEMCU_PATH)/bin/*.bin .
 
 # Use FS=1m FM=dout for most Sonoff devices

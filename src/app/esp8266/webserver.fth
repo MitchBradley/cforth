@@ -34,6 +34,8 @@
 : hello  reply{ ." Hello from ESP8266" cr }reply   ;
 defer homepage   ' hello to homepage
 
+0 value #connections
+
 : handle-url  ( -- close? )
    \ client .espconn   
    url-buf url-len                      ( url$ )
@@ -41,7 +43,9 @@ defer homepage   ' hello to homepage
 \      2dup " /favicon.ico" $=  if       ( url$ )
 \         2drop                          ( )
 \      else                              ( url$ )
-         ." URL: " 2dup type cr         ( url$ )
+\         ." URL: " 2dup type cr         ( url$ )
+#connections 1+ to #connections
+   ." URL: " 2dup type space #connections .d  cr         ( url$ )
          1 /string                      ( url$' )
          parse-args                     ( filename$ )
          dup  if                        ( filename$ )
