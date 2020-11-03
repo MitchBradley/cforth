@@ -1,3 +1,7 @@
+TCPATH=$(TOPDIR)/src/app/esp8266-rtos
+
+include $(TCPATH)/sdk.mk
+
 # APPPATH is the path to the application code, i.e. this directory
 APPPATH ?= $(TOPDIR)/src/app/esp8266-rtos
 
@@ -8,8 +12,6 @@ APPLOADFILE ?= app.fth
 # i.e. the list of files that APPLOADFILE floads.  It's for dependency checking.
 APPSRCS += $(wildcard $(APPPATH)/*.fth)
 
-TCPATH=$(TOPDIR)/src/app/esp8266-rtos
-
 # default: 0x00000.bin 0x10000.bin
 
 # default: app.o
@@ -19,9 +21,8 @@ TCPATH=$(TOPDIR)/src/app/esp8266-rtos
 SRC=$(TOPDIR)/src
 
 # Target compiler definitions
-CROSS ?= $(XTGCCPATH)xtensa-lx106-elf-
+CROSS ?= $(XTGCCPATH)/xtensa-lx106-elf-
 
-$(info CROSS $(CROSS))
 TCC=$(CROSS)gcc
 TLD=$(CROSS)ld
 TOBJDUMP=$(CROSS)objdump
@@ -32,14 +33,8 @@ LIBDIRS=-L$(dir $(shell $(TCC) $(TCFLAGS) -print-libgcc-file-name))
 VPATH += $(TCPATH)
 INCS += -I$(TCPATH)
 
-#INCS += -I$(IDF_PATH)/components/esp8266/include/
-#INCS += -I$(IDF_PATH)/components/driver/include/
-#INCS += -I$(IDF_PATH)components/soc/include/
-#INCS += -I$(IDF_PATH)components/soc/8266/include/
-
 include $(SRC)/common.mk
 include $(SRC)/cforth/targets.mk
-# include $(TCPATH)/sdk.mk
 
 OPTIMIZE = -O2
 
@@ -54,7 +49,7 @@ DUMPFLAGS = --disassemble -z -x -s
 
 # Platform-specific object files for low-level startup and platform I/O
 
-ttmain.o: vars.h
+ttmain.o: vars.h $(XTGCCPATH)
 
 PLAT_OBJS +=  ttmain.o
 PLAT_OBJS +=  tfileio.o
@@ -90,7 +85,13 @@ PREFIX += CBP=$(realpath $(TOPDIR)/src)
 
 include $(SRC)/cforth/embed/targets.mk
 
-# include autohotkey.mk
+IDF_PATHS:=IDF_PATH="$(IDF_PATH)" CFORTH_PATH="$(CFORTH_PATH)" PATH="$(PATH):$(XTGCCPATH)"
 
-dlonly:
-	$(NODEMCU_PARENT_PATH)/nodemcu-firmware/tools/esptool.py --port $(COMPORT) -b 115200 write_flash -fm=dio -fs=32m 0x00000 0x00000.bin 0x10000 0x10000.bin
+sdk_build/build/esp8266-rtos.elf: app.o
+	@$(IDF_PATHS) make --no-print-directory -C sdk_build
+
+flash: app.o
+	@$(IDF_PATHS) $(ESPPORT_OVERRIDE) make --no-print-directory -C sdk_build flash
+
+monitor:
+	@$(IDF_PATHS) $(ESPPORT_OVERRIDE) make --no-print-directory -C sdk_build monitor
