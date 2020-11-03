@@ -85,7 +85,7 @@ PREFIX += CBP=$(realpath $(TOPDIR)/src)
 
 include $(SRC)/cforth/embed/targets.mk
 
-IDF_PATHS:=IDF_PATH="$(IDF_PATH)" CFORTH_PATH="$(CFORTH_PATH)" PATH="$(PATH):$(XTGCCPATH)"
+IDF_PATHS:=IDF_PATH="$(IDF_PATH)" CFORTH_PATH="$(CFORTH_PATH)" PATH="$(XTGCCPATH):$(PATH)"
 
 sdk_build/build/esp8266-rtos.elf: app.o
 	@$(IDF_PATHS) make --no-print-directory -C sdk_build
