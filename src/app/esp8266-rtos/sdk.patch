@@ -6,7 +6,7 @@ index df079d31..d9dd753d 100644
      for (i = 0; i < channel_num; i++) {
          pwm_obj->pwm_info[i].io_num =  pin_num[i];
          pwm_obj->gpio_bit_mask |= (0x1 << pin_num[i]);
-+        pwm_obj->pwm_info[channel_num].phase = 0.0;
++        pwm_obj->pwm_info[i].phase = 0.0;
      }
 +
 +    /* Enable TSF0 interrupt */
