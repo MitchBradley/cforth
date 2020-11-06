@@ -20,6 +20,8 @@ warning !
    cr
 ;
 
+fl gpio.fth
+
 \ m-emit is defined in textend.c
 alias m-key  key
 alias m-init noop

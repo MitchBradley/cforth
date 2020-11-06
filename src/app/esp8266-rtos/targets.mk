@@ -1,3 +1,11 @@
+CONFIG += -DBITS32
+CONFIG += -DFLOATING -DMORE_FP
+LIBS += -lm
+
+CFLAGS += -m32
+
+CC := gcc
+
 TCPATH=$(TOPDIR)/src/app/esp8266-rtos
 
 include $(TCPATH)/sdk.mk
@@ -90,7 +98,7 @@ IDF_PATHS:=IDF_PATH="$(IDF_PATH)" CFORTH_PATH="$(CFORTH_PATH)" PATH="$(XTGCCPATH
 sdk_build/build/esp8266-rtos.elf: app.o
 	@$(IDF_PATHS) make --no-print-directory -C sdk_build
 
-flash: app.o
+flash: sdk_build/build/esp8266-rtos.elf
 	@$(IDF_PATHS) $(ESPPORT_OVERRIDE) make --no-print-directory -C sdk_build flash
 
 monitor:
