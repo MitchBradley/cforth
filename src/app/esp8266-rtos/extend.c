@@ -64,7 +64,6 @@ void alarm_callback(void* arg)
   switch_stacks(NULL, &alarm_stacks_save, callback_up);
 }
 
-
 cell ((* const ccalls[])()) = {
 	C(build_date_adr)   //c 'build-date     { -- a.value }
 	C(version_adr)      //c 'version        { -- a.value }
@@ -138,14 +137,14 @@ cell ((* const ccalls[])()) = {
         C(errno_val)		//c errno          { -- i.errno }
         C(strerror)		//c strerror       { i.errno -- $.msg }
 
-        C(pwm_init)             //c esp8266-pwm-init  { a.pin#s i.nchannels a.duties i.period -- i.err? }
+        C(pwm_init)             //c pwm-init  { a.pin#s i.nchannels a.duties i.period -- i.err? }
 	C(pwm_deinit)           //c pwm-deinit  { -- i.err? }
 	C(pwm_set_duty)         //c pwm-duty!  { i.duty i.channel# -- }
-	C(pwm_set_frequency)    //c pwm-frequency!  { i.frequency i.channel# -- }
-	C(pwm_duty_fetch)       //c pwm_duty@  { i.channel# -- i.duty }
+	C(pwm_set_frequency)    //c pwm-frequency!  { i.frequency -- }
+	C(pwm_duty_fetch)       //c pwm-duty@  { i.channel# -- i.duty }
 	C(pwm_frequency_fetch)  //c pwm-frequency@  { -- i.frequency }
-	C(pwm_set_period)       //c pwm-period!  { i.channel# -- }
-	C(pwm_period_fetch)     //c pwm_period@  { -- i.period }
+	C(pwm_set_period)       //c pwm-period!  { i.period -- }
+	C(pwm_period_fetch)     //c pwm-period@  { -- i.period }
 	C(pwm_start)            //c pwm-start { -- }
 	C(pwm_stop)             //c pwm-stop-mask { i.mask -- }
 	C(pwm_stop0)            //c pwm-stop { -- }

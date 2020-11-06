@@ -18,14 +18,6 @@ default: sdk_build/build/$(APPNAME).elf
 TOPDIR=../..
 UPDIR=$(realpath $(TOPDIR)/..)
 
-CONFIG += -DBITS32
-CONFIG += -DFLOATING -DMORE_FP
-LIBS += -lm
-
-CFLAGS += -m32
-
-CC := gcc
-
 # Change these to reflect the locations of external stuff on your system,
 # either here or on the command line
 XTGCC_PARENT_PATH ?= $(UPDIR)
