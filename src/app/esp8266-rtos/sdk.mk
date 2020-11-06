@@ -1,6 +1,11 @@
 # This makefile fragment gets the SDK into a subdirectory
 # of IDF_PARENT_PATH, then uses install.sh from the SDK
-# to install the toolchain
+# to install the toolchain, the uses export.sh to create
+# a makefile fragment named toolchain_path.mk .
+#
+# The installation work is done only once.  Subsequently,
+# toolchain_path.mk will be present and it will be included,
+# setting XGTCCPATH to the toolchain location.
 
 IDF_NAME ?= ESP8266_RTOS_SDK
 IDF_PATH ?= $(IDF_PARENT_PATH)/$(IDF_NAME)
