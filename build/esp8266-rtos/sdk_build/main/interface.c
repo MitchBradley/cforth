@@ -222,46 +222,48 @@ void gpio_toggle(cell gpio_num)
     gpio_set_level(gpio_num, !level);
 }
 
+static void gpio_setup(uint32_t gpio_num, gpio_mode_t mode, bool pu, bool pd)
+{
+    gpio_config_t io_conf;
+    io_conf.intr_type = GPIO_INTR_DISABLE;
+    io_conf.mode = mode;
+    io_conf.pin_bit_mask = 1 << gpio_num;
+    io_conf.pull_down_en = pd;
+    io_conf.pull_up_en = pd;
+    gpio_config(&io_conf);
+}
 void gpio_is_output(cell gpio_num)
 {
-    gpio_set_direction(gpio_num, GPIO_MODE_OUTPUT);
+    gpio_setup(gpio_num, GPIO_MODE_OUTPUT, 0, 0);
 }
 
 void gpio_is_output_od(cell gpio_num)
 {
-    gpio_set_direction(gpio_num, GPIO_MODE_OUTPUT_OD);
+    gpio_setup(gpio_num, GPIO_MODE_OUTPUT_OD, 0, 0);
 }
 
 void gpio_is_input(cell gpio_num)
 {
-    gpio_set_pull_mode(gpio_num, GPIO_FLOATING);
-    gpio_set_direction(gpio_num, GPIO_MODE_INPUT);
+    gpio_setup(gpio_num, GPIO_MODE_INPUT, 0, 0);
 }
 
 void gpio_is_input_pu(cell gpio_num)
 {
-    gpio_set_pull_mode(gpio_num, GPIO_PULLUP_ONLY);
-    gpio_set_direction(gpio_num, GPIO_MODE_INPUT);
+    gpio_setup(gpio_num, GPIO_MODE_INPUT, 1, 0);
 }
 
 void gpio_is_input_pd(cell gpio_num)
 {
-    gpio_set_pull_mode(gpio_num, GPIO_PULLDOWN_ONLY);
-    gpio_set_direction(gpio_num, GPIO_MODE_INPUT);
+    gpio_setup(gpio_num, GPIO_MODE_INPUT, 0, 1);
 }
 
-// For compatibility with ESP8266 interface
+// For compatibility with ancient ESP8266 interface
 // 1 constant gpio-input
 // 2 constant gpio-output
 // 6 constant gpio-opendrain
-void gpio_mode(cell gpio_num, cell direction, cell pull)
+void gpio_mode(cell gpio_num, cell mode, cell pullup)
 {
-    gpio_set_direction(gpio_num, direction);
-    if (pull) {
-        gpio_pullup_en(gpio_num);
-    } else {
-        gpio_pullup_dis(gpio_num);
-    }
+    gpio_setup(gpio_num, mode, pullup, 0);
 }
 
 /* FreeRTOS event group to signal when we are connected & ready to make a request */
