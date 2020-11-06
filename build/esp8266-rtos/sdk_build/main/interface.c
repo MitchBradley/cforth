@@ -323,28 +323,31 @@ int stream_connect(char *host, char *portstr, int timeout_msecs)
     char *endptr;
     uint16_t port = strtol(portstr, &endptr, 10);
     if (endptr != (portstr + strlen(portstr))) {
-        return -5;
+        return -8;
     }
 
     struct hostent * hostent = gethostbyname(host);
     if (hostent == NULL) {
-        return -4;
+        return -7;
+    }
+    struct in_addr **addr_list = (struct in_addr **)hostent->h_addr_list;
+    if (addr_list[0] == NULL) {
+        return -6;
     }
 
     struct sockaddr_in destAddr;
-    destAddr.sin_addr.s_addr = htonl(INADDR_ANY);
     destAddr.sin_family = AF_INET;
     destAddr.sin_port = htons(port);
-    destAddr.sin_addr.s_addr = *hostent->h_addr;
+    memcpy(&destAddr.sin_addr, addr_list[0], sizeof(destAddr.sin_addr));
 
     int s = socket(AF_INET, SOCK_STREAM, IPPROTO_IP);
     if (s < 0) {
-        return -2;
+        return -5;
     }
 
     if (connect(s, (struct sockaddr *)&destAddr, sizeof(destAddr)) < 0) {
         close(s);
-        return -2;
+        return -4;
     }
 
     struct timeval recv_timeout;
