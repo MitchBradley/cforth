@@ -52,17 +52,6 @@ pressure-sensor-pin #32 - constant pressure-sensor-adc-channel
 
 : relax  ;
 
-$3c constant ssd-i2c
-
-#100 buffer: ssd-buf
-0 value ssd-ptr
-: ssd-ram!  ( b -- )  ssd-ptr c!  ssd-ptr 1+ to ssd-ptr  ;
-: ssd-ram{  ( -- )  ssd-buf to ssd-ptr  $40 ssd-ram!  ;
-: }ssd-ram  ( -- )
-   ssd-buf  ssd-ptr ssd-buf -  0 0  ssd-i2c  true  i2c-write-read
-   abort" i2c-write-read failed"
-;
-
 fl ${CBP}/lib/fb.fth
 fl ${CBP}/lib/font5x7.fth
 fl ${CBP}/lib/ssd1306.fth
@@ -70,8 +59,6 @@ fl ${CBP}/lib/ssd1306.fth
    #22 #21 i2c-open abort" I2C open failed"
    ssd-init
 ;
-
-ssd-i2c to ssd-i2c-slave
 
 : test-wemos-oled  ( -- )
    init-wemos-oled
