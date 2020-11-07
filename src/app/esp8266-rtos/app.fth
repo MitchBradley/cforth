@@ -33,6 +33,8 @@ alias m-init noop
 alias get-ticks get-msecs
 : ms>ticks  ( ms -- ticks )  ;
 
+fl ../esp32/wifi.fth
+
 fl ../esp8266/xmifce.fth
 fl ../../lib/crc16.fth
 fl ../../lib/xmodem.fth
@@ -41,6 +43,8 @@ also modem
 previous
 
 fl ../esp32/files.fth
+
+fl ../esp32/server.fth
 
 \ Replace 'quit' to make CForth auto-run some application code
 \ instead of just going interactive.
