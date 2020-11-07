@@ -46,6 +46,10 @@ fl ../esp32/files.fth
 
 fl ../esp32/server.fth
 
+: relax ;
+
+fl oled.fth
+
 \ Replace 'quit' to make CForth auto-run some application code
 \ instead of just going interactive.
 \ : app  banner  hex init-i2c  showstack  quit  ;

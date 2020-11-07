@@ -83,7 +83,16 @@ $3c value ssd-i2c-slave
 : ssd-cmd  ( cmd -- )
    0 ssd-i2c-slave i2c-b! abort" SSD1306 I2C write failed"
 ;
-[ifndef] ssd-ram{
+[ifdef] i2c-write-read
+#100 buffer: ssd-buf
+0 value ssd-ptr
+: ssd-ram!  ( b -- )  ssd-ptr c!  ssd-ptr 1+ to ssd-ptr  ;
+: ssd-ram{  ( -- )  ssd-buf to ssd-ptr  $40 ssd-ram!  ;
+: }ssd-ram  ( -- )
+   ssd-buf  ssd-ptr ssd-buf -  0 0  ssd-i2c-slave  true  i2c-write-read
+   abort" i2c-write-read failed"
+;
+[else]
 : ssd-ram{   ( -- )
    $40 ssd-i2c-slave i2c-start-write abort" ssd-ram{ failed"
 ;

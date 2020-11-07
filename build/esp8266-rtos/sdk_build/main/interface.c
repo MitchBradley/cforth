@@ -81,7 +81,7 @@ void ms(int msecs)
 
 #include "driver/i2c.h"
 
-#define I2C_NUM 1
+#define I2C_NUM I2C_NUM_0
 #define ACK_CHECK 1
 #define ACK_VAL 0
 #define NACK_VAL 1
@@ -89,7 +89,7 @@ void ms(int msecs)
 // void i2c_setup(cell sda, cell scl)
 cell i2c_open(uint8_t sda, uint8_t scl)
 {
-    int i2c_master_port = 1;
+    int i2c_master_port = I2C_NUM;
     i2c_config_t conf;
     conf.mode = I2C_MODE_MASTER;
     conf.sda_io_num = sda;
