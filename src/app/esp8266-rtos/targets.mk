@@ -16,9 +16,13 @@ APPPATH ?= $(TOPDIR)/src/app/esp8266-rtos
 # APPLOADFILE is the top-level "Forth load file" for the application code.
 APPLOADFILE ?= app.fth
 
+ESP32PATH=$(TOPDIR)/src/app/esp32
+
 # APPSRCS is a list of Forth source files that the application uses,
 # i.e. the list of files that APPLOADFILE floads.  It's for dependency checking.
 APPSRCS += $(wildcard $(APPPATH)/*.fth)
+APPSRCS += $(ESP32PATH)/wifi.fth
+APPSRCS += $(ESP32PATH)/server.fth
 
 # default: 0x00000.bin 0x10000.bin
 

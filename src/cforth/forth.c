@@ -127,14 +127,32 @@ doprim:
 
 /*$p shift */   case SHIFT:
     if ( tos < 0 ) {
-        tos = -tos;
-        tos = (u_cell) *sp++ >> (u_cell)tos;
+        if (tos <= (-CELLBITS)) {
+            ++sp;
+            tos = 0;
+        } else {
+            tos = -tos;
+            tos = (u_cell) *sp++ >> (u_cell)tos;
+        }
     }
-    else
-        binop(<<);
+    else {
+        if (tos >= CELLBITS) {
+            ++sp;
+            tos = 0;
+        } else {
+            binop(<<);
+        }
+    }
     next;
 
-/*$p >>a */     case SHIFTA:  binop(>>);  next;
+/*$p >>a */     case SHIFTA:
+        if (tos >= CELLBITS) {
+            ++sp;
+            tos = 0;
+        } else {
+            binop(>>);
+        }
+        next;
 /*$p dup */     case DUP:     *--sp = tos;  next;
 /*$p drop */    case DROP:    loadtos;  next;
 /*$p swap */    case SWAP:    scr = *sp;  *sp = tos;  tos = scr;  next;
