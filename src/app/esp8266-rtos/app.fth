@@ -48,7 +48,7 @@ fl ../esp32/server.fth
 
 : relax ;
 
-fl oled.fth
+fl test-oled.fth
 
 \ Replace 'quit' to make CForth auto-run some application code
 \ instead of just going interactive.
