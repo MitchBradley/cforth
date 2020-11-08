@@ -298,14 +298,19 @@ static esp_err_t wifi_event_handler(void *ctx, system_event_t *event)
 cell wifi_open(cell timeout, char *password, char *ssid)
 {
     tcpip_adapter_init();
-    wifi_event_group = xEventGroupCreate();
-    if (esp_event_loop_init(wifi_event_handler, NULL)) return -1;
+    if (!wifi_event_group) {
+        wifi_event_group = xEventGroupCreate();
+        if (esp_event_loop_init(wifi_event_handler, NULL)) return -1;
+    }
     wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
     if (esp_wifi_init(&cfg) ) return -2;
     if (esp_wifi_set_storage(WIFI_STORAGE_RAM)) return -3;
     wifi_config_t wifi_config = { };
     strncpy((char *)wifi_config.sta.ssid, ssid, sizeof(wifi_config.sta.ssid));
     strncpy((char *)wifi_config.sta.password, password, sizeof(wifi_config.sta.password));
+    if (strlen(password)) {
+        wifi_config.sta.threshold.authmode = WIFI_AUTH_WEP;
+    }
     if(esp_wifi_set_mode(WIFI_MODE_STA)) return -4;
     if(esp_wifi_set_config(ESP_IF_WIFI_STA, &wifi_config)) return -5;
     if(esp_wifi_start()) return -6;
