@@ -304,6 +304,13 @@ cell wifi_open(cell timeout, char *password, char *ssid)
     return 0;
 }
 
+cell get_wifi_mode(void)
+{
+    wifi_mode_t mode;
+    esp_wifi_get_mode(&mode);
+    return mode;
+}
+
 void set_log_level(char *component, int level)
 {
     esp_log_level_set(component, level);

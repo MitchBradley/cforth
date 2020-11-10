@@ -12,6 +12,11 @@ defer wifi-sta-password
    0 " wifi" log-level!
    wifi-sta-ssid wifi-sta-password wifi-timeout wifi-open
 ;
+: start-wifi-sta  ( -- )
+   wifi-mode@ 0=  if
+      wifi-sta-on abort" Cannot connect to WiFi"
+   then
+;
 
 : ipaddr@  ( -- 'ip )  pad 0 ip-info@ drop  pad  ; \ 1 for AP, 0 for STA
 : (.d)  ( n -- )  push-decimal (.) pop-base  ;

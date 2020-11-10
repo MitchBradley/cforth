@@ -97,6 +97,7 @@ cell ((* const ccalls[])()) = {
 	C(gpio_is_input_pd)	//c gpio-is-input-pulldown { i.gpio# -- }
 	C(gpio_mode)    	//c gpio-mode { i.pullup? i.direction i.gpio# -- }
 
+	C(get_wifi_mode)	//c wifi-mode@ { -- i.mode }
 	C(wifi_open)		//c wifi-open { $ssid $password i.timeout -- i.error? }
 
 	C(set_log_level)	//c log-level! { i.level $component -- }
@@ -109,14 +110,16 @@ cell ((* const ccalls[])()) = {
 	C(lwip_bind)		//c bind           { i.len a.addr i.handle -- i.error }
 	C(lwip_setsockopt)	//c setsockopt     { i.len a.addr i.optname i.level i.handle -- i.error }
 	C(lwip_getsockopt)	//c getsockopt     { i.len a.addr i.optname i.level i.handle -- i.error }
-	C(lwip_connect)	//c connect        { i.len a.adr i.handle -- i.error }
+	C(lwip_connect)		//c connect        { i.len a.adr i.handle -- i.error }
 	C(stream_connect)	//c stream-connect { i.timeout $.portname $.hostname -- i.handle }
+	C(udp_client)		//c udp-connect    { $.portname $.hostname -- i.handle }
 	C(my_lwip_write)	//c lwip-write     { a.buf i.size i.handle -- i.count }
 	C(my_lwip_read)		//c lwip-read      { a.buf i.size i.handle -- i.count }
 	C(lwip_close)		//c lwip-close     { i.handle -- }
-	C(lwip_listen)	//c lwip-listen    { i.backlog i.handle -- i.handle }
-	C(lwip_accept)	//c lwip-accept    { a.addrlen a.addr i.handle -- i.error }
+	C(lwip_listen)		//c lwip-listen    { i.backlog i.handle -- i.handle }
+	C(lwip_accept)		//c lwip-accept    { a.addrlen a.addr i.handle -- i.error }
 	C(start_server)		//c start-server   { i.port -- i.error }
+	C(start_udp_server)	//c start-udp-server { i.port -- i.error }
 	C(dhcpc_status)		//c dhcp-status    { -- i.status }
 	C(ip_info)		//c ip-info        { a.info -- }
 

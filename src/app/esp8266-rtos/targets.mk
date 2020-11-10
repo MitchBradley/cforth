@@ -6,12 +6,12 @@ CFLAGS += -m32
 
 CC := gcc
 
-TCPATH=$(TOPDIR)/src/app/esp8266-rtos
+TCPATH=$(TOPDIR)/src/app/$(APPNAME)
 
 include $(TCPATH)/sdk.mk
 
 # APPPATH is the path to the application code, i.e. this directory
-APPPATH ?= $(TOPDIR)/src/app/esp8266-rtos
+APPPATH ?= $(TOPDIR)/src/app/$(APPNAME)
 
 # APPLOADFILE is the top-level "Forth load file" for the application code.
 APPLOADFILE ?= app.fth
@@ -97,13 +97,17 @@ PREFIX += CBP=$(realpath $(TOPDIR)/src)
 
 include $(SRC)/cforth/embed/targets.mk
 
-IDF_PATHS:=IDF_PATH="$(IDF_PATH)" CFORTH_PATH="$(CFORTH_PATH)" PATH="$(XTGCCPATH):$(PATH)"
+# The rest is the interface to the SDK build system
+PROJECT_PATH := $(abspath $(TCPATH)/sdk_src)
+$(info PP $(PROJECT_PATH))
 
-sdk_build/build/esp8266-rtos.elf: app.o
-	@$(IDF_PATHS) make --no-print-directory -C sdk_build
+IDF_PATHS:=IDF_PATH="$(IDF_PATH)" CFORTH_BUILD_PATH="$(CFORTH_BUILD_PATH)" PATH="$(XTGCCPATH):$(PATH)" PROJECT_PATH="$(PROJECT_PATH)"
 
-flash: sdk_build/build/esp8266-rtos.elf
-	@$(IDF_PATHS) $(ESPPORT_OVERRIDE) make --no-print-directory -C sdk_build flash
+$(APPELF): app.o
+	@$(IDF_PATHS) make -j4 --no-print-directory -C $(PROJECT_PATH)
+
+flash: $(APPELF)
+	@$(IDF_PATHS) $(ESPPORT_OVERRIDE) make -j4 --no-print-directory -C $(PROJECT_PATH) flash
 
 monitor:
-	@$(IDF_PATHS) $(ESPPORT_OVERRIDE) make --no-print-directory -C sdk_build monitor
+	@$(IDF_PATHS) $(ESPPORT_OVERRIDE) make -j4 --no-print-directory -C $(PROJECT_PATH) monitor
