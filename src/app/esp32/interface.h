@@ -20,6 +20,7 @@ void gpio_mode(cell gpio_num, cell direction, cell pull);
 void gpio_matrix_out();
 cell gpio_matrix_in();
 
+cell get_wifi_mode(void);
 cell wifi_open(char *password, char *ssid);
 
 void set_log_level(char *component, int level);

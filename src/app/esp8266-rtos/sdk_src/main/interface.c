@@ -16,6 +16,7 @@ typedef unsigned char u8_t;
 #include "esp_wifi.h"
 #include "esp_log.h"
 #include "esp_event.h"
+#include "esp_event_loop.h"
 #include "nvs_flash.h"
 
 #include "lwip/err.h"
@@ -318,12 +319,19 @@ cell wifi_open(cell timeout, char *password, char *ssid)
     return 0;
 }
 
+cell get_wifi_mode(void)
+{
+    wifi_mode_t mode;
+    esp_wifi_get_mode(&mode);
+    return mode;
+}
+
 void set_log_level(char *component, int level)
 {
     esp_log_level_set(component, level);
 }
 
-int stream_connect(char *host, char *portstr, int timeout_msecs)
+int client_socket(char *host, char *portstr, cell protocol)
 {
     char *endptr;
     uint16_t port = strtol(portstr, &endptr, 10);
@@ -345,14 +353,28 @@ int stream_connect(char *host, char *portstr, int timeout_msecs)
     destAddr.sin_port = htons(port);
     memcpy(&destAddr.sin_addr, addr_list[0], sizeof(destAddr.sin_addr));
 
-    int s = socket(AF_INET, SOCK_STREAM, IPPROTO_IP);
+    int s = socket(AF_INET, protocol, IPPROTO_IP);
     if (s < 0) {
         return -5;
     }
-
     if (connect(s, (struct sockaddr *)&destAddr, sizeof(destAddr)) < 0) {
         close(s);
         return -4;
+    }
+    return s;
+}
+
+cell udp_client(char *host, char *portstr)
+{
+    return client_socket(host, portstr, SOCK_DGRAM);
+}
+
+int stream_connect(char *host, char *portstr, int timeout_msecs)
+{
+
+    int s = client_socket(host, portstr, SOCK_STREAM);
+    if (s < 0) {
+        return s;
     }
 
     struct timeval recv_timeout;
@@ -367,7 +389,7 @@ int stream_connect(char *host, char *portstr, int timeout_msecs)
     return s;
 }
 
-cell start_server(cell port)
+cell bound_socket(cell port, cell protocol)
 {
     struct sockaddr_in addr;
     addr.sin_addr.s_addr = htonl(INADDR_ANY);
@@ -375,7 +397,7 @@ cell start_server(cell port)
     addr.sin_port = htons((unsigned short)port);
     addr.sin_addr.s_addr = 0;
 
-    int listenfd = socket(AF_INET, SOCK_STREAM, IPPROTO_IP);
+    int listenfd = socket(AF_INET, protocol, IPPROTO_IP);
     if (listenfd < 0) {
         return -2;
     }
@@ -384,6 +406,15 @@ cell start_server(cell port)
     if (err != 0) {
         return -3;
     }
+    return listenfd;
+}
+
+cell start_server(cell port)
+{
+    int listenfd = bound_socket(port, SOCK_STREAM);
+    if (listenfd < 0) {
+        return listenfd;
+    }
 
     // listen for incoming connections
     if (listen(listenfd, 1000000) != 0) {
@@ -391,6 +422,11 @@ cell start_server(cell port)
 	return -3;
     }
     return listenfd;
+}
+
+cell start_udp_server(cell port)
+{
+    return bound_socket(port, SOCK_DGRAM);
 }
 
 cell my_select(cell maxfdp1, void *reads, void *writes, void *excepts, cell msecs)
