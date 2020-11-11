@@ -9,8 +9,13 @@
    then
 ; immediate
 
+: off  ( adr -- )  false swap !  ;
+: on  ( adr -- )  true swap !  ;
+
 : s(  [char] ) parse  ;
+warning off
 : .(  s( type  ;
+warning on
 
 : ok ;
 
@@ -65,8 +70,6 @@ decimal
 : lalign  ( -- )  here here laligned swap - allot  ;
 
 : erase  ( adr count -- )  0 fill  ;
-: off  ( adr -- )  false swap !  ;
-: on  ( adr -- )  true swap !  ;
 : umax  ( u1 u2 -- umax )  2dup u<  if  swap  then  drop  ;
 : within  ( n1 min max+1 -- f )  over - >r - r> u<  ;
 : between  ( n min max -- f )  1+ within  ;
@@ -641,3 +644,18 @@ alias headerless noop
 alias headers noop
 : upc  ( char -- char' )  dup 'a' 'z' between  if  $20 invert and  then  ;
 alias #-buf pad
+
+warning off
+: fl
+   parse-word 2dup             ( adr len )
+   ['] included catch ?dup if  ( adr len x x error-code )
+      nip nip                  ( adr len error-code )
+      dup -11 =  if            ( adr len error-code )
+         ." Can't open file " -rot type cr  ( error-code )
+      then                     ( [ adr len ] error-code )
+      throw
+   then                        ( adr len )
+   2drop
+;
+alias fload fl
+warning on
