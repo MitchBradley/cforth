@@ -23,6 +23,6 @@
       endof
    endcase
 
-   wifi-max-connections wifi-storage ApSSID Ap-Password wifi-open-ap
+   wifi-max-connections wifi-storage ApSSID ApPassword wifi-open-ap
    abort" WiFi access point startup failed"
 ;
