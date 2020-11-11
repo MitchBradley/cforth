@@ -21,7 +21,10 @@ void gpio_is_input_pd(cell gpio_num);
 void gpio_mode(cell gpio_num, cell direction, cell pull);
 
 cell get_wifi_mode(void);
-cell wifi_open(char *password, char *ssid);
+cell wifi_open_station(char *password, char *ssid, cell storage, cell timeout, cell retries);
+cell wifi_open_station_compat(char *password, char *ssid, cell timeout);
+cell wifi_open_ap(char *password, char *ssid, cell storage, cell max_connections);
+cell wifi_off(void);
 
 void set_log_level(char *component, int level);
 

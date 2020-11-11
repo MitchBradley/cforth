@@ -98,7 +98,10 @@ cell ((* const ccalls[])()) = {
 	C(gpio_mode)    	//c gpio-mode { i.pullup? i.direction i.gpio# -- }
 
 	C(get_wifi_mode)	//c wifi-mode@ { -- i.mode }
-	C(wifi_open)		//c wifi-open { $ssid $password i.timeout -- i.error? }
+	C(wifi_open_ap)         //c wifi-open-ap { i.storage i.max-connections $ssid $password -- i.error? }
+	C(wifi_open_station)    //c wifi-open-station { i.storage i.retries i.timeout $ssid $password -- i.error? }
+	C(wifi_open_station_compat)  //c wifi-open { $ssid $password i.timeout -- i.error? }
+        C(wifi_off)             //c wifi-off { -- i.error? }
 
 	C(set_log_level)	//c log-level! { i.level $component -- }
 

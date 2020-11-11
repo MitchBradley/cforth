@@ -103,6 +103,15 @@ $(info PP $(PROJECT_PATH))
 
 IDF_PATHS:=IDF_PATH="$(IDF_PATH)" CFORTH_BUILD_PATH="$(CFORTH_BUILD_PATH)" PATH="$(XTGCCPATH):$(PATH)" PROJECT_PATH="$(PROJECT_PATH)"
 
+# If COMPORT is in the environment, for example
+#   COMPORT=COM36 make flash
+# then override the CONFIG_ESPTOOLPY_PORT setting in the SDK build scripts,
+# otherwise use that setting.
+COMPORT ?=
+ifneq ($(COMPORT),)
+	ESPPORT_OVERRIDE = ESPPORT=$(COMPORT)
+endif
+
 $(APPELF): app.o
 	@$(IDF_PATHS) make -j4 --no-print-directory -C $(PROJECT_PATH)
 

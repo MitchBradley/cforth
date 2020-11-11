@@ -31,15 +31,6 @@ IDF_PARENT_PATH ?= $(UPDIR)
 # The directory than contains this Makefile, i.e. the app build directory
 CFORTH_BUILD_PATH ?= $(abspath .)
 
-# If COMPORT is in the environment, for example
-#   COMPORT=COM36 make flash
-# then override the CONFIG_ESPTOOLPY_PORT setting in the SDK build scripts,
-# otherwise use that setting.
-COMPORT ?=
-ifneq ($(COMPORT),)
-	ESPPORT_OVERRIDE = ESPPORT=$(COMPORT)
-endif
-
 include $(TOPDIR)/src/app/$(APPNAME)/targets.mk
 
 clean::
