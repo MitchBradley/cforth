@@ -5,7 +5,7 @@
 #
 # The installation work is done only once.  Subsequently,
 # toolchain_path.mk will be present and it will be included,
-# setting XGTCCPATH to the toolchain location.
+# setting XTGCCPATH to the toolchain location.
 
 IDF_NAME ?= ESP8266_RTOS_SDK
 IDF_PATH ?= $(IDF_PARENT_PATH)/$(IDF_NAME)
