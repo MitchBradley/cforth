@@ -99,7 +99,6 @@ include $(SRC)/cforth/embed/targets.mk
 
 # The rest is the interface to the SDK build system
 PROJECT_PATH := $(abspath $(TCPATH)/sdk_src)
-$(info PP $(PROJECT_PATH))
 
 IDF_PATHS:=IDF_PATH="$(IDF_PATH)" CFORTH_BUILD_PATH="$(CFORTH_BUILD_PATH)" PATH="$(XTGCCPATH):$(PATH)" PROJECT_PATH="$(PROJECT_PATH)"
 
@@ -112,11 +111,41 @@ ifneq ($(COMPORT),)
 	ESPPORT_OVERRIDE = ESPPORT=$(COMPORT)
 endif
 
+MAKECMD = $(IDF_PATHS) $(ESPPORT_OVERRIDE) make -j4 --no-print-directory -C $(PROJECT_PATH)
+
 $(APPELF): app.o
-	@$(IDF_PATHS) make -j4 --no-print-directory -C $(PROJECT_PATH)
+	@$(MAKECMD)
 
 flash: $(APPELF)
-	@$(IDF_PATHS) $(ESPPORT_OVERRIDE) make -j4 --no-print-directory -C $(PROJECT_PATH) flash
+	@$(MAKECMD) $@
 
+# Passthroughs for some utility commands in the SDK build system
 monitor:
-	@$(IDF_PATHS) $(ESPPORT_OVERRIDE) make -j4 --no-print-directory -C $(PROJECT_PATH) monitor
+	@$(MAKECMD) $@
+
+erase_flash:
+	@$(MAKECMD) $@
+
+print_flash_cmd:
+	@$(MAKECMD) $@
+
+partition_table:
+	@$(MAKECMD) $@
+
+simple_monitor:
+	@$(MAKECMD) $@
+
+size:
+	@$(MAKECMD) $@
+
+size-components:
+	@$(MAKECMD) $@
+
+defconfig:
+	@$(MAKECMD) $@
+
+menuconfig:
+	@$(MAKECMD) $@
+
+sdk-clean:
+	@$(MAKECMD) clean
