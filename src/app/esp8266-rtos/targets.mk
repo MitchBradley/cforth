@@ -150,5 +150,8 @@ menuconfig:
 bootloader-flash:
 	@$(MAKECMD) $@
 
+app-flash:
+	@$(MAKECMD) $@
+
 sdk-clean:
 	@$(MAKECMD) clean
