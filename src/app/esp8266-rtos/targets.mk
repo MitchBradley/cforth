@@ -147,5 +147,8 @@ defconfig:
 menuconfig:
 	@$(MAKECMD) $@
 
+bootloader-flash:
+	@$(MAKECMD) $@
+
 sdk-clean:
 	@$(MAKECMD) clean
