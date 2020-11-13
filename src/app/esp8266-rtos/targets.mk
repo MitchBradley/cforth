@@ -111,7 +111,7 @@ ifneq ($(COMPORT),)
 	ESPPORT_OVERRIDE = ESPPORT=$(COMPORT)
 endif
 
-MAKECMD = $(IDF_PATHS) $(ESPPORT_OVERRIDE) make -j4 --no-print-directory -C $(PROJECT_PATH)
+MAKECMD = $(IDF_PATHS) $(ESPPORT_OVERRIDE) make --no-print-directory -C $(PROJECT_PATH)
 
 $(APPELF): app.o
 	@$(MAKECMD)
