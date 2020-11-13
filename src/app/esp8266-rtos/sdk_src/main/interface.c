@@ -496,7 +496,7 @@ int client_socket(char *host, char *portstr, cell protocol)
         return -6;
     }
 
-    struct sockaddr_in destAddr;
+    struct sockaddr_in destAddr = {};
     destAddr.sin_family = AF_INET;
     destAddr.sin_port = htons(port);
     memcpy(&destAddr.sin_addr, addr_list[0], sizeof(destAddr.sin_addr));
