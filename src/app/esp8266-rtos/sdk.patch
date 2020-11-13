@@ -1,5 +1,19 @@
+diff --git a/components/bootloader_support/src/bootloader_init.c b/components/bootloader_support/src/bootloader_init.c
+index fda2a49f..f2b4bfba 100644
+--- a/components/bootloader_support/src/bootloader_init.c
++++ b/components/bootloader_support/src/bootloader_init.c
+@@ -625,8 +625,8 @@ static void uart_console_configure(void)
+         }
+     }
+ 
+-    uart_div_modify(CONFIG_ESP_CONSOLE_UART_NUM, BOOTLOADER_CONSOLE_CLK_FREQ / CONFIG_ESP_CONSOLE_UART_BAUDRATE);
+ #endif
++    uart_div_modify(CONFIG_ESP_CONSOLE_UART_NUM, BOOTLOADER_CONSOLE_CLK_FREQ / CONFIG_ESP_CONSOLE_UART_BAUDRATE);
+ }
+ 
+ esp_err_t bootloader_init()
 diff --git a/components/esp8266/driver/pwm.c b/components/esp8266/driver/pwm.c
-index df079d31..d9dd753d 100644
+index df079d31..5c5d3d77 100644
 --- a/components/esp8266/driver/pwm.c
 +++ b/components/esp8266/driver/pwm.c
 @@ -559,7 +559,12 @@ esp_err_t pwm_init(uint32_t period, uint32_t *duties, uint8_t channel_num, const
