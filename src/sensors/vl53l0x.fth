@@ -13,8 +13,8 @@ $29 constant vl-i2c-slave
    vl-i2c-reg 1  2swap  vl-i2c-slave false  i2c-write-read ?vl-abort
 ;
 : vl-write  ( adr len reg# -- )
-   vl-i2c-buf c!               ( adr len )
-   tuck  vl-i2c-buf 1+ move    ( len )
+   vl-i2c-buf c!                  ( adr len )
+   tuck  vl-i2c-buf 1+  swap move ( len )
    vl-i2c-buf swap 1+  0 0   vl-i2c-slave false  i2c-write-read ?vl-abort
 ;
 
