@@ -32,6 +32,13 @@ ESP_IDF_PATHS:=IDF_PATH="$(IDF_PATH)" CFORTH_PATH="$(CFORTH_PATH)" PATH="$(PATH)
 forth.elf: app.o
 	@$(ESP_IDF_PATHS) make --no-print-directory -C sdk_build
 
+menuconfig:
+	@$(ESP_IDF_PATHS) make -C sdk_build menuconfig
+
+sdkclean:
+	@$(ESP_IDF_PATHS) make -C sdk_build clean
+
+
 # If COMPORT is in the environment - e.g.  COMPORT=COM36 make flash
 # override the CONFIG_ESPTOOLPY_PORT setting in sdk_build/sdkconfig,
 # otherwise use that setting.
