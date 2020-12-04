@@ -90,3 +90,15 @@ cell adc_deinit();
 cell adc_init_args(cell mode, cell divisor);
 cell adc_read_fast(uint16_t *, int);
 cell adc_fetch(void);
+
+
+
+typedef enum {
+     ESP_CPU_FREQ_80M = 1,       //!< 80 MHz
+     ESP_CPU_FREQ_160M = 2,      //!< 160 MHz
+} esp_cpu_freq_t;
+
+void esp_set_cpu_freq(esp_cpu_freq_t cpu_freq);
+int  esp_clk_cpu_freq(void);
+
+void esp_deep_sleep(uint64_t time_in_us);
