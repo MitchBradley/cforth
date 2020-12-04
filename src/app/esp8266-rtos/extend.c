@@ -161,4 +161,9 @@ cell ((* const ccalls[])()) = {
         C(alarm_us)              //c set-alarm-us   { i.xt i.us -- }
         C(repeat_alarm_us)       //c repeat-alarm-us   { i.xt i.us -- }
         C(us)                    //c us { i.us -- }
+
+	C(esp_clk_cpu_freq)      //c esp_clk_cpu_freq  { -- i.freq }
+	C(esp_set_cpu_freq)      //c esp_set_cpu_freq  { i.esp_cpu_freq_t i.freq -- }
+
+	C(esp_deep_sleep)        //c esp_deep_sleep    { i.uint64_t i.time_in_us -- }
 };
