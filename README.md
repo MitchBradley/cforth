@@ -10,3 +10,5 @@ b) Host version catches exceptions
 c) key and key? implemented property in host versions for Linux and Windows
 d) Makefile fragments factored better, and use pattern rules extensively
 e) Makefiles in build directories simplified
+
+This is a test
