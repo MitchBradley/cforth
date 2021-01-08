@@ -8,14 +8,14 @@
 void spi_send(cell len, cell adr);
 void spi_read(cell offset, cell len, cell adr);
 cell inflate(cell wpptr, cell nohdr, cell clear, cell compr);
-void *ps2_devices[2];
+extern void *ps2_devices[2];
 void init_ps2();
 #if 0   // Examples
 cell sum(cell b, cell a);
 cell byterev(cell n);
 #endif
 cell ps2_out(cell byte, cell device_num);
-cell dbg_uart_only;
+extern int dbg_uart_only;
 
 #define DECLARE_REGS \
     volatile unsigned long *fifo = (volatile unsigned long *)0xd4035010; \
