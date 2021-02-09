@@ -576,6 +576,16 @@ execute:
     *--sp = tos; V(XSP) = (cell)sp;  *--rp = ip;  V(XRP) = (cell)rp;
     return(scr);
 
+    /*$p (pause */ case PAREN_PAUSE:
+    *--sp = tos; V(XSP) = (cell)sp;
+    *--rp = ip;  V(XRP) = (cell)rp;
+    do {
+        up = (cell*)V(LINK);
+    } while(V(ASLEEP));
+    sp = (cell *)V(XSP);  tos = *sp++;
+    rp = (token_t **)V(XRP); ip = *rp++;
+    next;
+
 /*$p 0 */       case ZERO:      push(0);                 next;
 /*$p here */    case HERE:      push(V(DP));             next;
 /*$p tib */     case TIB:       push(V(TICK_TIB));       next;
@@ -1329,6 +1339,8 @@ execute_word(char *s, cell *up)
 
 /* Forth variables */
 /* Forth name   C #define       */
+/*$u link       e LINK:         */
+/*$u asleep     e ASLEEP:       */
 /*$u #user      e NUM_USER:     */
 /*$u >in        e TO_IN:        */
 /*$u base       e BASE:         */
