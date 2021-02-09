@@ -351,6 +351,7 @@ cell wifi_open_station(char *password, char *ssid, cell storage, cell timeout, c
 
     if (strlen(password)) {
         wifi_config.sta.threshold.authmode = WIFI_AUTH_WEP;
+        esp_wifi_set_protocol(ESP_IF_WIFI_STA, WIFI_PROTOCOL_11B | WIFI_PROTOCOL_11G | WIFI_PROTOCOL_11N);
     }
     if (esp_wifi_set_mode(WIFI_MODE_STA)) {
         esp_wifi_deinit();
