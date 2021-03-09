@@ -50,12 +50,19 @@ fl ../esp32/server.fth
 
 fl tests/oled.fth
 
+\ Jos: 1 line added
+fl tasking_rtos.fth  \ Pre-emptive multitasking
+
 \ Replace 'quit' to make CForth auto-run some application code
 \ instead of just going interactive.
 \ : app  banner  hex init-i2c  showstack  quit  ;
 : interrupt?  ( -- flag )
-   ." Type a key within 2 seconds to interact" cr
-   #20 0  do  key?  if  key drop  true unloop exit  then  #100 ms  loop
+   ." Type a key within 1 second to interact" cr \ changed to 1 second
+   #10 0  do  key?  if  key drop  true unloop exit  then  #100 ms  loop \ 1 second
+
+\   ." Type a key within 2 seconds to interact" cr  \ Original
+\   #20 0  do  key?  if  key drop  true unloop exit  then  #100 ms  loop \ Original
+
    false
 ;
 : load-startup-file  ( -- )  " start" included   ;
