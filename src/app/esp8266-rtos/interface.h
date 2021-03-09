@@ -91,7 +91,7 @@ cell adc_init_args(cell mode, cell divisor);
 cell adc_read_fast(uint16_t *, int);
 cell adc_fetch(void);
 
-
+// Jos: Added the lines below:
 
 typedef enum {
      ESP_CPU_FREQ_80M = 1,       //!< 80 MHz
@@ -102,3 +102,32 @@ void esp_set_cpu_freq(esp_cpu_freq_t cpu_freq);
 int  esp_clk_cpu_freq(void);
 
 void esp_deep_sleep(uint64_t time_in_us);
+
+cell esp_get_free_heap_size(void);
+
+typedef uint32_t TickType_t; 
+typedef uint32_t portTickType;
+void vTaskDelay(const TickType_t xTicksToDelay); 
+
+typedef void * TaskHandle_t;
+TaskHandle_t xTaskGetCurrentTaskHandle(void);
+void vTaskSuspend(TaskHandle_t xTaskToSuspend);
+void vTaskResume(TaskHandle_t xTaskToResume);
+void vTaskDelete(TaskHandle_t xTaskToDelete);
+
+#define portBASE_TYPE   int
+typedef portBASE_TYPE           BaseType_t;
+typedef unsigned portBASE_TYPE  UBaseType_t;
+typedef void (*TaskFunction_t)( void * );
+	#define configSTACK_DEPTH_TYPE uint16_t
+
+BaseType_t xTaskCreate(	TaskFunction_t pxTaskCode,
+  const char * const pcName,	
+  const configSTACK_DEPTH_TYPE usStackDepth,
+  void * const pvParameters,
+  UBaseType_t uxPriority,
+  TaskHandle_t * const pxCreatedTask);
+
+
+
+

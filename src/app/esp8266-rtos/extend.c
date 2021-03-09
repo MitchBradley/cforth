@@ -64,6 +64,19 @@ void alarm_callback(void* arg)
   switch_stacks(NULL, &alarm_stacks_save, callback_up);
 }
 
+// Jos: added 2 functions
+void ExecuteTask_callback(void* pvParameters)
+{
+    execute_xt((xt_t)pvParameters, callback_up);
+}
+
+void task_callback(int stack_size, void* pvParameters)
+{
+xt_t pvParam = pvParameters;
+xTaskCreate(ExecuteTask_callback, "NAME", 2048, (void*) pvParameters, 1, NULL );
+}
+
+
 cell ((* const ccalls[])()) = {
 	C(build_date_adr)   //c 'build-date     { -- a.value }
 	C(version_adr)      //c 'version        { -- a.value }
@@ -162,8 +175,16 @@ cell ((* const ccalls[])()) = {
         C(repeat_alarm_us)       //c repeat-alarm-us   { i.xt i.us -- }
         C(us)                    //c us { i.us -- }
 
+// Jos: Added the lines below
 	C(esp_clk_cpu_freq)      //c esp_clk_cpu_freq  { -- i.freq }
 	C(esp_set_cpu_freq)      //c esp_set_cpu_freq  { i.esp_cpu_freq_t i.freq -- }
-
 	C(esp_deep_sleep)        //c esp_deep_sleep    { i.uint64_t i.time_in_us -- }
+
+	C(esp_get_free_heap_size)    //c esp_get_free_heap_size     { -- i.size }
+ 	C(task_callback)             //c task                       { a.xt i.stack_size -- }
+	C(xTaskGetCurrentTaskHandle) //c xTaskGetCurrentTaskHandle  { -- i.htask }
+	C(vTaskDelay)                //c vTaskDelay                 { i.TicksToDelay -- }
+ 	C(vTaskResume)               //c vTaskResume                { i.htask -- }
+ 	C(vTaskSuspend)              //c vTaskSuspend               { i.htask -- }
+ 	C(vTaskDelete)               //c vTaskDelete                { i.htask -- }
 };
