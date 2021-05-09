@@ -64,18 +64,55 @@ void alarm_callback(void* arg)
   switch_stacks(NULL, &alarm_stacks_save, callback_up);
 }
 
-// Jos: added 2 functions
+// ------------ Jos: Added
 void ExecuteTask_callback(void* pvParameters)
 {
-    execute_xt((xt_t)pvParameters, callback_up);
+  execute_xt((xt_t)pvParameters, callback_up);
 }
 
 void task_callback(int stack_size, void* pvParameters)
 {
-xt_t pvParam = pvParameters;
-xTaskCreate(ExecuteTask_callback, "NAME", 2048, (void*) pvParameters, 1, NULL );
+  xt_t pvParam = pvParameters;
+  xTaskCreate(ExecuteTask_callback, "NAME", 2048, (void*) pvParameters, 1, NULL );
 }
 
+QueueHandle_t GpioQueue;
+
+static void gpio_qhandler(void *arg)
+{
+  int xHigherPriorityTaskWokenByPost;
+  int qitem=sys_now();
+  xQueueGenericSendFromISR(GpioQueue, &qitem, &xHigherPriorityTaskWokenByPost, 0);
+}
+
+void gpio_isr_qhandler_add(int gpio_num, QueueHandle_t hQueue)
+{
+  GpioQueue = hQueue;
+  int gpio_num1 = gpio_num;
+  gpio_isr_handler_add(gpio_num1, gpio_qhandler, (void *) gpio_num1);
+}
+
+
+// SPI write data, maximal 64 bytes at one time.
+void spi_master_write64(int size, uint32_t* data)
+{
+  spi_trans_t trans;
+  uint16_t cmd;
+  uint32_t addr = 0x0;
+  trans.bits.val = 0;
+  trans.bits.cmd = 8;
+  trans.bits.addr = 8;
+  trans.cmd = &cmd;
+  cmd = SPI_MASTER_WRITE_DATA_TO_SLAVE_CMD;
+  trans.addr = &addr;
+  memset(&trans, 0x0, sizeof(trans));
+  trans.bits.mosi = 8 * size;
+  trans.mosi = data;
+  spi_trans(HSPI_HOST, &trans);
+}
+
+
+// ------------ End Additions
 
 cell ((* const ccalls[])()) = {
 	C(build_date_adr)   //c 'build-date     { -- a.value }
@@ -176,15 +213,36 @@ cell ((* const ccalls[])()) = {
         C(us)                    //c us { i.us -- }
 
 // Jos: Added the lines below
-	C(esp_clk_cpu_freq)      //c esp_clk_cpu_freq  { -- i.freq }
-	C(esp_set_cpu_freq)      //c esp_set_cpu_freq  { i.esp_cpu_freq_t i.freq -- }
-	C(esp_deep_sleep)        //c esp_deep_sleep    { i.uint64_t i.time_in_us -- }
-
+	C(esp_clk_cpu_freq)          //c esp_clk_cpu_freq  { -- i.freq }
+	C(esp_set_cpu_freq)          //c esp_set_cpu_freq  { i.esp_cpu_freq_t i.freq -- }
+	C(esp_deep_sleep)            //c esp_deep_sleep    { i.uint64_t i.time_in_us -- }
 	C(esp_get_free_heap_size)    //c esp_get_free_heap_size     { -- i.size }
+
+// Preemptive multitasking
  	C(task_callback)             //c task                       { a.xt i.stack_size -- }
 	C(xTaskGetCurrentTaskHandle) //c xTaskGetCurrentTaskHandle  { -- i.htask }
 	C(vTaskDelay)                //c vTaskDelay                 { i.TicksToDelay -- }
  	C(vTaskResume)               //c vTaskResume                { i.htask -- }
  	C(vTaskSuspend)              //c vTaskSuspend               { i.htask -- }
  	C(vTaskDelete)               //c vTaskDelete                { i.htask -- }
-};
+
+// New 9-5-2021:
+ 	C(vTaskPrioritySet)          //c vTaskPrioritySet           { a.prio i.handle -- }
+        C(uxTaskPriorityGet)         //c uxTaskPriorityGet          { i.handle  -- i.prio }
+ 	C(vTaskSuspendAll)           //c vTaskSuspendAll            { -- }
+ 	C(xTaskResumeAll)            //c xTaskResumeAll             { -- }
+
+// Queues
+        C(xQueueGenericCreate)       //c xQueueGenericCreate        { i.type i.itemsize i.qlength  -- i.handle }
+ 	C(xQueueGenericSend)         //c xQueueGenericSend          { i.front_back i.xTicksToWait i.pvItemToQueue i.qHandle -- i.res }
+        C(xQueueReceive)             //c xQueueReceive              { i.xTicksToWait i.pxRxedMessage i.qHandle -- i.res }
+
+// Interrupts
+ 	C(gpio_set_intr_type)        //c gpio_set_intr_type         { i.intr_type i.gpio_num -- i.res }
+        C(gpio_install_isr_service)  //c gpio_install_isr_service   { i.no_use)  -- i.res}
+ 	C(gpio_isr_qhandler_add)     //c gpio_isr_qhandler_add      { i.hqueue i.gpio_num --  i.res }
+
+// Spi
+ 	C(spi_init)                  //c spi_init                   { a.config i.host  -- i.res }
+ 	C(spi_master_write64)        //c spi_master_write64         { a.data i.size -- }
+ };
