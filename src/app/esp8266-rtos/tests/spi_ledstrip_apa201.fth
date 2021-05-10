@@ -50,7 +50,7 @@ end-structure
 : ResetStartFrame ( - )      LedstripPtr @ off ;
 : SetEndFrame     ( - )      #Leds >led #EndingBytes $ff fill ;
 : read-adc        ( - adc )  8 0 adc-init drop  adc0@   adc-deinit ;
-: init-seed       ( - )      random read-adc + ms@ + to seed ;
+: init-seed       ( - )      random read-adc + get-msecs + to seed ;
 
 : .c      ( n - ) s>d <# bl hold  # # # #>  type ;
 : .c@     ( adr - )  c@ .c ;
