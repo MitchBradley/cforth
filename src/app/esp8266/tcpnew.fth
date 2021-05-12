@@ -73,7 +73,7 @@ defer respond   ( -- close? )
    \ the err argument is present only for consistency with other callbacks.
    drop  to rx-pcb  nip         ( pbuf )
    ?dup 0=  if                  ( )
-      ." Connection closed" cr cr
+      \ ." Connection closed" cr cr
       rx-pcb close-connection   ( )
       \ This is a normal termination, not a premature abort
       \ As I understand it, ERR_ABRT is for cases where something
@@ -81,7 +81,7 @@ defer respond   ( -- close? )
       ERR_OK exit               ( -- err )
    then                         ( pbuf )
 
-[ifdef] notdef
+[ifndef] notdef
    \ Set up the continuation mechanism so that, when tcp-write-wait
    \ returns to the OS via continuation, a subsequent tcp-sent callback
    \ will resume execution of Forth with the PCB on the stack, along
@@ -180,8 +180,13 @@ end-string-array
 
 : tcp-send  ( adr len pcb -- )
    tcp-write  ?dup  if  ( stat )
+[ifdef] NOTDEF
       ." tcp-write returned " .d cr
+[else]
+      drop
+[then]
    then                 ( )
+
    ERR_OK continuation  ( len pcb arg )
    swap to rx-pcb       ( len arg )
    2drop

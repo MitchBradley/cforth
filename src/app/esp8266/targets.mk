@@ -57,7 +57,7 @@ PLAT_OBJS +=  tesp_spi.o
 
 # Object files for the Forth system and application-specific extensions
 
-FORTH_OBJS = tembed.o textend.o
+FORTH_OBJS = tembed.o textend.o tw5500.o
 
 # Recipe for linking the final image
 
@@ -88,3 +88,6 @@ PREFIX += BP=$(realpath /c/Users/wmb/Documents/svn/openfirmware)
 include $(SRC)/cforth/embed/targets.mk
 
 # include autohotkey.mk
+
+dlonly:
+	$(NODEMCU_PARENT_PATH)/nodemcu-firmware/tools/esptool.py --port $(COMPORT) -b 115200 write_flash -fm=dio -fs=32m 0x00000 0x00000.bin 0x10000 0x10000.bin

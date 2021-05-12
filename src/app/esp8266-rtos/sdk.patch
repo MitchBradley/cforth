@@ -1,0 +1,62 @@
+diff --git a/components/bootloader_support/src/bootloader_init.c b/components/bootloader_support/src/bootloader_init.c
+index fda2a49f..f2b4bfba 100644
+--- a/components/bootloader_support/src/bootloader_init.c
++++ b/components/bootloader_support/src/bootloader_init.c
+@@ -625,8 +625,8 @@ static void uart_console_configure(void)
+         }
+     }
+ 
+-    uart_div_modify(CONFIG_ESP_CONSOLE_UART_NUM, BOOTLOADER_CONSOLE_CLK_FREQ / CONFIG_ESP_CONSOLE_UART_BAUDRATE);
+ #endif
++    uart_div_modify(CONFIG_ESP_CONSOLE_UART_NUM, BOOTLOADER_CONSOLE_CLK_FREQ / CONFIG_ESP_CONSOLE_UART_BAUDRATE);
+ }
+ 
+ esp_err_t bootloader_init()
+diff --git a/components/esp8266/driver/pwm.c b/components/esp8266/driver/pwm.c
+index df079d31..5c5d3d77 100644
+--- a/components/esp8266/driver/pwm.c
++++ b/components/esp8266/driver/pwm.c
+@@ -559,7 +559,12 @@ esp_err_t pwm_init(uint32_t period, uint32_t *duties, uint8_t channel_num, const
+     for (i = 0; i < channel_num; i++) {
+         pwm_obj->pwm_info[i].io_num =  pin_num[i];
+         pwm_obj->gpio_bit_mask |= (0x1 << pin_num[i]);
++        pwm_obj->pwm_info[i].phase = 0.0;
+     }
++
++    /* Enable TSF0 interrupt */
++    REG_WRITE(PERIPHS_DPORT_BASEADDR, (REG_READ(PERIPHS_DPORT_BASEADDR) & ~0x1F) | 0x1);
++
+     gpio_config_t io_conf;
+     io_conf.intr_type = GPIO_INTR_DISABLE;
+     io_conf.mode = GPIO_MODE_OUTPUT;
+diff --git a/components/newlib/src/time.c b/components/newlib/src/time.c
+index 95b2cc90..4a54d705 100644
+--- a/components/newlib/src/time.c
++++ b/components/newlib/src/time.c
+@@ -71,6 +71,7 @@ static inline uint64_t get_boot_time()
+     return result;
+ }
+ 
++#if defined(WITH_RTC) || defined(WITH_FRC)
+ // This function gradually changes boot_time to the correction value and immediately updates it.
+ static uint64_t adjust_boot_time(void)
+ {
+@@ -110,7 +111,6 @@ static uint64_t adjust_boot_time(void)
+     return boot_time;
+ }
+ 
+-#if defined( WITH_FRC ) || defined( WITH_RTC )
+ static uint64_t get_time_since_boot(void)
+ {
+     uint64_t microseconds = 0;
+diff --git a/requirements.txt b/requirements.txt
+index a43c6d4a..e1a4a871 100644
+--- a/requirements.txt
++++ b/requirements.txt
+@@ -9,5 +9,5 @@ click>=5.0
+ pyserial>=3.0
+ future>=0.15.2
+ cryptography>=2.1.4
+-pyparsing>=2.0.3,<2.4.0
++pyparsing>=2.0.3
+ pyelftools>=0.22

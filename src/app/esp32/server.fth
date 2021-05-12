@@ -9,12 +9,13 @@ fl ../../lib/httpserver.fth
    ." Listening on " ipaddr@ .ipaddr ." :80" cr
 ;
 
+\needs d!  : d!  ( d addr -- )  tuck na1+ ! ! ;
+
 \ Accept incoming connections, blocking for at most "milliseconds"
 \ Returns true on timeout, socket under false for connection accepted
-
 2variable xfds  2variable wfds  2variable rfds 0 , 0 ,
 : timed-accept  ( millseconds -- true | socket false )
-   1 listener-socket << rfds !   ( seconds )
+   1. listener-socket dlshift rfds d!   ( seconds )
    xfds wfds rfds  listener-socket 1+  lwip-select  ( nfds )
    0<=  if  true exit  then
    #16 sp@  here listener-socket lwip-accept nip false  ( socket false )
@@ -36,7 +37,7 @@ create &linger 1 , 5 ,  \ on , 5 seconds
 /req-buf buffer: req-buf
 
 : http-respond  ( timeout -- )
-   poll-interval timed-accept if  exit  then  >r
+   timed-accept if  exit  then  >r
 
    \ Set SO_LINGER so lwip-close does not discard any pending data
 \   8 &linger $80 $fff r@  setsockopt drop

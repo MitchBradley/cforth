@@ -47,7 +47,7 @@ void alerror(char *str, int len, cell *up)
         emit((u_char)*str++, up);
 }
 
-int moreinput() {    return (1);  }
+int moreinput(cell *up) {    return (1);  }
 
 int key() {  keymode();  return(getkey());  }
 

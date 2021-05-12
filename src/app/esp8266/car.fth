@@ -1,9 +1,9 @@
 \ DoitCar control program
 0 constant LED-pin
 1 constant left-speed-pin
-2 constant right-speed-pin
+7 constant right-speed-pin
 3 constant left-direction-pin
-4 constant right-direction-pin
+2 constant right-direction-pin
 5 constant left-s1-pin
 6 constant left-s2-pin
 7 constant right-s1-pin

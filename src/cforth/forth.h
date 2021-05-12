@@ -29,7 +29,7 @@ struct stacks {
   cell rp;
   cell rp0;
 };
-void switch_stack(struct stacks *old, struct stacks *new);
+void switch_stacks(struct stacks *old, struct stacks *new, cell *up);
 
 #define FTHERROR(s)   alerror(s, sizeof(s)-1, up)
 

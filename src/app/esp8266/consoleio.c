@@ -110,7 +110,7 @@ void alerror(char *str, int len, cell *up)
 }
 
 // moreinput() returns 0 when the console input stream has been closed for good
-int moreinput() {  return (1);  }
+int moreinput(cell *up) {  return (1);  }
 
 #include <mem.h>
 
