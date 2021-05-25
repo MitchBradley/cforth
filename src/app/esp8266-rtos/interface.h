@@ -262,3 +262,7 @@ void spi_trans(cell host, spi_trans_t *trans);
 #define SPI_DEFAULT_INTERFACE   0x1C0
 #define SPI_MASTER_DEFAULT_INTR_ENABLE 0x10
 
+    uint32_t rtc_time_get(void);
+    uint32_t pm_rtc_clock_cali_proc(void);
+
+#define ICACHE_FLASH_ATTR __attribute__((section(".irom0.text")))
