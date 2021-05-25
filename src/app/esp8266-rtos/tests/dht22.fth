@@ -188,7 +188,4 @@ previous previous
 \ also DHT22 EmptyQue 18 SendLowPulse DumpQue
 
 [then]
-
 \ \s
-\ Added ICACHE_FLASH_ATTR to avoid:  `.iram0.bss' will not fit in region `iram0_0_seg'
-\ make menuconfig -> Compiler options -> Optimization Level (Debug -> Release). (8K)
