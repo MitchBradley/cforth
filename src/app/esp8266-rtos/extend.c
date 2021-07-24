@@ -67,12 +67,10 @@ void alarm_callback(void* arg)
 }
 
 // ------------ Jos: Added
-
 void ICACHE_FLASH_ATTR ExecuteTask_callback(void* pvParameters)
 {
   execute_xt((xt_t)pvParameters, callback_up);
 }
-
 
 void ICACHE_FLASH_ATTR task_callback(int stack_size, void* pvParameters)
 {
@@ -272,4 +270,4 @@ cell ((* const ccalls[])()) = {
 // Rtc
 	C(rtc_time_get)              //c rtc_time_get               { -- i.us }
 	C(pm_rtc_clock_cali_proc)    //c pm_rtc_clock_cali_proc     { -- i.cali }
- };
+};
