@@ -4,7 +4,7 @@
 
 void spi_read(cell offset, cell len, cell adr);
 cell inflate(cell wpptr, cell nohdr, cell clear, cell compr);
-cell dbg_uart_only;
+extern int dbg_uart_only;
 
 #define DECLARE_REGS \
     volatile unsigned long *fifo = (volatile unsigned long *)0xd4035010; \

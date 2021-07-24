@@ -8,11 +8,13 @@
 
 extern cell *callback_up;
 
+
 cell ICACHE_FLASH_ATTR version_adr(void)
 {
     extern char version[];
     return (cell)version;
 }
+
 
 cell ICACHE_FLASH_ATTR build_date_adr(void)
 {
@@ -65,17 +67,18 @@ void alarm_callback(void* arg)
 }
 
 // ------------ Jos: Added
+
 void ICACHE_FLASH_ATTR ExecuteTask_callback(void* pvParameters)
 {
   execute_xt((xt_t)pvParameters, callback_up);
 }
+
 
 void ICACHE_FLASH_ATTR task_callback(int stack_size, void* pvParameters)
 {
   xt_t pvParam = pvParameters;
   xTaskCreate(ExecuteTask_callback, "NAME", 2048, (void*) pvParameters, 1, NULL );
 }
-
 
 QueueHandle_t GpioQueue;
 
@@ -112,8 +115,6 @@ void ICACHE_FLASH_ATTR pulse_isr_qhandler_add(int gpio_num, QueueHandle_t hQueue
   gpio_num_int2 = gpio_num;
   gpio_isr_handler_add(gpio_num_int2, pulse_qhandler, (void *) gpio_num_int2);
 }
-
-
 
 // SPI write data, maximal 64 bytes at one time.
 void spi_master_write64(int size, uint32_t* data)
@@ -266,6 +267,7 @@ cell ((* const ccalls[])()) = {
 // Spi
  	C(spi_init)                  //c spi_init                   { a.config i.host  -- i.res }
  	C(spi_master_write64)        //c spi_master_write64         { a.data i.size -- }
+
 
 // Rtc
 	C(rtc_time_get)              //c rtc_time_get               { -- i.us }
