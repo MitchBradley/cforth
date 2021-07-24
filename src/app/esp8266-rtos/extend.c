@@ -8,13 +8,15 @@
 
 extern cell *callback_up;
 
-cell version_adr(void)
+
+cell ICACHE_FLASH_ATTR version_adr(void)
 {
     extern char version[];
     return (cell)version;
 }
 
-cell build_date_adr(void)
+
+cell ICACHE_FLASH_ATTR build_date_adr(void)
 {
     extern char build_date[];
     return (cell)build_date;
@@ -65,12 +67,12 @@ void alarm_callback(void* arg)
 }
 
 // ------------ Jos: Added
-void ExecuteTask_callback(void* pvParameters)
+void ICACHE_FLASH_ATTR ExecuteTask_callback(void* pvParameters)
 {
   execute_xt((xt_t)pvParameters, callback_up);
 }
 
-void task_callback(int stack_size, void* pvParameters)
+void ICACHE_FLASH_ATTR task_callback(int stack_size, void* pvParameters)
 {
   xt_t pvParam = pvParameters;
   xTaskCreate(ExecuteTask_callback, "NAME", 2048, (void*) pvParameters, 1, NULL );
@@ -92,6 +94,25 @@ void gpio_isr_qhandler_add(int gpio_num, QueueHandle_t hQueue)
   gpio_isr_handler_add(gpio_num1, gpio_qhandler, (void *) gpio_num1);
 }
 
+
+QueueHandle_t GpioQueue2;
+int gpio_num_int2;
+
+static void pulse_qhandler(void *arg)
+{
+  int xHigherPriorityTaskWokenByPost;
+  int qitem[2];
+  qitem[1] = rtc_time_get();
+  qitem[2] = gpio_pin_fetch(gpio_num_int2);
+  xQueueGenericSendFromISR(GpioQueue2, &qitem, &xHigherPriorityTaskWokenByPost, 0);
+}
+
+void ICACHE_FLASH_ATTR pulse_isr_qhandler_add(int gpio_num, QueueHandle_t hQueue)
+{
+  GpioQueue2 = hQueue;
+  gpio_num_int2 = gpio_num;
+  gpio_isr_handler_add(gpio_num_int2, pulse_qhandler, (void *) gpio_num_int2);
+}
 
 // SPI write data, maximal 64 bytes at one time.
 void spi_master_write64(int size, uint32_t* data)
@@ -225,8 +246,6 @@ cell ((* const ccalls[])()) = {
  	C(vTaskResume)               //c vTaskResume                { i.htask -- }
  	C(vTaskSuspend)              //c vTaskSuspend               { i.htask -- }
  	C(vTaskDelete)               //c vTaskDelete                { i.htask -- }
-
-// New 9-5-2021:
  	C(vTaskPrioritySet)          //c vTaskPrioritySet           { a.prio i.handle -- }
         C(uxTaskPriorityGet)         //c uxTaskPriorityGet          { i.handle  -- i.prio }
  	C(vTaskSuspendAll)           //c vTaskSuspendAll            { -- }
@@ -241,8 +260,14 @@ cell ((* const ccalls[])()) = {
  	C(gpio_set_intr_type)        //c gpio_set_intr_type         { i.intr_type i.gpio_num -- i.res }
         C(gpio_install_isr_service)  //c gpio_install_isr_service   { i.no_use)  -- i.res}
  	C(gpio_isr_qhandler_add)     //c gpio_isr_qhandler_add      { i.hqueue i.gpio_num --  i.res }
+ 	C(pulse_isr_qhandler_add)    //c pulse_isr_qhandler_add     { i.hqueue i.gpio_num --  i.res }
 
 // Spi
  	C(spi_init)                  //c spi_init                   { a.config i.host  -- i.res }
  	C(spi_master_write64)        //c spi_master_write64         { a.data i.size -- }
- };
+
+
+// Rtc
+	C(rtc_time_get)              //c rtc_time_get               { -- i.us }
+	C(pm_rtc_clock_cali_proc)    //c pm_rtc_clock_cali_proc     { -- i.cali }
+};
