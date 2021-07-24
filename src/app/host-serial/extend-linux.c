@@ -17,14 +17,13 @@ int nbuf;
 #endif
 
 cell
-open_com(cell portnum)		// Open COM port
+open_com(char *comname)		// Open COM port
 {
 	struct termios kstate;
 	char comname[32];
 	int comfid;
 
-	sprintf(comname, "/dev/ttyUSB%d", portnum);
-	printf("%s\n",comname);
+	printf("%s\n", comname);
 	comfid = open(comname, O_RDWR, O_EXCL);
 	if (comfid < 0) {
 		return (cell)comfid;
