@@ -95,8 +95,8 @@ false value suppress-delay?
 
 defer check-abort
 
-: activator-delay  ( -- )
-   suppress-delay?  if  exit  then
+: activator-delay  ( #seconds -- )
+   suppress-delay?  if  drop exit  then
    #10 *  0 swap  do  check-abort  #100 ms  -1 +loop
 ;
 
