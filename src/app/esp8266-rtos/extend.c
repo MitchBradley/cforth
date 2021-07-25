@@ -258,7 +258,6 @@ cell ((* const ccalls[])()) = {
 
 // Interrupts
  	C(gpio_set_intr_type)        //c gpio_set_intr_type         { i.intr_type i.gpio_num -- i.res }
-        C(gpio_install_isr_service)  //c gpio_install_isr_service   { i.no_use)  -- i.res}
  	C(gpio_isr_qhandler_add)     //c gpio_isr_qhandler_add      { i.hqueue i.gpio_num --  i.res }
  	C(pulse_isr_qhandler_add)    //c pulse_isr_qhandler_add     { i.hqueue i.gpio_num --  i.res }
 
