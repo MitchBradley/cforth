@@ -138,6 +138,43 @@ static void repeat_alarm(uint32_t ms, xt_t xt)
     repeat_alarm_us((uint64_t)ms * 1000, xt);
 }
 
+
+static void ExecuteTask_callback(void* pvParameters)
+{
+  execute_xt((xt_t)pvParameters, callback_up);
+}
+
+// Can't use core 1.
+void task(int stack_size, void* pvParameters)
+{
+  xTaskCreatePinnedToCore(ExecuteTask_callback, "NAME", stack_size, (void*) pvParameters, 5, NULL, 0);
+}
+
+static QueueHandle_t GpioQueue;
+
+static void gpio_qhandler(void *arg)
+{
+  int xHigherPriorityTaskWokenByPost;
+  int qitem=xTaskGetTickCount();
+  xQueueGenericSendFromISR(GpioQueue, &qitem, &xHigherPriorityTaskWokenByPost, 0);
+}
+
+static void gpio_isr_qhandler_add(int gpio_num, QueueHandle_t hQueue)
+{
+  GpioQueue = hQueue;
+  int gpio_num1 = gpio_num;
+  gpio_isr_handler_add(gpio_num1, gpio_qhandler, (void *) gpio_num1);
+}
+
+int IRAM_ATTR time_t_now()
+{
+struct timeval tv = { .tv_sec = 0, .tv_usec = 0 };
+         gettimeofday(&tv, NULL);
+return tv.tv_sec*(uint64_t)1000000+tv.tv_usec;
+}
+
+// ------------ End Additions
+
 cell ((* const ccalls[])()) = {
 	C(build_date_adr)       //c 'build-date     { -- a.value }
 	C(version_adr)          //c 'version        { -- a.value }
@@ -172,7 +209,6 @@ cell ((* const ccalls[])()) = {
 
 	C(get_wifi_mode)	//c wifi-mode@ { -- i.mode }
 	C(wifi_open)		//c wifi-open { $ssid $password i.timeout -- i.error? }
-
 	C(set_log_level)	//c log-level! { i.level $component -- }
 
   // LWIP sockets
@@ -230,4 +266,27 @@ C(mcpwm_get_frequency)           //c mcpwm_get_frequency { i.timer# i.pwm# -- i.
         C(alarm_us)              //c set-alarm-us   { i.xt i.us -- }
         C(repeat_alarm_us)       //c repeat-alarm-us   { i.xt i.us -- }
         C(us)                    //c us { i.us -- }
+	C(time_t_now)            //c us@                            { -- i.us }
+
+	C(esp_deep_sleep)            //c esp_deep_sleep             { i.uint64_t i.time_in_us -- }
+	C(esp_get_free_heap_size)    //c esp_get_free_heap_size     { -- i.size }
+
+ 	C(task)                      //c task                       { a.xt i.stack_size -- }
+	C(xTaskGetCurrentTaskHandle) //c xTaskGetCurrentTaskHandle  { -- i.htask }
+	C(vTaskDelay)                //c vTaskDelay                 { i.TicksToDelay -- }
+ 	C(vTaskResume)               //c vTaskResume                { i.htask -- }
+ 	C(vTaskSuspend)              //c vTaskSuspend               { i.htask -- }
+ 	C(vTaskDelete)               //c vTaskDelete                { i.htask -- }
+ 	C(vTaskPrioritySet)          //c vTaskPrioritySet           { a.prio i.handle -- }
+        C(uxTaskPriorityGet)         //c uxTaskPriorityGet          { i.handle  -- i.prio }
+ 	C(vTaskSuspendAll)           //c vTaskSuspendAll            { -- }
+ 	C(xTaskResumeAll)            //c xTaskResumeAll             { -- }
+
+        C(xQueueGenericCreate)       //c xQueueGenericCreate        { i.type i.itemsize i.qlength  -- i.handle }
+ 	C(xQueueGenericSend)         //c xQueueGenericSend          { i.front_back i.xTicksToWait i.pvItemToQueue i.qHandle -- i.res }
+        C(xQueueGenericReceive)      //c xQueueReceive              { i.xTicksToWait i.pxRxedMessage i.qHandle -- i.res }
+
+ 	C(gpio_set_intr_type)        //c gpio_set_intr_type         { i.intr_type i.gpio_num -- i.res }
+        C(gpio_install_isr_service)  //c gpio_install_isr_service   { i.no_use -- i.res}
+ 	C(gpio_isr_qhandler_add)     //c gpio_isr_qhandler_add      { i.hqueue i.gpio_num --  i.res }
 };
