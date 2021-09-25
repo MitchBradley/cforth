@@ -1,6 +1,7 @@
-0 [if]   tasking_rtos.fth for cforth,
+0 [if]   tasking_rtos.fth for cforth on an esp8266.
 Based on tasking.fth written by Mitch Bradley.
-Modified by J.v.d.Ven  March 9th, 2021 for an experimental pre-emptive multitasking system under RTOS
+Modified by J.v.d.Ven September 25th, 2021
+an experimental pre-emptive multitasking system under RTOS
 
 
 Issues:
@@ -13,7 +14,7 @@ Issues:
 
 3) Can't use quit in a task.
 
-4) Can't always put a whole server into a task
+4) pre-emptive multitasking hangs lwip-select and lwip_accept.
 
 5) For exceptions like: mStack canary watchpoint triggered (NAME)
    Increase the stack in extend.c from 2048 to 4096 in xTaskCreate
@@ -25,7 +26,10 @@ Issues:
 8) The floating point stack is NOT changed when a new task is activated.
    Use floating point operations only in the main task.
 
+
 [then]
+
+marker -tasking_rtos.fth
 
 nuser task-handle
 
@@ -138,10 +142,11 @@ up@ constant main-task
 \ GLOBAL creates a variable that is shared between all tasks.
 : global  create 0 ,  ;
 
-: resume     ( task - ) task-handle swap task@ vTaskResume  ;
-: suspend    ( task - ) task-handle swap task@ vTaskSuspend ;
-: kill       ( task - ) dup free drop task-handle swap task@ vTaskDelete ;
-: end-task   ( - )      task-handle @ vTaskDelete ;
+: resume-task  ( task - ) task-handle swap task@ vTaskResume  ;
+: suspend-task ( task - ) task-handle swap task@ vTaskSuspend ;
+: kill         ( task - ) dup free drop task-handle swap task@ vTaskDelete ;
+: end-task     ( - )      task-handle @ vTaskDelete ;
+: set-priority ( prio - )  xTaskGetCurrentTaskHandle vTaskPrioritySet ;
 
 : switch-regs ( task -- )
    >r up0 r@ task@ up! \  task ptr
