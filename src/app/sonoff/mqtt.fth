@@ -62,7 +62,7 @@ vocabulary mqtt-topics
    drop
    ERR_OK
 ;
-: }mqtt  ( -- adr len )
+: }mqtt  ( -- )
    mqtt-msg  here over -  ( adr len )
    2dup 2-  swap 1+ c!    ( adr len )  \ Set length field
    ['] mqtt-sent rx-pcb tcp-sent  ( adr len )
