@@ -138,7 +138,7 @@ forth: $(BASEOBJS) $(HOSTOBJS)
 
 extend.o ccalls.fth: $(EXTENDSRC) $(FINC) makeccalls
 	@echo CC $<
-	@$(CC) $(CFLAGS) -c $(EXTENDSRC) -o $@
+	@$(CC) $(CFLAGS) -c $(EXTENDSRC) -o extend.o
 	@$(CC) $(CFLAGS) -E -C -c $(EXTENDSRC) | ./makeccalls >ccalls.fth
 
 # This rule builds a date stamp object that you can include in the image
