@@ -182,8 +182,8 @@ makeccalls: makeccalls.c
 	@echo CC $<
 	@$(CC) -o makeccalls $<
 
-# clean::
-# 	@rm -f $(ARTIFACTS) forth forth.dic app.dic $(EXTRA_CLEAN)
+clean::
+	@rm -f $(ARTIFACTS) forth forth.dic app.dic $(EXTRA_CLEAN)
 
 tidy:
 	@rm -f $(ARTIFACTS)
