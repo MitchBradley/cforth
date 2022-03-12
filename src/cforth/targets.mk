@@ -136,7 +136,7 @@ forth: $(BASEOBJS) $(HOSTOBJS)
 # and file I/O.  It is used in the compilation tools but not in the
 # embeddable version (embed.o).
 
-extend.o: $(EXTENDSRC) $(FINC) makeccalls
+extend.o ccalls.fth: $(EXTENDSRC) $(FINC) makeccalls
 	@echo CC $<
 	@$(CC) $(CFLAGS) -c $(EXTENDSRC) -o $@
 	@$(CC) $(CFLAGS) -E -C -c $(EXTENDSRC) | ./makeccalls >ccalls.fth
