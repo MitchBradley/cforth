@@ -214,7 +214,7 @@ void init_io(int argc, char **argv, cell *up)
         input_file = stdin;
         title(up);
     } else {
-        input_file = open_next_file();
+        input_file = open_next_file(up);
     }
     if (input_file == (FILE *)0) {
         FTHERROR("No input stream\n");
