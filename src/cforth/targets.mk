@@ -137,7 +137,7 @@ forth: $(BASEOBJS) $(HOSTOBJS)
 # embeddable version (embed.o).
 
 extend.o ccalls.fth: $(EXTENDSRC) $(FINC) makeccalls
-	@echo CC $<
+	@echo CC $(EXTENDSRC)
 	@$(CC) $(CFLAGS) -c $(EXTENDSRC) -o extend.o
 	@$(CC) $(CFLAGS) -E -C -c $(EXTENDSRC) | ./makeccalls >ccalls.fth
 

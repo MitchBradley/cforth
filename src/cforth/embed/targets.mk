@@ -143,9 +143,13 @@ tsyscall.o: generic/syscall.c $(FINC)
 
 tfloatops.o: $(FINC) prims.h
 
-tccalls.fth: extend.c
+TEXTENDSRC ?= $(APPPATH)/extend.c
+
+tccalls.fth: $(TEXTENDSRC)
 	./makeccalls <$< >tccalls.fth
 
-textend.o: extend.c $(FINC)
+textend.o: $(TEXTENDSRC) $(FINC)
+	@echo TCC $<
+	@$(TCC) $(INCS) $(DEFS) $(TCFLAGS) $(TCPPFLAGS) -c $< -o $@
 
 EXTRA_CLEAN += tembed.o
