@@ -53,6 +53,19 @@ extern void mcpwm_set_signal_high(void);
 extern void mcpwm_set_signal_low(void);
 extern void mcpwm_start(void);
 extern void mcpwm_stop(void);
+extern void esp_deep_sleep_start(void);
+// 19-12
+extern void esp_sleep_enable_ext0_wakeup(void);
+extern void esp_wifi_restore(void);
+extern void esp_clk_cpu_freq(void);
+extern void rtc_clk_cpu_freq_set(void);
+extern void esp_wifi_start(void);
+extern void esp_wifi_stop(void);
+extern void adc_power_on(void);
+extern void adc_power_off(void);
+
+extern void gpio_intr_enable(void);
+extern void gpio_intr_disable(void);
 
 int xTaskGetTickCount(void);
 void raw_emit(char c);
@@ -138,6 +151,98 @@ static void repeat_alarm(uint32_t ms, xt_t xt)
     repeat_alarm_us((uint64_t)ms * 1000, xt);
 }
 
+
+static void ExecuteTask_callback(void* pvParameters)
+{
+  execute_xt((xt_t)pvParameters, callback_up);
+}
+
+// Can't use core 1.
+void task(int stack_size, void* pvParameters)
+{
+  xTaskCreatePinnedToCore(ExecuteTask_callback, "NAME", stack_size, (void*) pvParameters, 5, NULL, 0);
+}
+
+static QueueHandle_t GpioQueue;
+
+void IRAM_ATTR gpio_qhandler(void *arg)
+{
+  int xHigherPriorityTaskWokenByPost;
+  xHigherPriorityTaskWokenByPost=0;
+  int qitem=xTaskGetTickCount();
+  xQueueGenericSendFromISR(GpioQueue, &qitem, &xHigherPriorityTaskWokenByPost, 0);
+}
+
+static void gpio_isr_qhandler_add(int gpio_num, QueueHandle_t hQueue)
+{
+  GpioQueue = hQueue;
+  int gpio_num1 = gpio_num;
+  gpio_isr_handler_add(gpio_num1, gpio_qhandler, (void *) gpio_num1);
+}
+
+void sec_deep_sleep(uint32_t sec)
+{
+  esp_sleep_enable_timer_wakeup((uint64_t)sec * 1000000);
+  esp_deep_sleep_start();
+}
+
+void ms_light_sleep(uint32_t ms)
+{
+  esp_sleep_enable_timer_wakeup((uint64_t)ms * 1000);
+  esp_light_sleep_start();
+}
+
+int IRAM_ATTR time_t_now()
+{
+struct timeval tv = { .tv_sec = 0, .tv_usec = 0 };
+         gettimeofday(&tv, NULL);
+return tv.tv_sec*(uint64_t)1000000+tv.tv_usec;
+}
+
+void add_my_peer(int *to_mac, int encryption, int channel )
+{
+    esp_now_peer_info_t peerInfo;
+    memcpy(peerInfo.peer_addr, to_mac, ESP_NOW_ETH_ALEN);
+    peerInfo.channel = channel;
+    peerInfo.ifidx   = ESPNOW_WIFI_IF;
+    peerInfo.encrypt = encryption;
+    ESP_ERROR_CHECK( esp_now_add_peer(&peerInfo) );
+}
+
+static QueueHandle_t espnow_queue;
+
+#define max_payload_size 20
+
+int get_max_payload_size()
+{
+return max_payload_size;
+}
+
+void q_data_cb(const uint8_t *mac, const uint8_t *data, int len)
+{
+        if (len <= max_payload_size) {
+           struct Qdata{
+           char   Qmac[8];
+           int    QLen;
+           char   Qdata[max_payload_size];
+           };
+           struct Qdata Qs = {
+           .QLen= len
+           };
+           memcpy(Qs.Qmac,(int*)mac,6);
+           memcpy(Qs.Qdata,(int*)data,len);
+           xQueueGenericSend(espnow_queue, &Qs, 5, 0);
+        }
+}
+
+cell set_esp_now_callback_rcv(QueueHandle_t hQueue)
+{
+    espnow_queue = hQueue;
+    ESP_ERROR_CHECK( esp_now_register_recv_cb(q_data_cb) );
+}
+
+// ------------ End Additions
+
 cell ((* const ccalls[])()) = {
 	C(build_date_adr)       //c 'build-date     { -- a.value }
 	C(version_adr)          //c 'version        { -- a.value }
@@ -145,8 +250,10 @@ cell ((* const ccalls[])()) = {
 	C(xTaskGetTickCount)    //c get-msecs       { -- i.ms }
 	C(software_reset)       //c restart         { -- }
 
-	C(adc1_config_width)    //c adc-width!  { i.width -- }
+	C(adc1_config_width)    //c adc-width!        { i.width -- }
 	C(adc1_config_channel_atten)  //c adc-atten!  { i.attenuation i.channel# -- }
+ 	C(adc_power_on)         //c adc-power-on      { -- }
+ 	C(adc_power_off)        //c adc-power-off     { -- }
 	C(adc1_get_voltage)     //c adc@        { i.channel# -- i.voltage }
 	C(hall_sensor_read)     //c hall@       { -- i.voltage }
 
@@ -172,6 +279,8 @@ cell ((* const ccalls[])()) = {
 
 	C(get_wifi_mode)	//c wifi-mode@ { -- i.mode }
 	C(wifi_open)		//c wifi-open { $ssid $password i.timeout -- i.error? }
+ 	C(esp_wifi_start)       //c esp-wifi-start             { -- }
+ 	C(esp_wifi_stop)        //c esp-wifi-stop              { -- }
 
 	C(set_log_level)	//c log-level! { i.level $component -- }
 
@@ -185,6 +294,7 @@ cell ((* const ccalls[])()) = {
 	C(lwip_getsockopt_r)	//c getsockopt     { i.len a.addr i.optname i.level i.handle -- i.error }
 	C(lwip_connect_r)	//c connect        { i.len a.adr i.handle -- i.error }
 	C(stream_connect)	//c stream-connect { i.timeout $.portname $.hostname -- i.handle }
+	C(udp_client)		//c udp-connect    { $.portname $.hostname -- i.handle }
 	C(my_lwip_write)	//c lwip-write     { a.buf i.size i.handle -- i.count }
 	C(my_lwip_read)		//c lwip-read      { a.buf i.size i.handle -- i.count }
 	C(lwip_close_r)		//c lwip-close     { i.handle -- }
@@ -230,4 +340,47 @@ C(mcpwm_get_frequency)           //c mcpwm_get_frequency { i.timer# i.pwm# -- i.
         C(alarm_us)              //c set-alarm-us   { i.xt i.us -- }
         C(repeat_alarm_us)       //c repeat-alarm-us   { i.xt i.us -- }
         C(us)                    //c us { i.us -- }
+	C(time_t_now)            //c us@                            { -- i.us }
+
+	C(sec_deep_sleep)            //c deep-sleep                 { i.sec -- }
+ 	C(ms_light_sleep)            //c light-sleep                { i.ms -- }
+ 	C(esp_sleep_enable_ext0_wakeup) //c esp-sleep-enable-ext0-wakeup { i.level i.pin -- e.err? }
+
+	C(esp_get_free_heap_size)    //c esp_get_free_heap_size     { -- i.size }
+
+ 	C(task)                      //c task                       { a.xt i.stack_size -- }
+	C(xTaskGetCurrentTaskHandle) //c xTaskGetCurrentTaskHandle  { -- i.htask }
+	C(vTaskDelay)                //c vTaskDelay                 { i.TicksToDelay -- }
+ 	C(vTaskResume)               //c vTaskResume                { i.htask -- }
+ 	C(vTaskSuspend)              //c vTaskSuspend               { i.htask -- }
+ 	C(vTaskDelete)               //c vTaskDelete                { i.htask -- }
+ 	C(vTaskPrioritySet)          //c vTaskPrioritySet           { a.prio i.handle -- }
+        C(uxTaskPriorityGet)         //c uxTaskPriorityGet          { i.handle  -- i.prio }
+ 	C(vTaskSuspendAll)           //c vTaskSuspendAll            { -- }
+ 	C(xTaskResumeAll)            //c xTaskResumeAll             { -- }
+
+        C(xQueueGenericCreate)       //c xQueueGenericCreate        { i.type i.itemsize i.qlength  -- i.handle }
+ 	C(xQueueGenericSend)         //c xQueueGenericSend          { i.front_back i.xTicksToWait i.pvItemToQueue i.qHandle -- i.res }
+        C(xQueueGenericReceive)      //c xQueueReceive              { i.xTicksToWait a.pxRxedMessage i.qHandle -- i.res }
+ 	C(xQueueGenericReset)        //c xQueueGenericReset         { i.type i.handle -- }
+ 	C(uxQueueMessagesWaiting)    //c uxQueueMessagesWaiting     { i.handle -- i.waiting }
+        C(vQueueDelete)              //c vQueueDelete               { i.handle  -- }
+
+ 	C(gpio_set_intr_type)        //c gpio_set_intr_type         { i.intr_type i.gpio_num -- i.res }
+        C(gpio_install_isr_service)  //c gpio_install_isr_service   { i.no_use -- i.res}
+ 	C(gpio_isr_qhandler_add)     //c gpio_isr_qhandler_add      { i.hqueue i.gpio_num --  i.res }
+ 	C(gpio_intr_enable)          //c gpio_intr_enable           { i.handle -- i.err }
+ 	C(gpio_intr_disable)         //c gpio_intr_disable          { i.handle -- i.err }
+
+ 	C(esp_clk_cpu_freq)          //c esp-clk-cpu-freq           { -- i.hz }
+ 	C(rtc_clk_cpu_freq_set)      //c rtc-clk-cpu-freq-set       { i.freq123 --}
+
+	C(esp_now_open)		     //c esp-now-open               { i.channel -- i.error? }
+	C(esp_now_init)		     //c esp-now-init               { -- i.error? }
+	C(esp_now_deinit)            //c esp-now-deinit             { -- i.error? }
+	C(add_my_peer)               //c esp-now-add-peer           { i.channel i.encryption i.to_mac -- }
+	C(esp_now_send)              //c esp-now-send               { i.size a.data a.peer  -- i.error? }
+ 	C(get_max_payload_size)      //c get-max-payload-size       { -- i.max-payload-size-enow }
+	C(set_esp_now_callback_rcv)  //c set-esp-now-callback-rcv   { i.HQueueEnow -- }
+	C(esp_now_unregister_recv_cb) //c esp-now-unregister-recv_cb { -- }
 };
