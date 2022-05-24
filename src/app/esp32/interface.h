@@ -7,6 +7,7 @@ cell i2c_le_rw(cell stop, cell slave, cell reg);
 cell i2c_wb(cell slave, cell reg, cell value);
 cell i2c_be_ww(cell slave, cell reg, cell value);
 cell i2c_le_ww(cell slave, cell reg, cell value);
+
 cell gpio_pin_fetch(cell gpio_num);
 void gpio_pin_store(cell gpio_num, cell level);
 void gpio_toggle(cell gpio_num);
@@ -37,6 +38,7 @@ cell lwip_listen_r(cell handle, cell backlog);
 cell lwip_accept_r(cell handle, void *adr, void *addrlen);
 
 cell stream_connect(char *hostname, char *portname, cell timeout);
+cell udp_client(char *host, char *portstr);
 cell start_server(cell port);
 cell dhcpc_status(void);
 void ip_info(void *buf);
@@ -79,8 +81,8 @@ typedef portBASE_TYPE           BaseType_t;
 typedef unsigned portBASE_TYPE  UBaseType_t;
 
 typedef void (*TaskFunction_t)( void * );
-	#define pdTASK_CODE TaskFunction_t
-	#define configSTACK_DEPTH_TYPE uint16_t
+        #define pdTASK_CODE TaskFunction_t
+        #define configSTACK_DEPTH_TYPE uint16_t
 
 #define IRAM_ATTR __attribute__((section(".iram1")))
 int tskNO_AFFINITY = 0x7FFFFFFF;
@@ -101,7 +103,7 @@ QueueHandle_t xQueueGenericCreate(const UBaseType_t uxQueueLength,
   const uint8_t ucQueueType);
 
 BaseType_t xQueueGenericSend(
-  QueueHandle_t	xQueue,
+  QueueHandle_t xQueue,
   const void *pvItemToQueue,
   TickType_t xTicksToWait,
   const uint8_t front_back
@@ -131,9 +133,20 @@ void gpio_set_intr_type(int gpio_num, gpio_int_type_t intr_type);
 BaseType_t xQueueGenericSendFromISR(
  QueueHandle_t xQueue, 
  const void *pvItemToQueue,
- BaseType_t 	*pxHigherPriorityTaskWoken,
- BaseType_t 	xCopyPosition									   
+ BaseType_t     *pxHigherPriorityTaskWoken,
+ BaseType_t     xCopyPosition                                                                      
  );
+
+BaseType_t xQueueAltGenericSend(
+ QueueHandle_t xQueue,
+ const void * const pvItemToQueue,
+ TickType_t xTicksToWait,
+ BaseType_t xCopyPosition
+ );
+
+BaseType_t xQueueGenericReset( QueueHandle_t xQueue, BaseType_t xNewQueue ) ;
+UBaseType_t uxQueueMessagesWaiting( const QueueHandle_t xQueue ) ;
+void vQueueDelete( QueueHandle_t xQueue ) ;
 
 typedef void * gpio_isr_t;
 
@@ -198,5 +211,51 @@ struct timeval {
   suseconds_t tv_usec;
 };
 
+
 int gettimeofday(struct timeval *__restrict __p, void *__restrict __tz);
+void esp_sleep_enable_timer_wakeup(uint64_t time_in_us);
+void esp_light_sleep_start();
+
+cell esp_now_open();
+cell esp_now_init();
+cell esp_now_deinit();
+
+#define ESP_NOW_ETH_ALEN             6         /*!< Length of ESPNOW peer MAC address */
+#define ESP_NOW_KEY_LEN              16        /*!< Length of ESPNOW peer local master key */
+
+typedef enum {
+    ESP_IF_WIFI_STA = 0,     /**< ESP32 station interface */
+    ESP_IF_WIFI_AP,          /**< ESP32 soft-AP interface */
+    ESP_IF_ETH,              /**< ESP32 ethernet interface */
+    ESP_IF_MAX
+} esp_interface_t;
+
+typedef esp_interface_t wifi_interface_t;
+
+typedef struct esp_now_peer_info {
+    uint8_t peer_addr[ESP_NOW_ETH_ALEN];    /**< ESPNOW peer MAC address that is also the MAC address of station or softap */
+    uint8_t lmk[ESP_NOW_KEY_LEN];           /**< ESPNOW peer local master key that is used to encrypt data */
+    uint8_t channel;                        /**< Wi-Fi channel that peer uses to send/receive ESPNOW data. If the value is 0,
+                                                 use the current channel which station or softap is on. Otherwise, it must be
+                                                 set as the channel that station or softap is on. */
+    wifi_interface_t ifidx;                 /**< Wi-Fi interface that peer uses to send/receive ESPNOW data */
+    _Bool encrypt;                           /**< ESPNOW data that this peer sends/receives is encrypted or not */
+    void *priv;                             /**< ESPNOW peer private data */
+} esp_now_peer_info_t;
+
+#define ESPNOW_WIFI_IF   ESP_IF_WIFI_STA
+/**
+  * @brief     Callback function of receiving ESPNOW data
+  * @param     mac_addr peer MAC address
+  * @param     data received data
+  * @param     data_len length of received data
+  */
+typedef void (*esp_now_recv_cb_t)(const uint8_t *mac_addr, const uint8_t *data, int data_len);
+
+
+cell esp_now_add_peer(const esp_now_peer_info_t *peer);
+cell esp_now_send(const uint8_t *peer_addr, const uint8_t *data, cell len);
+cell esp_now_register_recv_cb(esp_now_recv_cb_t cb);
+cell esp_now_unregister_recv_cb(void);
+
 
