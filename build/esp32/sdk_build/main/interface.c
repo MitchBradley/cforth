@@ -9,6 +9,9 @@ typedef int cell;
 #include "freertos/event_groups.h"
 #include "esp_system.h"
 #include "esp_wifi.h"
+
+#include "esp_wifi_types.h"
+
 #include "esp_event_loop.h"
 #include "esp_log.h"
 #include "esp_event.h"
@@ -304,6 +307,33 @@ cell wifi_open(cell timeout, char *password, char *ssid)
     return 0;
 }
 
+static esp_err_t esp_now_event_handler(void *ctx, system_event_t *event)
+{
+    switch(event->event_id) {
+    case SYSTEM_EVENT_STA_START:
+//         printf ("%s \n", "WiFi for ESP-NOW started");
+        break;
+    default:
+        break;
+    }
+    return ESP_OK;
+}
+
+//  esp_now_open and wifi_open can not both be used at the same time!
+
+cell esp_now_open(int channel)
+{
+    tcpip_adapter_init();
+    if ( esp_event_loop_init(esp_now_event_handler, NULL)) return -1;
+    wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
+    esp_wifi_init(&cfg);
+    esp_wifi_set_storage(WIFI_STORAGE_RAM);
+    if ( esp_wifi_set_mode(WIFI_MODE_STA) ) return -2;
+    if ( esp_wifi_start()) return -3;
+    if ( esp_wifi_set_channel(channel,WIFI_SECOND_CHAN_NONE)) return -4;
+    return 0;
+}
+
 cell get_wifi_mode(void)
 {
     wifi_mode_t mode;
@@ -311,12 +341,32 @@ cell get_wifi_mode(void)
     return mode;
 }
 
+static DRAM_ATTR portMUX_TYPE global_int_mux = portMUX_INITIALIZER_UNLOCKED;
+
+void IRAM_ATTR interrupt_disable()
+{
+    if (xPortInIsrContext()) {
+        portENTER_CRITICAL_ISR(&global_int_mux);
+    } else {
+        portENTER_CRITICAL(&global_int_mux);
+    }
+}
+
+void IRAM_ATTR interrupt_restore()
+{
+    if (xPortInIsrContext()) {
+        portEXIT_CRITICAL_ISR(&global_int_mux);
+    } else {
+        portEXIT_CRITICAL(&global_int_mux);
+    }
+}
+
 void set_log_level(char *component, int level)
 {
     esp_log_level_set(component, level);
 }
 
-int stream_connect(char *host, char *portstr, int timeout_msecs)
+int client_socket(char *host, char *portstr, cell protocol)
 {
     struct addrinfo hints, *res, *res0;
     int error;
@@ -325,7 +375,7 @@ int stream_connect(char *host, char *portstr, int timeout_msecs)
 
     memset(&hints, 0, sizeof(hints));
     hints.ai_family = AF_UNSPEC;
-    hints.ai_socktype = SOCK_STREAM;
+    hints.ai_socktype = protocol;
 
     error = getaddrinfo(host, portstr, &hints, &res0);
     if (error) {
@@ -352,6 +402,23 @@ int stream_connect(char *host, char *portstr, int timeout_msecs)
     if (s < 0) {
         printf("%s", cause);
         return -2;
+    }
+
+    return s;
+}
+
+cell udp_client(char *host, char *portstr)
+{
+    return client_socket(host, portstr, SOCK_DGRAM);
+}
+
+
+int stream_connect(char *host, char *portstr, int timeout_msecs)
+{
+    int s = client_socket(host, portstr, SOCK_STREAM);
+    int error;
+    if (s < 0) {
+        return s;
     }
 
     struct timeval recv_timeout;
