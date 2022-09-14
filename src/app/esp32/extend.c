@@ -41,6 +41,9 @@ extern void ms(void);
 extern void adc1_config_width(void);
 extern void adc1_config_channel_atten(void);
 extern void adc1_get_voltage(void);
+extern void esp_adc_cal_raw_to_voltage(void);
+extern void esp_adc_cal_characterize(void);
+extern void esp_adc_cal_check_efuse(void);
 extern void hall_sensor_read(void);
 
 extern void mcpwm_gpio_init(void);
@@ -167,10 +170,11 @@ static QueueHandle_t GpioQueue;
 
 void IRAM_ATTR gpio_qhandler(void *arg)
 {
-  int xHigherPriorityTaskWokenByPost;
-  xHigherPriorityTaskWokenByPost=0;
+  interrupt_disable();
+  int xHigherPriorityTaskWokenByPost=0;
   int qitem=xTaskGetTickCount();
   xQueueGenericSendFromISR(GpioQueue, &qitem, &xHigherPriorityTaskWokenByPost, 0);
+  interrupt_restore();
 }
 
 static void gpio_isr_qhandler_add(int gpio_num, QueueHandle_t hQueue)
@@ -254,10 +258,13 @@ cell ((* const ccalls[])()) = {
 	C(adc1_config_channel_atten)  //c adc-atten!  { i.attenuation i.channel# -- }
  	C(adc_power_on)         //c adc-power-on      { -- }
  	C(adc_power_off)        //c adc-power-off     { -- }
-	C(adc1_get_voltage)     //c adc@        { i.channel# -- i.voltage }
-	C(hall_sensor_read)     //c hall@       { -- i.voltage }
+	C(adc1_get_voltage)     //c adc@          { i.channel# -- i.voltage }
+ C(esp_adc_cal_characterize)    //c get-adc-chars { a.adc_chars i.vref i.bi_width i.atten i.adc_num -- i.res }
+ C(esp_adc_cal_raw_to_voltage)  //c adc-mv        { a.adc_chars i.reading - i.voltage }
+ C(esp_adc_cal_check_efuse)     //c check-efuse   { i.type -- i.res }
+	C(hall_sensor_read)     //c hall@         { -- i.voltage }
 
-	C(i2c_open)		//c i2c-open  { i.scl i.sda -- i.error? }
+	C(i2c_open)		//c i2c-open   { i.scl i.sda -- i.error? }
 	C(i2c_close)		//c i2c-close  { -- }
 	C(i2c_write_read)	//c i2c-write-read { a.wbuf i.wsize a.rbuf i.rsize i.slave i.stop -- i.err? }
 	C(i2c_rb)		//c i2c-b@     { i.reg i.slave i.stop -- i.b }
@@ -383,4 +390,5 @@ C(mcpwm_get_frequency)           //c mcpwm_get_frequency { i.timer# i.pwm# -- i.
  	C(get_max_payload_size)      //c get-max-payload-size       { -- i.max-payload-size-enow }
 	C(set_esp_now_callback_rcv)  //c set-esp-now-callback-rcv   { i.HQueueEnow -- }
 	C(esp_now_unregister_recv_cb) //c esp-now-unregister-recv_cb { -- }
+
 };
