@@ -57,7 +57,6 @@ extern void mcpwm_set_signal_low(void);
 extern void mcpwm_start(void);
 extern void mcpwm_stop(void);
 extern void esp_deep_sleep_start(void);
-// 19-12
 extern void esp_sleep_enable_ext0_wakeup(void);
 extern void esp_wifi_restore(void);
 extern void esp_clk_cpu_freq(void);
@@ -66,9 +65,14 @@ extern void esp_wifi_start(void);
 extern void esp_wifi_stop(void);
 extern void adc_power_on(void);
 extern void adc_power_off(void);
-
 extern void gpio_intr_enable(void);
 extern void gpio_intr_disable(void);
+extern void my_uart_param_config(void);
+extern void uart_set_pin(void);
+extern void uart_driver_install(void);
+extern void uart_write_bytes(void);
+extern void uart_read_bytes(void);
+extern void my_lwip_recv_r(void);
 
 int xTaskGetTickCount(void);
 void raw_emit(char c);
@@ -264,6 +268,12 @@ cell ((* const ccalls[])()) = {
  C(esp_adc_cal_check_efuse)     //c check-efuse   { i.type -- i.res }
 	C(hall_sensor_read)     //c hall@         { -- i.voltage }
 
+	C(my_uart_param_config)	//c uart-param-config	{ i.flow i.stop i.par i.#bits i.baud i.uart_num -- i.err}
+	C(uart_write_bytes)	//c uart-write-bytes	{ i.size a.src i.uart_num -- i.res }
+	C(uart_read_bytes)	//c uart-read-bytes	{ i.wait i.size i.buf i.uart_num - i.#bytes }
+	C(uart_set_pin)		//c uart-set-pin	{ i.cts i.rts i.rx i.tx i.uart_num -- i.error? }
+	C(uart_driver_install)	//c uart-driver-install	{ i.flags a.queue i.q_size i.tx_size i.rx_size i.uart_num -- i.error? }
+
 	C(i2c_open)		//c i2c-open   { i.scl i.sda -- i.error? }
 	C(i2c_close)		//c i2c-close  { -- }
 	C(i2c_write_read)	//c i2c-write-read { a.wbuf i.wsize a.rbuf i.rsize i.slave i.stop -- i.err? }
@@ -294,12 +304,14 @@ cell ((* const ccalls[])()) = {
   // LWIP sockets
   // Like Posix sockets but the socket descriptor space is not
   // merged with the file descriptor space, so you cannot
-  // do a select that encompasses both
+  // do a  that encompasses both
 	C(lwip_socket)		//c socket         { i.proto i.type i.family -- i.handle }
 	C(lwip_bind_r)		//c bind           { i.len a.addr i.handle -- i.error }
 	C(lwip_setsockopt_r)	//c setsockopt     { i.len a.addr i.optname i.level i.handle -- i.error }
 	C(lwip_getsockopt_r)	//c getsockopt     { i.len a.addr i.optname i.level i.handle -- i.error }
 	C(lwip_connect_r)	//c connect        { i.len a.adr i.handle -- i.error }
+	C(my_lwip_recv_r)	//c lwip-recv-r	   { i.flags a.buf i.size i.handle -- i.count }
+
 	C(stream_connect)	//c stream-connect { i.timeout $.portname $.hostname -- i.handle }
 	C(udp_client)		//c udp-connect    { $.portname $.hostname -- i.handle }
 	C(my_lwip_write)	//c lwip-write     { a.buf i.size i.handle -- i.count }
@@ -335,8 +347,8 @@ cell ((* const ccalls[])()) = {
         C(mcpwm_init)            //c mcpwm_init  { a.conf i.timer# i.pwm# -- e.err? }
         C(mcpwm_set_frequency)   //c mcpwm_set_frequency  { i.freq i.timer# i.pwm# -- e.err? }
         C(mcpwm_set_duty_in_us)  //c mcpwm_set_duty_in_us  { i.duty i.op# i.timer# i.pwm# -- e.err? }
-C(mcpwm_set_duty_type)           //c mcpwm_set_duty_type { i.duty# i.op# i.timer# i.pwm# -- i.err? }
-C(mcpwm_get_frequency)           //c mcpwm_get_frequency { i.timer# i.pwm# -- i.freq }
+	C(mcpwm_set_duty_type)	 //c mcpwm_set_duty_type { i.duty# i.op# i.timer# i.pwm# -- i.err? }
+	C(mcpwm_get_frequency)	 //c mcpwm_get_frequency { i.timer# i.pwm# -- i.freq }
         C(mcpwm_set_signal_high) //c mcpwm_set_signal_high { i.op# i.timer# i.pwm# -- i.err? }
         C(mcpwm_set_signal_low)  //c mcpwm_set_signal_low { i.op# i.timer# i.pwm# -- i.err? }
         C(mcpwm_start)           //c mcpwm_start { i.timer# i.pwm# -- i.err? }
