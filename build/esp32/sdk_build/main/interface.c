@@ -69,6 +69,24 @@ void init_uart(void)
     uart_driver_install(uart_num, BUF_SIZE * 2, 0, 0, NULL, 0);
 }
 
+cell my_uart_param_config(int uart_num, int baud, int bits, int par, int stop, int flow)
+{
+    uart_config_t uart_config = {
+       .baud_rate = baud,
+       .data_bits = bits-5,
+       .parity = par,
+       .stop_bits = stop,
+       .flow_ctrl = flow,
+       .rx_flow_ctrl_thresh = 122,
+    };
+   return uart_param_config(uart_num, &uart_config);
+}
+
+cell my_lwip_recv_r(int handle, int size, void *buf, int flags)
+{
+ return lwip_recv_r(handle, buf, size, flags);
+}
+
 // Routines for the ccalls[] table in textend.c.  Add new ones
 // as necessary.
 
@@ -389,7 +407,6 @@ int client_socket(char *host, char *portstr, cell protocol)
             cause = "socket";
             continue;
         }
-
         if (connect(s, res->ai_addr, res->ai_addrlen) < 0) {
             cause = "connect";
             close(s);
@@ -411,7 +428,6 @@ cell udp_client(char *host, char *portstr)
 {
     return client_socket(host, portstr, SOCK_DGRAM);
 }
-
 
 int stream_connect(char *host, char *portstr, int timeout_msecs)
 {
