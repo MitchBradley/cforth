@@ -347,7 +347,7 @@ void propose_word(cell *up)
     int newmatchlen;
     char *name;
     int len = strlen(word);
-    int nmatches = num_initial_matches(word, len, thismatch, &name, &newmatchlen, up);
+    num_initial_matches(word, len, thismatch, &name, &newmatchlen, up);
     while (matchlen > len) {
 	erase_char(up);
 	--matchlen;

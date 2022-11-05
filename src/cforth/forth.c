@@ -1521,8 +1521,8 @@ cell
 doccall(cell (*function_adr)(), u_char *format, cell *up)
 {
     register cell *sp = (cell *)V(XSP);
-    cell arg0, arg1, arg2, arg3, arg4,  arg5,
-           arg6, arg7, arg8, arg9, arg10, arg11;
+    cell arg0 = 0, arg1 = 0, arg2 = 0, arg3 = 0, arg4 = 0, arg5 = 0,
+        arg6 = 0, arg7 = 0, arg8 = 0, arg9 = 0, arg10 = 0, arg11 = 0;
     cell ret;
     char cstr[4][128];
     int strn = 0;

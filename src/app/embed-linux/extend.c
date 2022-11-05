@@ -15,11 +15,7 @@ cell build_date_adr(void)
     return (cell)build_date;
 }
 
-// Prototypes
-//int msticks(void);
-
 cell ((* const ccalls[])()) = {
 	C(build_date_adr)       //c 'build-date     { -- a.value }
 	C(version_adr)          //c 'version        { -- a.value }
-  //	C(msticks)               //c get-msecs  { -- i.ms }
 };
