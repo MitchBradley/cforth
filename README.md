@@ -257,6 +257,15 @@ plugging it in again, or grounding the RUN pin.
 
 ### As a Forth script
 
+* create a file containing Forth commands,
+
+```
+: hello  ." hello world" cr  ;
+hello
+```
+
+* run the script using Forth,
+
 ```
 ~/bin/forth ~/bin/app.dic script.fth
 ```
@@ -268,6 +277,22 @@ plugging it in again, or grounding the RUN pin.
 ~/bin/forth ~/bin/app.dic - <<EOF
 ." hello world" cr
 EOF
+```
+
+### As a dictionary
+
+* define words in the dictionary and save it to a file,
+
+```
+ok : hello  ." hello world" cr  ;
+ok " test.dic" save
+ok 
+```
+
+* run it later,
+
+```
+~/bin/forth ~/bin/test.dic -s hello
 ```
 
 ### Different ways to start C Forth on an operating system
