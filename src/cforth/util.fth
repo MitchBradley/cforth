@@ -233,7 +233,11 @@ decimal
 ;
 ' (where1) to where1
 
-: (.not-found)  ( name$ -- )  cr  type ."  ?"  cr  where1  ;
+: (.not-found)  ( -- )
+   cr  type ."  ?"  cr  where1
+   \ When not interactive, exit the process with nonzero status
+   interactive?  0=  if  1 finished-pop  then
+;
 ' (.not-found) to .not-found
 
 : (.underflow)  ( -- )  ." Stack Underflow" cr  ;
