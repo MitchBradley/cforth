@@ -27,7 +27,7 @@ Use `build/host-serial-linux64/Makefile` as an example for how to set
 up a build directory for a host-resident C Forth on a 64-bit Linux
 system.
 
-Use `build/arm-xo-1.75/Makefile` as an example for how to set up a
+Use `build/esp8266/Makefile` as an example for how to set up a
 build directory for an embedded C Forth.
 
 Typing `make` in `build/host-serial-linux64` will build a host image
