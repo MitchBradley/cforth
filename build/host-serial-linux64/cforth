@@ -1,0 +1,13 @@
+#!/bin/bash
+# script to run C Forth
+# if it has been installed in a specific path
+
+DESTDIR=/usr/local/bin/
+
+if [[ $# != 0 ]]; then
+    # execute list of words on command line
+    echo $* | exec $DESTDIR/forth $DESTDIR/app.dic -
+else
+    # show banner and prompt ok
+    exec $DESTDIR/forth $DESTDIR/app.dic
+fi
