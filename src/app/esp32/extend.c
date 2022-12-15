@@ -36,7 +36,6 @@ cell errno_val(void) {  return (cell)errno;  }
 // has run, so it can include whatever it needs.
 
 extern void software_reset(void);
-extern void ms(void);
 
 extern void adc1_config_width(void);
 extern void adc1_config_channel_atten(void);
@@ -73,6 +72,9 @@ extern void uart_driver_install(void);
 extern void uart_write_bytes(void);
 extern void uart_read_bytes(void);
 extern void my_lwip_recv_r(void);
+extern void time_t_now(void);
+extern void time_t_ms(void);
+extern void time_t_sec(void);
 
 int xTaskGetTickCount(void);
 void raw_emit(char c);
@@ -200,13 +202,6 @@ void ms_light_sleep(uint32_t ms)
   esp_light_sleep_start();
 }
 
-int IRAM_ATTR time_t_now()
-{
-struct timeval tv = { .tv_sec = 0, .tv_usec = 0 };
-         gettimeofday(&tv, NULL);
-return tv.tv_sec*(uint64_t)1000000+tv.tv_usec;
-}
-
 void add_my_peer(int *to_mac, int encryption, int channel )
 {
     esp_now_peer_info_t peerInfo;
@@ -254,8 +249,11 @@ cell set_esp_now_callback_rcv(QueueHandle_t hQueue)
 cell ((* const ccalls[])()) = {
 	C(build_date_adr)       //c 'build-date     { -- a.value }
 	C(version_adr)          //c 'version        { -- a.value }
-	C(ms)                   //c ms              { i.ms -- }
-	C(xTaskGetTickCount)    //c get-msecs       { -- i.ms }
+        C(us)                   //c us		    { i.us -- }
+	C(time_t_now)           //c us@             { -- i.us }
+	C(time_t_ms)		//c get-msecs       { -- i.ms }
+	C(time_t_sec)		//c get-secs        { -- i.seconds }
+	C(xTaskGetTickCount)    //c get-ticks       { -- i.ticks }
 	C(software_reset)       //c restart         { -- }
 
 	C(adc1_config_width)    //c adc-width!        { i.width -- }
@@ -358,8 +356,6 @@ cell ((* const ccalls[])()) = {
         C(repeat_alarm)          //c repeat-alarm   { i.xt i.ms -- }
         C(alarm_us)              //c set-alarm-us   { i.xt i.us -- }
         C(repeat_alarm_us)       //c repeat-alarm-us   { i.xt i.us -- }
-        C(us)                    //c us { i.us -- }
-	C(time_t_now)            //c us@                            { -- i.us }
 
 	C(sec_deep_sleep)            //c deep-sleep                 { i.sec -- }
  	C(ms_light_sleep)            //c light-sleep                { i.ms -- }
@@ -392,7 +388,7 @@ cell ((* const ccalls[])()) = {
  	C(gpio_intr_disable)         //c gpio_intr_disable          { i.handle -- i.err }
 
  	C(esp_clk_cpu_freq)          //c esp-clk-cpu-freq           { -- i.hz }
- 	C(rtc_clk_cpu_freq_set)      //c rtc-clk-cpu-freq-set       { i.freq123 --}
+ 	C(rtc_clk_cpu_freq_set)      //c rtc-clk-cpu-freq-set       { i.freq123 -- }
 
 	C(esp_now_open)		     //c esp-now-open               { i.channel -- i.error? }
 	C(esp_now_init)		     //c esp-now-init               { -- i.error? }

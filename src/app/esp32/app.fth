@@ -28,8 +28,24 @@ alias m-init noop
    key?  if  key true exit  then
    false
 ;
-alias get-ticks get-msecs
-: ms>ticks  ( ms -- ticks )  ;
+
+: ms>ticks  ( ms -- ticks )
+   esp-clk-cpu-freq #80000000 over =
+     if    drop
+     else  #240000000 =
+             if   exit
+             else #1 lshift
+             then
+     then  #3 /
+;
+
+: ms ( ms - )
+   get-msecs +
+     begin   dup get-msecs - #10000 >
+     while   #10000000 us
+     repeat
+   get-msecs - #1000 * 0 max us
+;
 
 fl wifi.fth
 
