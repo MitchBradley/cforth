@@ -591,7 +591,28 @@ void restart(void)
 }
 
 #include <rom/ets_sys.h>
-void us(cell us)
+void IRAM_ATTR us(cell us)
 {
     ets_delay_us(us);
+}
+
+int IRAM_ATTR time_t_now()
+{
+struct timeval tv = { .tv_sec = 0, .tv_usec = 0 };
+         gettimeofday(&tv, NULL);
+return tv.tv_sec*(uint64_t)1000000+tv.tv_usec;
+}
+
+int IRAM_ATTR time_t_ms()
+{
+struct timeval tv = { .tv_sec = 0, .tv_usec = 0 };
+         gettimeofday(&tv, NULL);
+return tv.tv_sec*(uint64_t)1000+tv.tv_usec/1000;
+}
+
+int IRAM_ATTR time_t_sec()
+{
+struct timeval tv = { .tv_sec = 0, .tv_usec = 0 };
+         gettimeofday(&tv, NULL);
+return tv.tv_sec;
 }
