@@ -66,7 +66,6 @@ void alarm_callback(void* arg)
   switch_stacks(NULL, &alarm_stacks_save, callback_up);
 }
 
-// ------------ Jos: Added
 void ICACHE_FLASH_ATTR ExecuteTask_callback(void* pvParameters)
 {
   execute_xt((xt_t)pvParameters, callback_up);
@@ -132,6 +131,10 @@ void spi_master_write64(int size, uint32_t* data)
   spi_trans(HSPI_HOST, &trans);
 }
 
+void sec_deep_sleep(uint32_t sec)
+{
+  esp_deep_sleep((uint64_t)sec * 1000000);
+}
 
 // ------------ End Additions
 
@@ -140,6 +143,7 @@ cell ((* const ccalls[])()) = {
 	C(version_adr)      //c 'version        { -- a.value }
 	C(ms)               //c ms              { i.ms -- }
 	C(sys_now)          //c get-msecs       { -- i.ms }
+	C(time_t_sec)	    //c get-secs        { -- i.seconds }
 	C(restart)          //c restart         { -- }
 
         // divisor is 8..32 (80MHz/divisor), mode is 0 for TOUT, 1 for VDD
@@ -180,6 +184,7 @@ cell ((* const ccalls[])()) = {
   // Like Posix sockets but the socket descriptor space is not
   // merged with the file descriptor space, so you cannot
   // do a select that encompasses both
+	C(lwip_init)		//c lwip_init      { -- }
 	C(lwip_socket)		//c socket         { i.proto i.type i.family -- i.handle }
 	C(lwip_bind)		//c bind           { i.len a.addr i.handle -- i.error }
 	C(lwip_setsockopt)	//c setsockopt     { i.len a.addr i.optname i.level i.handle -- i.error }
@@ -189,9 +194,11 @@ cell ((* const ccalls[])()) = {
 	C(udp_client)		//c udp-connect    { $.portname $.hostname -- i.handle }
 	C(my_lwip_write)	//c lwip-write     { a.buf i.size i.handle -- i.count }
 	C(my_lwip_read)		//c lwip-read      { a.buf i.size i.handle -- i.count }
+
 	C(lwip_close)		//c lwip-close     { i.handle -- }
 	C(lwip_listen)		//c lwip-listen    { i.backlog i.handle -- i.handle }
 	C(lwip_accept)		//c lwip-accept    { a.addrlen a.addr i.handle -- i.error }
+
 	C(start_server)		//c start-server   { i.port -- i.error }
 	C(start_udp_server)	//c start-udp-server { i.port -- i.error }
 	C(dhcpc_status)		//c dhcp-status    { -- i.status }
@@ -231,12 +238,11 @@ cell ((* const ccalls[])()) = {
         C(repeat_alarm)          //c repeat-alarm   { i.xt i.ms -- }
         C(alarm_us)              //c set-alarm-us   { i.xt i.us -- }
         C(repeat_alarm_us)       //c repeat-alarm-us   { i.xt i.us -- }
-        C(us)                    //c us { i.us -- }
+        C(us)                    //c us		     { i.us -- }
 
-// Jos: Added the lines below
 	C(esp_clk_cpu_freq)          //c esp_clk_cpu_freq  { -- i.freq }
 	C(esp_set_cpu_freq)          //c esp_set_cpu_freq  { i.esp_cpu_freq_t i.freq -- }
-	C(esp_deep_sleep)            //c esp_deep_sleep    { i.uint64_t i.time_in_us -- }
+	C(sec_deep_sleep)            //c deep-sleep        { i.sec -- }
 	C(esp_get_free_heap_size)    //c esp_get_free_heap_size     { -- i.size }
 
 // Preemptive multitasking

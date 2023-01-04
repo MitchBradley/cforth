@@ -28,6 +28,7 @@ cell wifi_off(void);
 
 void set_log_level(char *component, int level);
 
+void lwip_init(void);
 cell lwip_socket(cell family, cell type, cell proto);
 cell lwip_bind(cell handle, void *addr, cell len);
 cell lwip_setsockopt(cell handle, cell level, cell optname, void *addr, cell len);
@@ -35,6 +36,7 @@ cell lwip_getsockopt(cell handle, cell level, cell optname, void *addr, cell len
 cell lwip_connect(cell handle, void *adr, cell len);
 cell lwip_write(cell handle, void *adr, cell len);
 cell lwip_read(cell handle, void *adr, cell len);
+
 void lwip_close(cell handle);
 cell lwip_listen(cell handle, cell backlog);
 cell lwip_accept(cell handle, void *adr, void *addrlen);
@@ -101,13 +103,12 @@ typedef enum {
 void esp_set_cpu_freq(esp_cpu_freq_t cpu_freq);
 int  esp_clk_cpu_freq(void);
 
-void esp_deep_sleep(uint64_t time_in_us);
-
 cell esp_get_free_heap_size(void);
 
-typedef uint32_t TickType_t; 
+typedef uint32_t TickType_t;
 typedef uint32_t portTickType;
-void vTaskDelay(const TickType_t xTicksToDelay); 
+void vTaskDelay(const TickType_t xTicksToDelay);
+
 
 typedef void * TaskHandle_t;
 TaskHandle_t xTaskGetCurrentTaskHandle(void);
@@ -268,3 +269,6 @@ void spi_trans(cell host, spi_trans_t *trans);
     uint32_t pm_rtc_clock_cali_proc(void);
 
 #define ICACHE_FLASH_ATTR __attribute__((section(".irom0.text")))
+
+void esp_deep_sleep(uint64_t time_in_us);
+void time_t_sec(void); 
