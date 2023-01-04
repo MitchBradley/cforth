@@ -82,11 +82,6 @@ cell my_uart_param_config(int uart_num, int baud, int bits, int par, int stop, i
    return uart_param_config(uart_num, &uart_config);
 }
 
-cell my_lwip_recv_r(int handle, int size, void *buf, int flags)
-{
- return lwip_recv_r(handle, buf, size, flags);
-}
-
 // Routines for the ccalls[] table in textend.c.  Add new ones
 // as necessary.
 

@@ -71,7 +71,6 @@ extern void uart_set_pin(void);
 extern void uart_driver_install(void);
 extern void uart_write_bytes(void);
 extern void uart_read_bytes(void);
-extern void my_lwip_recv_r(void);
 extern void time_t_now(void);
 extern void time_t_ms(void);
 extern void time_t_sec(void);
@@ -308,7 +307,6 @@ cell ((* const ccalls[])()) = {
 	C(lwip_setsockopt_r)	//c setsockopt     { i.len a.addr i.optname i.level i.handle -- i.error }
 	C(lwip_getsockopt_r)	//c getsockopt     { i.len a.addr i.optname i.level i.handle -- i.error }
 	C(lwip_connect_r)	//c connect        { i.len a.adr i.handle -- i.error }
-	C(my_lwip_recv_r)	//c lwip-recv-r	   { i.flags a.buf i.size i.handle -- i.count }
 
 	C(stream_connect)	//c stream-connect { i.timeout $.portname $.hostname -- i.handle }
 	C(udp_client)		//c udp-connect    { $.portname $.hostname -- i.handle }
@@ -398,5 +396,4 @@ cell ((* const ccalls[])()) = {
  	C(get_max_payload_size)      //c get-max-payload-size       { -- i.max-payload-size-enow }
 	C(set_esp_now_callback_rcv)  //c set-esp-now-callback-rcv   { i.HQueueEnow -- }
 	C(esp_now_unregister_recv_cb) //c esp-now-unregister-recv_cb { -- }
-
 };
