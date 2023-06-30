@@ -69,6 +69,19 @@ void init_uart(void)
     uart_driver_install(uart_num, BUF_SIZE * 2, 0, 0, NULL, 0);
 }
 
+cell my_uart_param_config(int uart_num, int baud, int bits, int par, int stop, int flow)
+{
+    uart_config_t uart_config = {
+       .baud_rate = baud,
+       .data_bits = bits-5,
+       .parity = par,
+       .stop_bits = stop,
+       .flow_ctrl = flow,
+       .rx_flow_ctrl_thresh = 122,
+    };
+   return uart_param_config(uart_num, &uart_config);
+}
+
 // Routines for the ccalls[] table in textend.c.  Add new ones
 // as necessary.
 
@@ -389,7 +402,6 @@ int client_socket(char *host, char *portstr, cell protocol)
             cause = "socket";
             continue;
         }
-
         if (connect(s, res->ai_addr, res->ai_addrlen) < 0) {
             cause = "connect";
             close(s);
@@ -411,7 +423,6 @@ cell udp_client(char *host, char *portstr)
 {
     return client_socket(host, portstr, SOCK_DGRAM);
 }
-
 
 int stream_connect(char *host, char *portstr, int timeout_msecs)
 {
@@ -575,7 +586,28 @@ void restart(void)
 }
 
 #include <rom/ets_sys.h>
-void us(cell us)
+void IRAM_ATTR us(cell us)
 {
     ets_delay_us(us);
+}
+
+int IRAM_ATTR time_t_now()
+{
+struct timeval tv = { .tv_sec = 0, .tv_usec = 0 };
+         gettimeofday(&tv, NULL);
+return tv.tv_sec*(uint64_t)1000000+tv.tv_usec;
+}
+
+int IRAM_ATTR time_t_ms()
+{
+struct timeval tv = { .tv_sec = 0, .tv_usec = 0 };
+         gettimeofday(&tv, NULL);
+return tv.tv_sec*(uint64_t)1000+tv.tv_usec/1000;
+}
+
+int IRAM_ATTR time_t_sec()
+{
+struct timeval tv = { .tv_sec = 0, .tv_usec = 0 };
+         gettimeofday(&tv, NULL);
+return tv.tv_sec;
 }

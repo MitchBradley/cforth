@@ -36,7 +36,6 @@ cell errno_val(void) {  return (cell)errno;  }
 // has run, so it can include whatever it needs.
 
 extern void software_reset(void);
-extern void ms(void);
 
 extern void adc1_config_width(void);
 extern void adc1_config_channel_atten(void);
@@ -57,7 +56,6 @@ extern void mcpwm_set_signal_low(void);
 extern void mcpwm_start(void);
 extern void mcpwm_stop(void);
 extern void esp_deep_sleep_start(void);
-// 19-12
 extern void esp_sleep_enable_ext0_wakeup(void);
 extern void esp_wifi_restore(void);
 extern void esp_clk_cpu_freq(void);
@@ -66,9 +64,16 @@ extern void esp_wifi_start(void);
 extern void esp_wifi_stop(void);
 extern void adc_power_on(void);
 extern void adc_power_off(void);
-
 extern void gpio_intr_enable(void);
 extern void gpio_intr_disable(void);
+extern void my_uart_param_config(void);
+extern void uart_set_pin(void);
+extern void uart_driver_install(void);
+extern void uart_write_bytes(void);
+extern void uart_read_bytes(void);
+extern void time_t_now(void);
+extern void time_t_ms(void);
+extern void time_t_sec(void);
 
 int xTaskGetTickCount(void);
 void raw_emit(char c);
@@ -196,13 +201,6 @@ void ms_light_sleep(uint32_t ms)
   esp_light_sleep_start();
 }
 
-int IRAM_ATTR time_t_now()
-{
-struct timeval tv = { .tv_sec = 0, .tv_usec = 0 };
-         gettimeofday(&tv, NULL);
-return tv.tv_sec*(uint64_t)1000000+tv.tv_usec;
-}
-
 void add_my_peer(int *to_mac, int encryption, int channel )
 {
     esp_now_peer_info_t peerInfo;
@@ -250,8 +248,11 @@ cell set_esp_now_callback_rcv(QueueHandle_t hQueue)
 cell ((* const ccalls[])()) = {
 	C(build_date_adr)       //c 'build-date     { -- a.value }
 	C(version_adr)          //c 'version        { -- a.value }
-	C(ms)                   //c ms              { i.ms -- }
-	C(xTaskGetTickCount)    //c get-msecs       { -- i.ms }
+        C(us)                   //c us		    { i.us -- }
+	C(time_t_now)           //c us@             { -- i.us }
+	C(time_t_ms)		//c get-msecs       { -- i.ms }
+	C(time_t_sec)		//c get-secs        { -- i.seconds }
+	C(xTaskGetTickCount)    //c get-ticks       { -- i.ticks }
 	C(software_reset)       //c restart         { -- }
 
 	C(adc1_config_width)    //c adc-width!        { i.width -- }
@@ -263,6 +264,12 @@ cell ((* const ccalls[])()) = {
  C(esp_adc_cal_raw_to_voltage)  //c adc-mv        { a.adc_chars i.reading - i.voltage }
  C(esp_adc_cal_check_efuse)     //c check-efuse   { i.type -- i.res }
 	C(hall_sensor_read)     //c hall@         { -- i.voltage }
+
+	C(my_uart_param_config)	//c uart-param-config	{ i.flow i.stop i.par i.#bits i.baud i.uart_num -- i.err}
+	C(uart_write_bytes)	//c uart-write-bytes	{ i.size a.src i.uart_num -- i.res }
+	C(uart_read_bytes)	//c uart-read-bytes	{ i.wait i.size i.buf i.uart_num - i.#bytes }
+	C(uart_set_pin)		//c uart-set-pin	{ i.cts i.rts i.rx i.tx i.uart_num -- i.error? }
+	C(uart_driver_install)	//c uart-driver-install	{ i.flags a.queue i.q_size i.tx_size i.rx_size i.uart_num -- i.error? }
 
 	C(i2c_open)		//c i2c-open   { i.scl i.sda -- i.error? }
 	C(i2c_close)		//c i2c-close  { -- }
@@ -294,12 +301,13 @@ cell ((* const ccalls[])()) = {
   // LWIP sockets
   // Like Posix sockets but the socket descriptor space is not
   // merged with the file descriptor space, so you cannot
-  // do a select that encompasses both
+  // do a  that encompasses both
 	C(lwip_socket)		//c socket         { i.proto i.type i.family -- i.handle }
 	C(lwip_bind_r)		//c bind           { i.len a.addr i.handle -- i.error }
 	C(lwip_setsockopt_r)	//c setsockopt     { i.len a.addr i.optname i.level i.handle -- i.error }
 	C(lwip_getsockopt_r)	//c getsockopt     { i.len a.addr i.optname i.level i.handle -- i.error }
 	C(lwip_connect_r)	//c connect        { i.len a.adr i.handle -- i.error }
+
 	C(stream_connect)	//c stream-connect { i.timeout $.portname $.hostname -- i.handle }
 	C(udp_client)		//c udp-connect    { $.portname $.hostname -- i.handle }
 	C(my_lwip_write)	//c lwip-write     { a.buf i.size i.handle -- i.count }
@@ -335,8 +343,8 @@ cell ((* const ccalls[])()) = {
         C(mcpwm_init)            //c mcpwm_init  { a.conf i.timer# i.pwm# -- e.err? }
         C(mcpwm_set_frequency)   //c mcpwm_set_frequency  { i.freq i.timer# i.pwm# -- e.err? }
         C(mcpwm_set_duty_in_us)  //c mcpwm_set_duty_in_us  { i.duty i.op# i.timer# i.pwm# -- e.err? }
-C(mcpwm_set_duty_type)           //c mcpwm_set_duty_type { i.duty# i.op# i.timer# i.pwm# -- i.err? }
-C(mcpwm_get_frequency)           //c mcpwm_get_frequency { i.timer# i.pwm# -- i.freq }
+	C(mcpwm_set_duty_type)	 //c mcpwm_set_duty_type { i.duty# i.op# i.timer# i.pwm# -- i.err? }
+	C(mcpwm_get_frequency)	 //c mcpwm_get_frequency { i.timer# i.pwm# -- i.freq }
         C(mcpwm_set_signal_high) //c mcpwm_set_signal_high { i.op# i.timer# i.pwm# -- i.err? }
         C(mcpwm_set_signal_low)  //c mcpwm_set_signal_low { i.op# i.timer# i.pwm# -- i.err? }
         C(mcpwm_start)           //c mcpwm_start { i.timer# i.pwm# -- i.err? }
@@ -346,8 +354,6 @@ C(mcpwm_get_frequency)           //c mcpwm_get_frequency { i.timer# i.pwm# -- i.
         C(repeat_alarm)          //c repeat-alarm   { i.xt i.ms -- }
         C(alarm_us)              //c set-alarm-us   { i.xt i.us -- }
         C(repeat_alarm_us)       //c repeat-alarm-us   { i.xt i.us -- }
-        C(us)                    //c us { i.us -- }
-	C(time_t_now)            //c us@                            { -- i.us }
 
 	C(sec_deep_sleep)            //c deep-sleep                 { i.sec -- }
  	C(ms_light_sleep)            //c light-sleep                { i.ms -- }
@@ -380,7 +386,7 @@ C(mcpwm_get_frequency)           //c mcpwm_get_frequency { i.timer# i.pwm# -- i.
  	C(gpio_intr_disable)         //c gpio_intr_disable          { i.handle -- i.err }
 
  	C(esp_clk_cpu_freq)          //c esp-clk-cpu-freq           { -- i.hz }
- 	C(rtc_clk_cpu_freq_set)      //c rtc-clk-cpu-freq-set       { i.freq123 --}
+ 	C(rtc_clk_cpu_freq_set)      //c rtc-clk-cpu-freq-set       { i.freq123 -- }
 
 	C(esp_now_open)		     //c esp-now-open               { i.channel -- i.error? }
 	C(esp_now_init)		     //c esp-now-init               { -- i.error? }
@@ -390,5 +396,4 @@ C(mcpwm_get_frequency)           //c mcpwm_get_frequency { i.timer# i.pwm# -- i.
  	C(get_max_payload_size)      //c get-max-payload-size       { -- i.max-payload-size-enow }
 	C(set_esp_now_callback_rcv)  //c set-esp-now-callback-rcv   { i.HQueueEnow -- }
 	C(esp_now_unregister_recv_cb) //c esp-now-unregister-recv_cb { -- }
-
 };
