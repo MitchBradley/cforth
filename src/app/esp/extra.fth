@@ -1,13 +1,24 @@
-marker -extra.fth  cr lastacf .name #19 to-column .( 09-01-2023 ) \ By J.v.d.Ven
+marker -extra.fth  cr lastacf .name #19 to-column .( 30-06-2023 ) \ By J.v.d.Ven
 \ Additional words I often use.
 
 alias b   bye
 alias cls reset-terminal
 alias h.  .h
 alias ms@ get-msecs
-alias si  sifting
 alias word-join  wljoin
 alias word-split lwsplit
+
+
+: lower-char ( C -- c )
+   dup [char] A [char] Z between
+     if   $20 or
+     then  ;
+
+: si ( <word> - )
+   safe-parse-word 2dup bounds
+         do  i c@ lower-char i c!
+         loop
+   $sift ;
 
 [ifdef]  spi_master_write64  true  [else]  false  [then]  constant esp8266?
 
@@ -50,7 +61,7 @@ alias cpu_freq@   esp-clk-cpu-freq
 
 [then]
 
-#255 buffer: tmp$
+#255 ualloc user tmp$
 
 : bold        ( -- )  .esc[ '1' (emit  'm' (emit ; \ VT100
 : norm        ( -- )  .esc[ '0' (emit  'm' (emit ; \ VT100
@@ -66,6 +77,33 @@ alias cpu_freq@   esp-clk-cpu-freq
 : -ftrunc     ( f: n - -ftrunc )   fdup ftrunc f-  ;
 : s>f         ( n -- ) ( f: - n )  s>d d>f ;
 : f>s         ( -- n ) ( f: n - )  f>d d>s ;
+: f2drop      ( fs: r1 r2 -- )     fdrop fdrop ;
+: dup>r       ( n1 -- n1 ) ( R: -- n1 ) s" dup >r"  evaluate ; immediate
+
+: parse-single ( <number$> - n flag )  \ parse-single
+   parse-word dup 0=
+      if    ." No number found" nip dup
+      else  2dup (number?)
+                if    d>s -rot 2drop true
+                else  2drop cr type ."  <--- Bad number" false dup
+                then
+      then ;
+
+0 value seed
+: init-seed       ( - )      random ms@ + to seed ;
+
+: Rnd        ( -- rnd )
+    seed dup 0= or   dup 13 lshift xor   dup 17 rshift xor
+    dup 5 lshift xor dup to seed  ;
+
+: RandomLim  ( limit - random )   rnd swap /mod drop ;
+
+: cells+ ( a1 n1 -- a1+n1*cell ) \ multiply n1 by the cell size and add
+          cells + ;              \ the result to address a1
+
+: +cells ( n1 a1 -- n1*cell+a1 ) \ multiply n1 by the cell size and add
+          swap cells+ ;          \ the result to address a1
+
 
 : check-conditional   ( mark - mark here )
     depth 0> true ?pairs    dup lastacf here cell+ within true ?pairs here ;
@@ -101,21 +139,19 @@ end-structure
 
 : incr-cbuf-count ( &CBuffer - ) 1 swap >cbuf-count +!  ;
 
+
 : >record-cbuf ( i-Cbuffer &CBuffer - adr ) \ i= index that must point INTO the circular buffer
     tuck >&data-buffer @ rot >record-size @ rot * + ;
 
-: circular-range ( &CBuffer - i-end i-start )
-   dup >cbuf-count @  over >max-records @ >
-       if    >max-records
-       else  >cbuf-count
-       then
-   @ 0 ;
+HIDDEN DEFINITIONS
 
 : >circular-index-abs ( i &CBuffer - i-Cbuffer )
     dup >cbuf-count @ swap >max-records @ 2dup >
        if    >r + r>  /mod drop
        else  2drop
        then ;
+
+FORTH DEFINITIONS ALSO HIDDEN
 
 : >circular-index ( i &CBuffer - i-Cbuffer )
     over 0>=
@@ -125,6 +161,13 @@ end-structure
              else  r@ >cbuf-count @ + 0 max
              then  r> >circular-index-abs
       then ;
+
+: circular-range ( &CBuffer - i-end i-start )
+   dup >cbuf-count @  over >max-records @ >
+       if    >max-records
+       else  >cbuf-count
+       then
+   @ 0 ;
 
 : >circular      ( i &CBuffer - addr )
     tuck >circular-index swap >record-cbuf ;
@@ -143,6 +186,7 @@ end-structure
     0 r@ >cbuf-count !
     r> ;
 
+PREVIOUS
 
 : b.     ( n -  )  base @ 2 base ! swap . base ! ;
 : start-length ( bStart bEnd  - bStart length )  over - 1+  ;
@@ -199,8 +243,29 @@ test-1second
       if   + 0
       then  ;
 
+: BlankString  ( adrs cnts adr cnt - adrEnd cntEnd|0 )
+  dup >r search
+    if    swap  dup r> bl fill swap
+    else  r> 2drop 0
+    then ;
+
+: BlankStrings ( adrs cnts adr cnt -- )
+     begin  2over 2over BlankString dup
+     while  2rot 2drop 2swap
+     repeat
+   4drop 2drop  ;
+
 : NextString ( a n delimiter -- a1 n1 )
     >r  2dup r> scan nip - ;
+
+: SkipDots ( str$ count #dots - remains$ count )
+   0  do [char] . scan dup 0=
+            if    leave
+            then
+         1 /string
+      loop ;
+
+: my-host-id" ( - adr cnt ) ipaddr@ ipaddr$ 3 SkipDots ; \ IP4
 
 : GetValue ( adrOf-Number+limiter length limiter - n flag )
     NextString over c@ [char] - = dup >r
@@ -245,6 +310,7 @@ char , value seperator
 : .#-> [char] . hold  #s rot sign #>  ;
 : (f.2) ( f -- ) ( -- c-addr u )  f# 100e0  f>dint <# # # .#-> ;
 : (f.1) ( f -- ) ( -- c-addr u )  f# 10e0   f>dint <# # .#-> ;
+: ip4Host ( adr cnt - ) ipaddr@ ipaddr$ #10 /string ;
 
 0     value lsock
 0     value HtmlPage$  \ To collect html for streaming.
@@ -276,13 +342,18 @@ char , value seperator
 : file-exist?         ( filename cnt -- true-if-file-exist )
     r/o open-file   if   drop false   else    close-file drop  true   then ;
 
-: +file ( filename cnt buffer lcnt - )   \ Adding a file to a buffer
+: +file ( filename cnt buffer lcnt - )   \ Adding a file to a lcounted buffer
     >r >r r/o open-file
        if    2r> 3drop
        else  r@ @ r@ + cell+
              2r> >r 2 pick read-file drop
              swap close-file drop r> +!
        then ;
+
+: @file ( buffer cnt filename cnt - #read ) \ Place a file in a buffer
+    r/o open-file throw  dup>r
+    read-file throw
+    r> close-file drop  ;
 
 : hold"       ( - ) [CHAR] " hold ;
 : hold"bl     ( - ) bl hold hold" ;
@@ -294,7 +365,7 @@ char , value seperator
 : file-it  ( buffer cnt filename cnt - ) \ Write a buffer to a file
     r/w create-file throw >r
     r@  write-file throw
-    r@  flush-file drop
+    r@  flush-file drop 25 ms
     r>  close-file drop ;
 
 : open-file-append  ( filename cnt - hndl ) \ Points to the last postion in a file
@@ -359,6 +430,18 @@ char , value seperator
                 then
     endcase ;
 
+create TcpPort$ ," 8080"     create UdpPort$ ," 8899"
+
+
+: UdpWrite ( send$ cnt ip-server$ - )
+   count UdpPort$ count 2swap udp-connect
+   >r   r@ lwip-write  50 ms  r> lwip-close drop ;
+
+: TcpWrite ( bufer cnt ip-server$ - )
+   >r #1000 TcpPort$ count r> count stream-connect >r
+   r@ lwip-write drop
+   r> lwip-close ;
+
 \ After "WiFi station connection failed":
 \ Reboot and remove wifi_connect.fth then enter logon
 
@@ -371,8 +454,6 @@ char , value seperator
 
       else drop
       then ;
-
-create TcpPort$ ," 8080"   \ To communicate with a RPI
 
 : crlf$		( -- adr n )    " "r"n" ;
 : +html_line	( adr n -- )    +html crlf$ +html ;
