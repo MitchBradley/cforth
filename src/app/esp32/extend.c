@@ -56,7 +56,6 @@ extern void mcpwm_set_signal_low(void);
 extern void mcpwm_start(void);
 extern void mcpwm_stop(void);
 extern void esp_deep_sleep_start(void);
-extern void esp_sleep_enable_ext0_wakeup(void);
 extern void esp_wifi_restore(void);
 extern void esp_clk_cpu_freq(void);
 extern void rtc_clk_cpu_freq_set(void);
@@ -357,7 +356,6 @@ cell ((* const ccalls[])()) = {
 
 	C(sec_deep_sleep)            //c deep-sleep                 { i.sec -- }
  	C(ms_light_sleep)            //c light-sleep                { i.ms -- }
- 	C(esp_sleep_enable_ext0_wakeup) //c esp-sleep-enable-ext0-wakeup { i.level i.pin -- e.err? }
 
 	C(esp_get_free_heap_size)    //c esp_get_free_heap_size     { -- i.size }
 
