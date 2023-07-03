@@ -130,6 +130,9 @@ typedef enum {
 
 void gpio_set_intr_type(int gpio_num, gpio_int_type_t intr_type);
 
+void interrupt_disable();
+void interrupt_restore();
+
 BaseType_t xQueueGenericSendFromISR(
  QueueHandle_t xQueue, 
  const void *pvItemToQueue,
