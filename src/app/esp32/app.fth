@@ -60,6 +60,15 @@ fl files.fth
 
 fl server.fth
 
+fl tasking_rtos.fth         \ Preemptive multitasking
+fl ../esp/extra.fth         \ Extra tools
+fl ../esp/table_sort.f      \ Multi-key sort
+fl ../esp/timediff.fth      \ Time calculations. The local time was received from a RPI
+fl ../esp/webcontrols.fth   \ Extra tags in ROM
+fl ../esp/svg_plotter.f     \ To plot simple charts for a web client
+
+
+
 \ Replace 'quit' to make CForth auto-run some application code
 \ instead of just going interactive.
 \ : app  banner  hex init-i2c  showstack  quit  ;
