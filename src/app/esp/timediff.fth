@@ -103,11 +103,31 @@ f# 86400. fconstant #SecondsOneDay
 
 : .- ( n - )  (u.) type ." -"   ;
 
-: date-now  ( - dd mm yearLocal )
-   @time LocalTics-from-UtcTics Jd-from-UtcTics Date-from-jd ;
+: date-from-utc-time ( F: UtcTics -  dd mm yearLocal )
+   LocalTics-from-UtcTics Jd-from-UtcTics Date-from-jd ;
+
+: date-now      ( - dd mm yearLocal )   @time date-from-utc-time ;
+: date>jjjjmmdd  ( d m j - jjjjmmdd )   10000 * swap 100 * + + ;
 
 : UtcTics-from-Time-today ( ss mm uu - f: UtcTics  )
    date-now UtcTics-from-Time&Date ;
+
+f# 1e9 fconstant Nanoseconds
+
+: #SecondsToDay ( f: - #SecondsToDay ) \ Taking DST changes in account
+   #60 #59 #23 date-now UtcTics-from-Time&Date
+   00 00 00 date-now UtcTics-from-Time&Date f- ;
+
+: UtcTics-from-hm ( hhmmToday - ) ( f: - UtcTics )
+    #100 /mod 0 -rot date-now  UtcTics-from-Time&Date ;
+
+: #NsTill  ( hhmmTargetLocal -- ) ( F: -- NanosecondsUtc )
+  UtcTics-from-hm  @time f2dup f<
+      if   fswap #SecondsToDay f+ fswap \ Next day when the time has past today
+      then
+   f- Nanoseconds f* ;
+
+: time>mmhh ( - mmhh )  local-time-now time-from-utctics #100 * + nip ;
 
 : .Html-Time-from-UtcTics (  f: UtcTics - )
     fdup f0>=
@@ -141,14 +161,12 @@ f# 86400. fconstant #SecondsOneDay
 
 0 value time-server$ \ Pointer to the ip address that responds to GetTcpTime
 
-: GetTcpTime ( - ) \ Sends: TcpTime? @28 HTTP/1.1
+
+: GetTcpTime ( - ) \ Sends: my-net-id" Ask_time
    HtmlPage$ off
-   #1000 TcpPort$ count time-server$ count stream-connect >r
-   s" TcpTime? @" HtmlPage$ lplace
-   ipaddr@ ipaddr$ #11 /string HtmlPage$ +lplace \ 11: assumes an ip4 address
-   s"  HTTP/1.1" HtmlPage$ +lplace
-   HtmlPage$ lcount  r@ lwip-write drop
-   r> lwip-close ;
+   my-host-id" HtmlPage$ lplace
+   s"  Ask_time" HtmlPage$ +lplace
+   HtmlPage$ lcount time-server$ TcpWrite  ;
 
 variable GotTime? GotTime? off
 0 value start-tic

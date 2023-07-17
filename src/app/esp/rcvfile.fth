@@ -1,10 +1,14 @@
-marker -rcvfile.fth  cr lastacf .name #19 to-column  .( 17-05-2023 ) \ By J.v.d.Ven
+marker -rcvfile.fth  cr lastacf .name #19 to-column  .( 17-07-2023 ) \ By J.v.d.Ven
+\ To receive an ASCII file over a wifi connection
 
 \ Needed in ROM
 needs execute-task  tasking_rtos.fth  \ Note: If no other tasks or servers are used then the receiver
 needs /circular      ../esp/extra.fth \       might be started in a task of tasking_rtos.fth
 
 0 [if]
+
+See https://github.com/Jos-Ven/A-smart-home-in-Forth for the needed _UploadServer.f and documentation.
+
  New:
 26-06-2022
 Changed the timing for the ESP32.
