@@ -39,8 +39,7 @@ s" gforth" ENVIRONMENT? [IF] 2drop
 : f2dup   ( fs: r1 r2 -- r1 r2 r1 r2 ) s" fover fover " evaluate ; immediate
 : f2drop  ( fs: r1 r2 -- )             s" fdrop fdrop " evaluate ; immediate
 : dup>r   ( n1 -- n1 ) ( R: -- n1 )    s" dup >r"       evaluate ; immediate
-
-: dms@ ( -- d: u )  utime 1 1000 m*/ ;
+: dms@    ( -- d: u )  utime 1 1000 m*/ ;
 : ms@     ( -- ms ) dms@  drop ;
 
 [THEN]
@@ -55,9 +54,8 @@ alias &key-len     cell+
 [ELSE]
 
 ' cell+ alias >table-aptrs ( &table - &list-adress-pointers )
-' cell+ alias &key-len    ( key - &key-len )
-
-: >record-size            ( &table - &size-records )   2 cells+ ;
+' cell+ alias &key-len     ( key - &key-len )
+: >record-size             ( &table - &size-records )   2 cells+ ;
 
 [THEN]
 
@@ -68,8 +66,8 @@ alias &key-len     cell+
 
 : init-table                ( /table - &table ) dup allocate throw tuck swap erase ;
 \ : >record-list            ( &table - &list-records ) ; immediate
-\ >table-aptrs cell+        ( &table - &list-adress-pointers )      \ Forth-defended defined
-\ : >record-size            ( &table - &size-records )   2 cells+ ; \ Forth-defended defined
+\ >table-aptrs              ( &table - &list-adress-pointers ) cell+ ; \ Forth-depended defined
+\ : >record-size            ( &table - &size-records )   2 cells+ ;    \ Forth-depended defined
 : >#records                 ( &table - &number-records ) 3 cells+ ;
 : table-size                ( &table - #bytes ) dup >#records @ swap >record-size @ * ;
 : get-sizes                 ( &table -- $list-records table-size record-size )
