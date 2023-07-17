@@ -60,6 +60,9 @@ fl files.fth
 
 fl server.fth
 
+fl tasking_rtos.fth         \ Preemptive multitasking
+
+
 \ Replace 'quit' to make CForth auto-run some application code
 \ instead of just going interactive.
 \ : app  banner  hex init-i2c  showstack  quit  ;

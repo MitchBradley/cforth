@@ -1,4 +1,4 @@
-marker -extra.fth  cr lastacf .name #19 to-column .( 30-06-2023 ) \ By J.v.d.Ven
+marker -extra.fth  cr lastacf .name #19 to-column .( 06-06-2023 ) \ By J.v.d.Ven
 \ Additional words I often use.
 
 alias b   bye
