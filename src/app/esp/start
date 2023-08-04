@@ -1,0 +1,28 @@
+\ To start rcvfile.fth in the background on an esp32 or on an esp12-F. READ:
+\ https://github.com/Jos-Ven/A-smart-home-in-Forth/blob/main/Installation_upload_server.pdf
+\ first!
+
+\ 0 to ansi-colors? \ Avoiding unclear colors
+5 set-priority
+
+s" _receiver_bg.txt" file-exist? [if]
+\ logon must be in the main task
+logon
+
+wifi-logon-state 0= [if]
+
+task: receiver-task
+: start-receiver-in-task  ( -- ) receiver-task switch-regs receiver-in-task ;
+
+also hidden
+
+stack_size #retries ! #8191 to stack_size
+10 ms
+' start-receiver-in-task receiver-task execute-task
+
+#retries @ to stack_size previous
+[then]
+[then]
+
+compile-file
+
