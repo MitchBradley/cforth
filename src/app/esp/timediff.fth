@@ -1,4 +1,4 @@
-marker -timediff.fth cr lastacf .name #19 to-column .( 17-12-2022 ) \ By J.v.d.Ven
+marker -timediff.fth cr lastacf .name #19 to-column .( 01-08-2023 ) \ By J.v.d.Ven
 \ Time calculations.
 
 f# -1 fvalue #diff-tics \ = #utcTicsRpi - ( msEsp / 1000 )
@@ -73,22 +73,23 @@ f# 86400. fconstant #SecondsOneDay
     2r@ 1 rot fixed-from-gregorian - 1+               ( day)
     r> swap r> ( month day year) ;
 
-: @time    ( - f: #tics|-1 )
+: @time    ( - f: Utctics|-1 )
     #diff-tics fdup f0>=
        if  get-secs s>f f+
        then ;
 
 : LocalTics-from-UtcTics ( f: UtcTics - LocalTics ) UtcOffset f+ ;
+
 : Jd-from-UtcTics        ( f: UtcTics - fjd )  #SecondsOneDay f/ f# 2440588 f+  ;
 
 : UtcTics-from-Jd&Time  ( ss mm uu JD -  ) ( f: - UtcTics )
    #2440588 - s>f #SecondsOneDay f* #SecondsOneHour * swap #60 * + + s>f f+ ;
 
 : UtcTics-from-Time&Date      ( ss mm uu dd mm year - ) ( f: - UtcTics )
-   jd UtcTics-from-Jd&Time UtcOffset f- ;
+   jd UtcTics-from-Jd&Time  ;
 
 : Time-from-UtcTics      ( f: UtcTics - ) ( - ss mm uu )
-   Jd-from-UtcTics -ftrunc #SecondsOneDay f*  f>s
+   Jd-from-UtcTics -ftrunc #SecondsOneDay f* fround f>s
    #SecondsOneHour /mod swap #60 /mod #60 /mod drop rot ;
 
 : Moment-from-JD          ( F: julian-day-number -- moment )
@@ -112,11 +113,8 @@ f# 86400. fconstant #SecondsOneDay
 : UtcTics-from-Time-today ( ss mm uu - f: UtcTics  )
    date-now UtcTics-from-Time&Date ;
 
-f# 1e9 fconstant Nanoseconds
-
-: #SecondsToDay ( f: - #SecondsToDay ) \ Taking DST changes in account
-   #60 #59 #23 date-now UtcTics-from-Time&Date
-   00 00 00 date-now UtcTics-from-Time&Date f- ;
+f# 1e9     fconstant Nanoseconds
+f# 86400e0 fconstant #SecondsToDay
 
 : UtcTics-from-hm ( hhmmToday - ) ( f: - UtcTics )
     #100 /mod 0 -rot date-now  UtcTics-from-Time&Date ;
@@ -180,7 +178,7 @@ variable GotTime? GotTime? off
 
 : AskTime ( - )                            \ Adapt if needed!
    time-server$ 0<>
-     if     gettcptime                     \ To get the time from an RPI
+     if     gettcptime                     \ To get the UTC-time from an RPI
      else   set-time-to-0                  \ See the note.
      then ;
 
