@@ -278,6 +278,11 @@ test-1second
          else  r> drop 2drop 0 0
          then ;
 
+: Reboot ( - )
+  ." Rebooting..."
+    [ifdef]  esp-wifi-stop esp-wifi-stop 50 ms
+    [then]   1 deep-sleep ;
+
 : ##$        ( seperator n -- adr cnt ) s>d <# # #  2 pick hold  #> rot 0= abs /string ;
 
 char , value seperator
@@ -472,7 +477,7 @@ create TcpPort$ ," 8080"     create UdpPort$ ," 8899"
 : logon ( -- )
       s" wifi_connect.fth" file-exist?
         if   s" wifi_connect.fth" included #35 ms
-             9 0  do  ipaddr@ @ 0<>   if   leave   then  #2000 ms
+             9 0  do  ipaddr@ @ 0<>   if   leave   then  i . #2000 ms
                   loop
         else set-ssid
         then  ;

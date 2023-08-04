@@ -257,8 +257,9 @@ alias get            noop
 alias HTTP/1.1       noop
 alias NoReply-HTTP   noop
 alias nn             noop
-alias order order
-alias words words
+alias order  order
+alias words  words
+alias reboot reboot
 
 : +f       ( - ) only forth  ;
 
