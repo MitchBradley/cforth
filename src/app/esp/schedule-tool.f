@@ -167,8 +167,6 @@ s" cell 1 cells key: schedule-option schedule-option Ascending bin-sort" evaluat
 : start-schedule    ( - )  ['] sync-schedule  execute-task to TidSchedule
                            true to StopRunSchedule? ;
 
-: reboot-system      ( - ) cr ." REBOOTING"  reboot ;
-
 [ELSE]
 
 
@@ -240,8 +238,10 @@ s" ' (sort-schedule) is sort-schedule" evaluate
    esp-wifi-stop 1 rtc-clk-cpu-freq-set 10 ms
    cr ."  SLEEPING." deep-sleep ;
 
+60 60 * value seconds-before-sunset
+
 : sleep-seconds-before-sunset        ( SecondsBeforeSunset - )
-    UtcSunSet  @time f- utcoffset f+ s>f f- fdup f0>
+    UtcSunSet  @time f- s>f f- fdup f0>
        if    cr .date .time ."  Needed sleep " f>s  #seconds-deep-sleeping
        else  fdrop cr .date .time ."  No sleep needed."
              false to WaitForSleeping-
@@ -265,7 +265,7 @@ s" ' (sort-schedule) is sort-schedule" evaluate
 
 : schedule|sunset ( - )
    next-scheduled-time 2359 > \ No entries in schedule?
-     if    [ 60 60 * ] literal sleep-seconds-before-sunset
+     if    seconds-before-sunset sleep-seconds-before-sunset
      else  (sleeping-schedule)              \ Follow schedule
      then ;
 
@@ -289,8 +289,6 @@ s" ' (sort-schedule) is sort-schedule" evaluate
            if  (sleep-till-sunset)
            then
        then ;
-
-: reboot-system            ( - ) bye ;
 
 
 [THEN]
@@ -430,7 +428,6 @@ TCP/IP DEFINITIONS
       then ;
 
 : StopRunSchedule   ( - )  (StopRunSchedule)   ;
-: reboot ( - ) reboot-system ;
 
 
 S" cforth" ENVIRONMENT? [IF] DROP
