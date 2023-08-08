@@ -796,3 +796,10 @@ cell adc_fetch(void)
     uint16_t data;
     return adc_read(&data) != ESP_OK ? -1 : data;
 }
+
+int IRAM_ATTR time_t_sec()
+{
+struct timeval tv = { .tv_sec = 0, .tv_usec = 0 };
+         gettimeofday(&tv, NULL);
+return tv.tv_sec;
+}
