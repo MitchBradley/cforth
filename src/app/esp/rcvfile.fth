@@ -7,7 +7,8 @@ needs /circular      ../esp/extra.fth \       might be started in a task of task
 
 0 [if]
 
-See https://github.com/Jos-Ven/A-smart-home-in-Forth for the needed _UploadServer.f and documentation.
+See https://github.com/Jos-Ven/A-smart-home-in-Forth for
+the needed _UploadServer.f and documentation (Installation_upload_server.pdf).
 
  New:
 26-06-2022
@@ -225,8 +226,6 @@ variable msStartFlash
              else   cr type ."  does not exist."
         else  ." Error at:" type
         then then ;
-
-: Reboot ( - )  bye ;
 
 \ 1 value dmp
 

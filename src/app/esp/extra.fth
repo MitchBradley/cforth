@@ -1,4 +1,4 @@
-marker -extra.fth  cr lastacf .name #19 to-column .( 06-06-2023 ) \ By J.v.d.Ven
+marker -extra.fth  cr lastacf .name #19 to-column .( 06-08-2023 ) \ By J.v.d.Ven
 \ Additional words I often use.
 
 alias b   bye
@@ -58,10 +58,7 @@ alias cpu_freq@   esp-clk-cpu-freq
 
 : read-rx ( - #read )  0 /RxBuf &RxBuf uart_num  uart-read-bytes ;
 
-
 [then]
-
-#255 ualloc user tmp$
 
 : bold        ( -- )  .esc[ '1' (emit  'm' (emit ; \ VT100
 : norm        ( -- )  .esc[ '0' (emit  'm' (emit ; \ VT100
@@ -110,6 +107,7 @@ alias cpu_freq@   esp-clk-cpu-freq
 
 patch check-conditional here >resolve
 patch check-conditional here <resolve
+
 
 : begin-structure     ( <name> -- addr 0 )
              create here 0 0 ,
@@ -232,11 +230,7 @@ test-1second
 
 : .tElapsed ( timer - ) get-msecs swap cell+ @ - . ;
 
-: rjust ( a u width char -- a2 u2 )
-   >r over - 0 max dup tmp$ !
-   tmp$ cell+ swap r> fill
-   tmp$ +lplace
-   tmp$ lcount ;
+
 
 : scan  ( addr len c -- addr2 len2 )
     >r rp@ 1 search r> drop 0=
@@ -248,6 +242,7 @@ test-1second
     if    swap  dup r> bl fill swap
     else  r> 2drop 0
     then ;
+
 
 : BlankStrings ( adrs cnts adr cnt -- )
      begin  2over 2over BlankString dup
@@ -277,6 +272,11 @@ test-1second
                   then  true
          else  r> drop 2drop 0 0
          then ;
+
+: Reboot ( - )
+  ." Rebooting..."
+    [ifdef]  esp-wifi-stop esp-wifi-stop 50 ms
+    [then]   1 deep-sleep ;
 
 : ##$        ( seperator n -- adr cnt ) s>d <# # #  2 pick hold  #> rot 0= abs /string ;
 
@@ -334,10 +334,18 @@ char , value seperator
        then
     htmlpage$ +lplace ;
 
+0 value tmp$
 
 : init-HtmlPage ( - )
     /HtmlPage cell+ allocate
-    abort" Allocating HtmlPage failed " dup to HtmlPage$ off ;
+    abort" Allocating HtmlPage failed " dup to HtmlPage$ off
+    255 allocate   abort" Allocating tmp$ failed "  to tmp$ ;
+
+: rjust ( a u width char -- a2 u2 )
+   >r over - 0 max dup tmp$ !
+   tmp$ cell+ swap r> fill
+   tmp$ +lplace
+   tmp$ lcount ;
 
 : file-exist?         ( filename cnt -- true-if-file-exist )
     r/o open-file   if   drop false   else    close-file drop  true   then ;
@@ -472,7 +480,7 @@ create TcpPort$ ," 8080"     create UdpPort$ ," 8899"
 : logon ( -- )
       s" wifi_connect.fth" file-exist?
         if   s" wifi_connect.fth" included #35 ms
-             9 0  do  ipaddr@ @ 0<>   if   leave   then  #2000 ms
+             9 0  do  ipaddr@ @ 0<>   if   leave   then  i . #2000 ms
                   loop
         else set-ssid
         then  ;
