@@ -797,9 +797,7 @@ cell adc_fetch(void)
     return adc_read(&data) != ESP_OK ? -1 : data;
 }
 
-int IRAM_ATTR time_t_sec()
+int IRAM_ATTR time_t_sec(uint32_t sec)
 {
-struct timeval tv = { .tv_sec = 0, .tv_usec = 0 };
-         gettimeofday(&tv, NULL);
-return tv.tv_sec;
+    return time(NULL);
 }
