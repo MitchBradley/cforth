@@ -1,23 +1,23 @@
 # C Forth
 
-This is Mitch Bradley's C Forth implementation, derived from the
+This is Mitch Bradley's C Forth with Open Firmware, derived from the
 version at One Laptop per Child, and improved as follows:
 
-a. Host version now has line editing
-a. Host version catches exceptions
-a. `key` and `key?` implemented property in host versions for Linux and Windows
-a. Makefile fragments factored better, and use pattern rules extensively
-a. Makefiles in build directories simplified
+* Host version has line editing,
+* Host version catches exceptions,
+* `key` and `key?` implemented property in host versions for Linux and Windows,
+* Makefile fragments factored better, and use pattern rules extensively,
+* Makefiles in build directories simplified.
 
 It has been optimized for embedded use in semi-constrained systems
 such as System On Chip processors.  To port it to a new system, you
 will need to add some or all of the following new directories and
 files:
 
-a. CPU-dependent code and compiler definitions in `src/cpu/*`
-a. Platform-dependent code in `src/platform/*`
-a. Application-specific code in `app/*`
-a. Build directories for your versions in `build/*`
+* CPU-dependent code and compiler definitions in `src/cpu/*`
+* Platform-dependent code in `src/platform/*`
+* Application-specific code in `app/*`
+* Build directories for your versions in `build/*`
 
 There are two build directories that can be used as templates.  You
 can copy these templates to a new name as a starting point for your
