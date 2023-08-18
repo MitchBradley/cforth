@@ -57,10 +57,19 @@ also modem
 previous
 
 fl files.fth
-
 fl server.fth
+fl tasking_rtos.fth             \ Pre-empty multitasking
+fl ../esp/extra.fth
 
-fl tasking_rtos.fth         \ Preemptive multitasking
+fl ../esp/table_sort.f
+fl ../esp/timediff.fth          \ Time calculations. The local time was received from a RPI
+fl ../esp/webcontrols.fth       \ Extra tags in ROM
+fl ../esp/svg_plotter.f
+
+fl ../esp/rcvfile.fth           \ To receive ASCII files over a WiFi connection
+fl ../esp/wsping.fth
+fl ../esp/schedule-tool.f       \ Daily schedule
+fl ../ntc-web/ntc_steinhart.fth \ For ntc_web.fth
 
 
 \ Replace 'quit' to make CForth auto-run some application code

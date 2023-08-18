@@ -796,3 +796,8 @@ cell adc_fetch(void)
     uint16_t data;
     return adc_read(&data) != ESP_OK ? -1 : data;
 }
+
+int IRAM_ATTR time_t_sec(uint32_t sec)
+{
+    return time(NULL);
+}
