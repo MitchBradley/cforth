@@ -7,6 +7,8 @@ UPDIR=$(realpath $(TOPDIR)/..)
 
 CONFIG += -DBITS32
 CONFIG += -DFLOATING -DMORE_FP
+
+
 LIBS += -lm
 
 CFLAGS += -m32

@@ -21,6 +21,7 @@ cell build_date_adr(void)
 #include <errno.h>
 cell errno_val(void) {  return (cell)errno;  }
 #include <string.h>
+
 // Above gets us strerror()
 
 // Many of the routines cited below are defined either directly
@@ -56,6 +57,7 @@ extern void mcpwm_set_signal_low(void);
 extern void mcpwm_start(void);
 extern void mcpwm_stop(void);
 extern void esp_deep_sleep_start(void);
+extern void esp_sleep_enable_ext0_wakeup(void);
 extern void esp_wifi_restore(void);
 extern void esp_clk_cpu_freq(void);
 extern void rtc_clk_cpu_freq_set(void);
@@ -253,6 +255,7 @@ cell ((* const ccalls[])()) = {
 	C(time_t_sec)		//c get-secs        { -- i.seconds }
 	C(xTaskGetTickCount)    //c get-ticks       { -- i.ticks }
 	C(software_reset)       //c restart         { -- }
+	C(set_log_level)	//c log-level!	    { i.level $component -- }
 
 	C(adc1_config_width)    //c adc-width!        { i.width -- }
 	C(adc1_config_channel_atten)  //c adc-atten!  { i.attenuation i.channel# -- }
@@ -260,13 +263,13 @@ cell ((* const ccalls[])()) = {
  	C(adc_power_off)        //c adc-power-off     { -- }
 	C(adc1_get_voltage)     //c adc@          { i.channel# -- i.voltage }
  C(esp_adc_cal_characterize)    //c get-adc-chars { a.adc_chars i.vref i.bi_width i.atten i.adc_num -- i.res }
- C(esp_adc_cal_raw_to_voltage)  //c adc-mv        { a.adc_chars i.reading - i.voltage }
+ C(esp_adc_cal_raw_to_voltage)  //c adc-mv        { a.adc_chars i.reading -- i.voltage }
  C(esp_adc_cal_check_efuse)     //c check-efuse   { i.type -- i.res }
 	C(hall_sensor_read)     //c hall@         { -- i.voltage }
 
-	C(my_uart_param_config)	//c uart-param-config	{ i.flow i.stop i.par i.#bits i.baud i.uart_num -- i.err}
+	C(my_uart_param_config)	//c uart-param-config	{ i.flow i.stop i.par i.#bits i.baud i.uart_num -- i.err }
 	C(uart_write_bytes)	//c uart-write-bytes	{ i.size a.src i.uart_num -- i.res }
-	C(uart_read_bytes)	//c uart-read-bytes	{ i.wait i.size i.buf i.uart_num - i.#bytes }
+	C(uart_read_bytes)	//c uart-read-bytes	{ i.wait i.size i.buf i.uart_num -- i.#bytes }
 	C(uart_set_pin)		//c uart-set-pin	{ i.cts i.rts i.rx i.tx i.uart_num -- i.error? }
 	C(uart_driver_install)	//c uart-driver-install	{ i.flags a.queue i.q_size i.tx_size i.rx_size i.uart_num -- i.error? }
 
@@ -289,13 +292,15 @@ cell ((* const ccalls[])()) = {
 	C(gpio_is_input_pu)	//c gpio-is-input-pullup { i.gpio# -- }
 	C(gpio_is_input_pd)	//c gpio-is-input-pulldown { i.gpio# -- }
 	C(gpio_mode)    	//c gpio-mode { i.pullup? i.direction i.gpio# -- }
-
+	C(gpio_deep_sleep_hold_en) //c gpio-deep-sleep-hold-en { -- }
+	C(gpio_deep_sleep_hold_dis) //c gpio-deep-sleep-hold-dis { -- }
+        C(esp_sleep_enable_ext0_wakeup) //c esp-sleep-enable-ext0-wakeup { i.level i.pin -- i.error? }
+	C(gpio_hold_dis)	//c gpio-hold-dis { i.gpio# -- }
+        C(gpio_hold_en)		//c gpio-hold-en { i.gpio# -- }
 	C(get_wifi_mode)	//c wifi-mode@ { -- i.mode }
 	C(wifi_open)		//c wifi-open { $ssid $password i.timeout -- i.error? }
  	C(esp_wifi_start)       //c esp-wifi-start             { -- }
  	C(esp_wifi_stop)        //c esp-wifi-stop              { -- }
-
-	C(set_log_level)	//c log-level! { i.level $component -- }
 
   // LWIP sockets
   // Like Posix sockets but the socket descriptor space is not
@@ -378,7 +383,7 @@ cell ((* const ccalls[])()) = {
         C(vQueueDelete)              //c vQueueDelete               { i.handle  -- }
 
  	C(gpio_set_intr_type)        //c gpio_set_intr_type         { i.intr_type i.gpio_num -- i.res }
-        C(gpio_install_isr_service)  //c gpio_install_isr_service   { i.no_use -- i.res}
+        C(gpio_install_isr_service)  //c gpio_install_isr_service   { i.no_use -- i.res }
  	C(gpio_isr_qhandler_add)     //c gpio_isr_qhandler_add      { i.hqueue i.gpio_num --  i.res }
  	C(gpio_intr_enable)          //c gpio_intr_enable           { i.handle -- i.err }
  	C(gpio_intr_disable)         //c gpio_intr_disable          { i.handle -- i.err }
