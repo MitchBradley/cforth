@@ -203,6 +203,10 @@ typedef enum {
 } gpio_num_t;
 
 void gpio_isr_handler_add(gpio_num_t gpio_num, gpio_isr_t isr_handler, void *args);
+void gpio_deep_sleep_hold_en(void);
+void gpio_deep_sleep_hold_dis(void);
+void gpio_hold_en(gpio_num_t gpio_num);
+void gpio_hold_dis(gpio_num_t gpio_num);
 
 void vTaskSuspendAll( void );
 BaseType_t xTaskResumeAll( void );

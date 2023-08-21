@@ -3,8 +3,7 @@
 #include <inttypes.h>
 #include "config.h"
 
-int
-test_little_endian()
+int test_little_endian()
 {
     long cell = 1;
     return *(char *)&cell == 1;

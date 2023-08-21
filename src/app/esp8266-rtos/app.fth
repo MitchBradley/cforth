@@ -50,7 +50,6 @@ fl ../esp32/server.fth
 
 fl tests/oled.fth
 
-\ Jos: 1 line added
 fl tasking_rtos.fth  \ Pre-emptive multitasking
 
 \ Replace 'quit' to make CForth auto-run some application code

@@ -45,7 +45,7 @@ alias cpu_freq@   esp-clk-cpu-freq
 
 60000 to wifi-timeout
 : wifi-open-station ( retr wifi-timeout wifi-storage &ss sscnt  &pw pwcnt - flag )
-    0 " wifi" log-level!
+\    0 " wifi" log-level!
     5 roll 10 ms wifi-open nip nip ;
 
 \ For an extra uart
