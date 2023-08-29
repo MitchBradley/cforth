@@ -20,3 +20,30 @@ $20 value mcp-i2c-slave
 : mcp-gpio-clr  ( gpio# -- )  $12 mcp-clr  ;
 : mcp-gpio-set  ( gpio# -- )  $12 mcp-set  ;
 : mcp-gpio-pin@  ( gpio# -- flag )  1 swap lshift  $12 mcp-w@  and  0<>  ;
+
+: byte-split ( n16 -- high low ) dup #8 rshift swap $FF and ;
+: .mcp-pin   ( gpio# -- ) mcp-gpio-pin@ . ;
+: .mcp-pins  ( -- ) #16 0  do  i cr dup . .mcp-pin  loop ;
+: set-inputs-pullup   ( n -- )
+   0  do  i dup mcp-gpio-is-input mcp-gpio-pullup-on  loop ;
+
+: mcp-ints@ ( -- ints ) $10 ( INTCAPA) mcp-w@ ;
+
+: .mcp-ints  ( -- ) \  Reads the INTCAPA register AND clears the INT pin
+   $07 ( DEFVALB) mcp-w@ ." DEFVALB:" .h
+   $06 ( DEFVALA) mcp-w@ ." DEFVALA:" .h
+   mcp-ints@ ."   B/A:"   .h ;
+
+: set-interrupts-on-change ( Bits_BBAA -- )
+   byte-split $08 ( INTCONA) mcp-w! $09 ( INTCONB) mcp-w!  ;
+
+: clr-mcp-ints ( -- )  \ clears the INT pin and the INTCAPA register
+   $10 ( INTCAPA) mcp-w@ drop
+   $FFFF set-interrupts-on-change
+   0     set-interrupts-on-change
+   $10 ( INTCAPA) mcp-w@ drop ;
+
+: init-mcp-ints ( Bits_BBAA -- )
+   $40 $0A ( IOCON)  mcp-w!   \ Mirror
+   byte-split $04 ( GPINTENA) mcp-w! $05 ( GPINTENB) mcp-w!
+   clr-mcp-ints ;

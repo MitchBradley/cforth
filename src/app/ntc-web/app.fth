@@ -20,8 +20,6 @@ warning !
    cr
 ;
 
-fl gpio.fth
-
 \ m-emit is defined in textend.c
 alias m-key  key
 alias m-init noop
@@ -30,10 +28,26 @@ alias m-init noop
    key?  if  key true exit  then
    false
 ;
-alias get-ticks get-msecs
-: ms>ticks  ( ms -- ticks )  ;
 
-fl ../esp32/wifi.fth
+: ms>ticks  ( ms -- ticks )
+   esp-clk-cpu-freq #80000000 over =
+     if    drop
+     else  #240000000 =
+             if   exit
+             else #1 lshift
+             then
+     then  #3 /
+;
+
+: ms ( ms - )
+   get-msecs +
+     begin   dup get-msecs - #10000 >
+     while   #10000000 us
+     repeat
+   get-msecs - #1000 * 0 max us
+;
+
+fl wifi.fth
 
 fl ../esp8266/xmifce.fth
 fl ../../lib/crc16.fth
@@ -42,26 +56,28 @@ also modem
 : rx  ( -- )  pad  unused pad here - -  (receive)  #100 ms  ;
 previous
 
-fl ../esp32/files.fth
+fl files.fth
+fl server.fth
+fl tasking_rtos.fth             \ Pre-empty multitasking
+fl ../esp/extra.fth
 
-fl ../esp32/server.fth
+fl ../esp/table_sort.f
+fl ../esp/timediff.fth          \ Time calculations. The local time was received from a RPI
+fl ../esp/webcontrols.fth       \ Extra tags in ROM
+fl ../esp/svg_plotter.f
 
-: relax ;
+fl ../esp/rcvfile.fth           \ To receive ASCII files over a WiFi connection
+fl ../esp/wsping.fth
+fl ../esp/schedule-tool.f       \ Daily schedule
+fl ../ntc-web/ntc_steinhart.fth \ For ntc_web.fth
 
-fl tests/oled.fth
-
-fl tasking_rtos.fth  \ Pre-emptive multitasking
 
 \ Replace 'quit' to make CForth auto-run some application code
 \ instead of just going interactive.
 \ : app  banner  hex init-i2c  showstack  quit  ;
 : interrupt?  ( -- flag )
-   ." Type a key within 1 second to interact" cr \ changed to 1 second
-   #10 0  do  key?  if  key drop  true unloop exit  then  #100 ms  loop \ 1 second
-
-\   ." Type a key within 2 seconds to interact" cr  \ Original
-\   #20 0  do  key?  if  key drop  true unloop exit  then  #100 ms  loop \ Original
-
+   ." Type a key within 2 seconds to interact" cr
+   #20 0  do  key?  if  key drop  true unloop exit  then  #100 ms  loop
    false
 ;
 : load-startup-file  ( -- )  " start" included   ;

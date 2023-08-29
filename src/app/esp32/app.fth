@@ -1,5 +1,4 @@
 \ Load file for application-specific Forth extensions
-
 fl ../../lib/misc.fth
 fl ../../lib/dl.fth
 fl ../../lib/random.fth
@@ -28,8 +27,26 @@ alias m-init noop
    key?  if  key true exit  then
    false
 ;
-alias get-ticks get-msecs
-: ms>ticks  ( ms -- ticks )  ;
+
+: ms>ticks  ( ms -- ticks )
+   esp-clk-cpu-freq #80000000 over =
+     if    drop
+     else  #240000000 =
+             if   exit
+             else #1 lshift
+             then
+     then  #3 /
+;
+
+: ms ( ms - )
+   get-msecs +
+     begin   dup get-msecs - #10000 >
+     while   #10000000 us
+     repeat
+   get-msecs - #1000 * 0 max us
+;
+
+
 
 fl wifi.fth
 
@@ -44,14 +61,20 @@ fl files.fth
 
 fl server.fth
 
+
+fl tasking_rtos.fth         \ Preemptive multitasking
+
 \ Replace 'quit' to make CForth auto-run some application code
 \ instead of just going interactive.
 \ : app  banner  hex init-i2c  showstack  quit  ;
+
+
 : interrupt?  ( -- flag )
    ." Type a key within 2 seconds to interact" cr
    #20 0  do  key?  if  key drop  true unloop exit  then  #100 ms  loop
    false
 ;
+
 : load-startup-file  ( -- )  " start" included   ;
 
 : app
@@ -60,6 +83,7 @@ fl server.fth
    ['] load-startup-file catch drop
    quit
 ;
+
 
 alias id: \
 
