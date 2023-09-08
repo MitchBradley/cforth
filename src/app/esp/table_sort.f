@@ -1,4 +1,4 @@
-marker -table_sort.f
+marker -table_sort.f \ 07-09-2023
 
 
 0 [IF]
@@ -8,7 +8,7 @@ A flexible shellsort.
 Testet under Cforth, Win32forth and Gforth.
 
  Characteristics:
- This version uses relative as pointers. So there is no need
+ This version uses relative pointers. So there is no need
  to generate the same pointers again when they are saved in a file.
  Multiple keys can be used and sorted in one go.
  The number of keys is only limited by the unused size of the stack.
@@ -20,7 +20,9 @@ Testet under Cforth, Win32forth and Gforth.
 
  Tested under Win32Forth Cforth and Gforth.
  Gforth under Linux and Win32Forth are able to sort different tables parallel.
- NOTES: In Win32Forth a source must contain Windows Line endings.
+
+ NOTES:
+ In Win32Forth a source must contain Windows Line endings.
 
  When mapped files are used:
  1.The table and the pointers must be mapped.
@@ -62,11 +64,10 @@ alias &key-len     cell+
 
 \ Adressing the table properties:
 
-4 cells value /table        \ The minimal needed size incl. 0
+5 cells value /table        \ The minimal needed size of the table properties
 
 : init-table                ( /table - &table ) dup allocate throw tuck swap erase ;
-\ : >record-list            ( &table - &list-records ) ; immediate
-\ >table-aptrs              ( &table - &list-adress-pointers ) cell+ ; \ Forth-depended defined
+\ : >table-aptrs            ( &table - &list-adress-pointers ) cell+ ; \ Forth-depended defined
 \ : >record-size            ( &table - &size-records )   2 cells+ ;    \ Forth-depended defined
 : >#records                 ( &table - &number-records ) 3 cells+ ;
 : table-size                ( &table - #bytes ) dup >#records @ swap >record-size @ * ;
@@ -180,6 +181,7 @@ s" cforth" ENVIRONMENT? 0= [IF]
       loop 2drop ;
 
 : build-ptrs    ( aptrs record-size #records -- )  0  add-ptrs ;
+
 : allocate-ptrs ( #records -- &aptrs )
     cells allocate
        if   cr ." The allocation of address pointers failed."  quit
