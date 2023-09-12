@@ -1,5 +1,6 @@
 marker -timediff.fth cr lastacf .name #19 to-column .( 01-08-2023 ) \ By J.v.d.Ven
-\ Time calculations.
+\ Time calculations.  Time specifications like  ( ss mm uu JD -  ) are in UTC
+\ unless otherwise indicated like: ( hhmmTargetLocal -- ) or ( f: UtcTics - ss mm uu dd mm yearLocal )
 
 f# -1 fvalue #diff-tics \ = #utcTicsRpi - ( msEsp / 1000 )
 f# -1 fvalue UtcOffset  \ Time zone depended
@@ -79,6 +80,7 @@ f# 86400. fconstant #SecondsOneDay
        then ;
 
 : LocalTics-from-UtcTics ( f: UtcTics - LocalTics ) UtcOffset f+ ;
+: UtcTics-from-LocalTics ( f: UtcTics - LocalTics ) UtcOffset f- ;
 
 : Jd-from-UtcTics        ( f: UtcTics - fjd )  #SecondsOneDay f/ f# 2440588 f+  ;
 
@@ -116,11 +118,11 @@ f# 86400. fconstant #SecondsOneDay
 f# 1e9     fconstant Nanoseconds
 f# 86400e0 fconstant #SecondsToDay
 
-: UtcTics-from-hm ( hhmmToday - ) ( f: - UtcTics )
+: UtcTics-from-hm ( hhmmTodayUTC - ) ( f: - UtcTics )
     #100 /mod 0 -rot date-now  UtcTics-from-Time&Date ;
 
 : #NsTill  ( hhmmTargetLocal -- ) ( F: -- NanosecondsUtc )
-  UtcTics-from-hm  @time f2dup f<
+  UtcTics-from-hm  UtcTics-from-LocalTics @time f2dup f<
       if   fswap #SecondsToDay f+ fswap \ Next day when the time has past today
       then
    f- Nanoseconds f* ;
@@ -159,7 +161,6 @@ f# 86400e0 fconstant #SecondsToDay
 
 0 value time-server$ \ Pointer to the ip address that responds to GetTcpTime
 
-
 : GetTcpTime ( - ) \ Sends: my-net-id" Ask_time
    HtmlPage$ off
    my-host-id" HtmlPage$ lplace
@@ -169,7 +170,7 @@ f# 86400e0 fconstant #SecondsToDay
 variable GotTime? GotTime? off
 0 value start-tic
 
-: SetLocalTime (  UtcTics UtcOffset sunrise  sunset - )
+: SetLocalTime (  UtcTics UtcOffset sunrise sunset - )
    s>f to UtcSunSet   s>f  to UtcSunRise    s>f to UtcOffset
    s>f get-secs s>f f- to #diff-tics true GotTime? ! ;
 
@@ -198,4 +199,33 @@ variable GotTime? GotTime? off
              then
      then   ;
 
-\ \s
+\ Manual input:
+
+: single? ( n$ cnt -- ) (number?) 0= abort" bad number" d>s ;
+
+: extract-time ( ssmmhh$ cnt - seconds minutes hours )
+   2dup 2>r drop 2 single?
+   2r@ 2 /string drop 2 single?
+   2r> 4 /string drop 2 single? ;
+
+: extract-date ( ddmmyyyy$ cnt - day mnont year )
+   2dup 2>r drop 2 single?
+   2r@ 2 /string drop 2 single?
+   2r> 4 /string drop 4 single? ;
+
+: enter-input  ( length -- string cnt )  pad dup rot accept ;
+
+: enter-date-time ( -- ss mm uu dd mm yearLocal )
+   cr ." Date ddmmyyyy: " 8 dup >r enter-input
+      dup r> <> abort" Need 8 positions. Like 21092023"
+   extract-date >r 2>r
+      ."   Time ssmmhh: " 6 dup >r enter-input
+   dup r> <>  abort" Time need 6 positions. Like 455918"
+   extract-time  2r> r> ;
+
+: set-time     ( - )
+   base @ decimal
+   enter-date-time UtcTics-from-Time&Date f>s
+   0 0 0 SetLocalTime  \  UtcOffset sunrise and sunset are ignored.
+   cr .date .time space base ! ;
+\s
