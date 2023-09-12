@@ -228,4 +228,4 @@ variable GotTime? GotTime? off
    enter-date-time UtcTics-from-Time&Date f>s
    0 0 0 SetLocalTime  \  UtcOffset sunrise and sunset are ignored.
    cr .date .time space base ! ;
-\s
+\ \s
