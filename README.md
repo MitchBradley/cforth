@@ -10,6 +10,6 @@ This branch contains the following extra options for the ESP32:
 - Pre-emptive multitasking
 - Usage of the system clock
 
-It does not use Platform. Installation:   
+It does not use PlatformIO. Installation:   
 cd ~/cforth/build/esp32   
 make flash
