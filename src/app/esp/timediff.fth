@@ -201,12 +201,16 @@ variable GotTime? GotTime? off
 
 \ Manual input:
 
-: single? ( n$ cnt -- ) (number?) 0= abort" bad number" d>s ;
+: single? ( n$ cnt -- n ) (number?) 0= if ." Bad number" then d>s  ;
 
-: extract-time ( ssmmhh$ cnt - seconds minutes hours )
-   2dup 2>r drop 2 single?
+: extract-time ( hhmm[ss]$ cnt - seconds minutes hours )
+   dup 6 = -rot 2>r
+     if    2r@ 4 /string drop 2 single?
+     else  0
+     then
    2r@ 2 /string drop 2 single?
-   2r> 4 /string drop 2 single? ;
+   2r> drop 2 single?
+    ;
 
 : extract-date ( ddmmyyyy$ cnt - day mnont year )
    2dup 2>r drop 2 single?
@@ -215,17 +219,26 @@ variable GotTime? GotTime? off
 
 : enter-input  ( length -- string cnt )  pad dup rot accept ;
 
-: enter-date-time ( -- ss mm uu dd mm yearLocal )
-   cr ." Date ddmmyyyy: " 8 dup >r enter-input
-      dup r> <> abort" Need 8 positions. Like 21092023"
-   extract-date >r 2>r
-      ."   Time ssmmhh: " 6 dup >r enter-input
-   dup r> <>  abort" Time need 6 positions. Like 455918"
-   extract-time  2r> r> ;
+: enter-date-time ( -- ss mm uu dd mm yearLocal flag )
+   cr ."   Date ddmmyyyy: " #8 dup >r enter-input
+   dup r> <>  dup 0= s>f
+        if   cr ." Date needs 8 positions. Like 21092023. "
+        then
+   extract-date dup #1970 <
+       if   fdrop false s>f cr ." Year must bigger than 1969. "
+       then
+   >r 2>r   ."   Time hhmm[ss]: " 6 enter-input
+   dup #4 < dup 0= s>f
+       if cr ." Time needs at least 4 positions. Like 1245. "
+       then
+   extract-time  2r> r> f>s f>s and ;
 
 : set-time     ( - )
    base @ decimal
-   enter-date-time UtcTics-from-Time&Date f>s
-   0 0 0 SetLocalTime  \  UtcOffset sunrise and sunset are ignored.
-   cr .date .time space base ! ;
+   enter-date-time
+     if    UtcTics-from-Time&Date f>s
+           0 0 0 SetLocalTime  \  UtcOffset sunrise and sunset are ignored.
+           cr .date .time
+     else  3drop 3drop cr ." Bad Time/date."
+     then  space base ! ;
 \ \s

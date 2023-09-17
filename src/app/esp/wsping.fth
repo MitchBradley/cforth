@@ -30,7 +30,8 @@ create prefix$ ," 192.168.0."
      then ;
 
 : ForUdpRange  ( from n cfa - )
-  dup cr .name
+\  dup cr .name
+cr
    -rot bounds
       ?do  i prefix$ count pad lplace dec(.) pad +lplace
            pad lcount cr 2dup type

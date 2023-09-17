@@ -47,7 +47,7 @@ s" gforth" ENVIRONMENT? [IF] 2drop
 [THEN]
 
 s" cforth" ENVIRONMENT? [IF] drop \ Extended version, may be loaded in ROM
-cr lastacf .name #19 to-column .( 30-06-2023 ) \ By J.v.d.Ven
+cr lastacf .name #19 to-column .( 07-09-2023 ) \ By J.v.d.Ven
 
 needs /circular      ../esp/extra.fth \ Assuming extra.fth is in ROM
 alias >table-aptrs cell+

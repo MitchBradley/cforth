@@ -214,7 +214,7 @@ VOCABULARY HTML HTML DEFINITIONS
      +HTML| padding: 5px 1px; |
      +HTML| text-align: center; |
      +HTML| border-radius: 12px;
-     +HTML| font-size: 18px; |
+     +HTML| font-size: 16px; |
      +HTML| width: 80px; |
 
      +HTML| background-color: #e7e7e7; |
@@ -341,13 +341,13 @@ variable depth-target
    dup #128 < if cr then  ." Evaluate: " 2dup type cr
    evaluating_tcp/ip
    20 0 do [char] - emit loop cr
-   SendHtmlPage ;
+   SendHtmlPage xt-htmlpage off ;
 
 : (handle-request) ( adrRequest lenRequest -- )
    cut-line  \ Extract the line with GET
    2dup remove_seperators
    evaluating_tcp/ip
-   SendHtmlPage ;
+   SendHtmlPage xt-htmlpage off ;
 
 defer handle-request   ' (handle-request) is handle-request
 

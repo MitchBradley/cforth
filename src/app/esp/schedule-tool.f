@@ -234,11 +234,12 @@ s" ' (sort-schedule) is sort-schedule" evaluate
 
 : #seconds-deep-sleeping  ( #seconds - )
    dup .time-duration
-   range-Gforth-servers 2@ -ArpRange
+   range-Gforth-servers 2@ -ArpRange 2000 ms
    esp-wifi-stop 1 rtc-clk-cpu-freq-set 10 ms
    cr ."  SLEEPING." deep-sleep ;
 
 60 60 * value seconds-before-sunset
+200 9 range-Gforth-servers 2! \ Network depended !
 
 : sleep-seconds-before-sunset        ( SecondsBeforeSunset - )
     UtcSunSet  @time f- s>f f- fdup f0>

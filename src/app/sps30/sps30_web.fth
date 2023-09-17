@@ -16,6 +16,7 @@ needs handle-sps30   ../sps30/sps30.fth  \ Needs to be compiled in ROM
 esp8266? [IF] cr .( Needs an extended version of Cforth on an ESP32! )
 cr .( See https://github.com/Jos-Ven/cforth/tree/WIP  ) QUIT [THEN]
 
+cr cr .(  WAIT for the webserver! ) cr
 
 DECIMAL
 
@@ -179,7 +180,10 @@ f# 0e0 fvalue f-interval
 
 : end-html-page-graph ( - )
    4 .HtmlSpaces
-   &CBdata-sps30 circular-range - .html   +HTML|  records. | </td>
+   &CBdata-sps30 circular-range -  dup .html   +HTML|  records. |  2 <
+      if  <br> +HTML|  The graph starts after 3 minutes.|
+      then
+   </td>
    <tdr> .forth-driven </td>
    </tr> </table> </fieldset>
    </td> </tr> </table> </body> </html> ;
@@ -293,13 +297,20 @@ create file-schedule-sps30 ," schedule-sps30.dat"
    ['] add-options-dropdown  html-schedule-list ;
 
 
+: start-Sps30-page
+   s" Sps30 " html-header
+  +HTML| <body bgcolor="#FEFFE6">|
+   <center> <h4>
+   +HTML| <table border="0" cellpadding="0" cellspacing="2" width="20%">|
+   <tr> <tdL> <fieldset> <legend> ;
+
 2 constant minutes-wakup-ahead
 
 : sleep-needed? ( - flag )
     scheduled @ 1+ n>sched.time@  time>mmhh - minutes-wakup-ahead < \ A new entry in sight ?
        if false exit                               \ No sleep needed
        then
-    0 n>sched.option@  Sleep-till-sunset-option =  \ Sleep option active?
+    0 n>sched.option@  Sleep-till-sunset-option =  \ Sleep option active? Then sleep until the next item!
     scheduled @ 1+ n>sched.time@  2359 < and  ;    \ Current entry inside schedule?
 
 
@@ -312,26 +323,54 @@ ALSO TCP/IP DEFINITIONS
      if   @time to boot-time
      then
    set-next-measurement-sps30
-   cr .date .time bl emit  restart-schedule
+   cr .date .time bl emit tTotal start-timer restart-schedule
    sleep-needed?     \ if true sleep until the next item in the schedule
       if  .pause-msg ."   Starting the sleeping-schedule" cr
           ['] poll-pause-sps30      to responder
           ['] (sleeping-schedule) is schedule-entry
-      then
-;
+      then ;
+
+: /set_time_form  ( - )
+   start-Sps30-page
+   s" /home" s" Chart" <<TopLink>>
+   <strong> +HTML| Sps30 | </strong>  .HtmlSpace </legend>
+   <br> +HTML| Set system date and time: |
+   <br> <br> +HTML|  <form> <input type="datetime-local" name="sys_time_user" value="0"> |
+   <br> <br> s" Set time" s" nn" <CssButton> </form>
+  </tr> </fieldset>   </td> </tr> </table>
+  </center>  </h4> </body> </html> ;
 
 : /home ( - )
-   start-html-page
-   [ifdef]  SitesIndex  SitesIndex [then]
-   s" /Schedule" s" Schedule" <<TopLink>>
-   s" /list"     s" List"     <<TopLink>>
-   s" /NumConc"  s" Number"   <<TopLink>>
-   s" /Tps"      s" Tps"      <<TopLink>>
-   +TimeDate/legend
-   pm-chart   ;
+   time-server$ GotTime? @ or
+      if    start-Sps30-page
+            [ifdef]  SitesIndex  SitesIndex [then]
+            s" /set_time_form" s" Set time" <<TopLink>>
+            s" /Schedule" s" Schedule" <<TopLink>>
+            s" /list"     s" List"     <<TopLink>>
+            s" /NumConc"  s" Number"   <<TopLink>>
+            s" /Tps"      s" Tps"      <<TopLink>>
+            +TimeDate/legend
+            pm-chart
+      else  /set_time_form  \ Need a local time first
+      then  ;
+
+
+: sys_time_user ( - ) \ Actions after /set_time_form
+  parse-word
+  2dup [char] - remove_seperator
+  2dup [char] T remove_seperator
+  2dup [char] % remove_seperator
+  2dup [char] A remove_seperator
+  evaluate nip 0
+  swap rot \ - Y m d H m s
+  3 roll 4 roll 5 roll
+  UtcTics-from-Time&Date f>s 0 0 0 SetLocalTime
+  ms@ to start-tic tTotal start-timer restart-schedule
+  cr .date .time cr
+  ['] /home set-page ;
 
 : /NumConc ( - )
-   start-html-page
+   start-Sps30-page
    [ifdef]  SitesIndex  SitesIndex [then]
    s" /Schedule" s" Schedule" <<TopLink>>
    s" /list" s" List"         <<TopLink>>
@@ -341,7 +380,7 @@ ALSO TCP/IP DEFINITIONS
    nc-chart ;
 
 : /Tps ( - )
-   start-html-page
+   start-Sps30-page
    [ifdef]  SitesIndex  SitesIndex [then]
    s" /Schedule" s" Schedule" <<TopLink>>
    s" /list"    s" List"      <<TopLink>>
@@ -351,7 +390,7 @@ ALSO TCP/IP DEFINITIONS
    tps-chart ;
 
 : /list ( -- )    \ Builds the HTML-page starting at HtmlPage$
-   ['] noop set-page  start-html-page
+   ['] noop set-page  start-Sps30-page
    [ifdef]  SitesIndex  SitesIndex [then]
    s" /Schedule" s" Schedule" <<TopLink>>
    +HTML| List last 20 records  |  +TimeDate/legend
@@ -478,7 +517,11 @@ PREVIOUS SPS30 DEFINITIONS
    0  to WaitForSleeping-
    send_ask_time \ check-time
    500 ms>ticks to poll-interval
-   cr ." The first results appear after 30 seconds." cr
+   cr ." The first results appear after 30 seconds in the list." cr
+   cr cr ." Now, the webserver is active!  "
+   time-server$ 0=
+     if   cr ." Enter the date and time in the webserver." cr
+     then
    program-loop   \ Contains the loop of the server
  ;
 

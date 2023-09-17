@@ -1,6 +1,8 @@
 \ ntc_web.fth   to see the measured temperature of an NTC in a browser.
 \ Compile this file in RAM when the ESP32 boots.
 
+ cr cr .(  WAIT for the webserver! ) cr
+
 0 value Rpi1-server$   \ Used when the sensorweb is not active at port 8899
 0 value ESP2-server$   \ Used when there is no message board at port 8899
 
@@ -160,17 +162,19 @@ f# 5e0 f# 60e0 f* fvalue fcycle-time \ Time between two records in &CBdata
    1 to fmeasure-complete  ;
 
 : take-ntc-samples ( - )  \ *1
-   time-server$  0<>
-      if  GotTime? @ 0=
-            if    check-time
-            then
-      then
+   GotTime? @ 0=
+     if time-server$  0<>
+         if  check-time \ Get the time from a local network
+         \ else set-time  \ Input the time by hand.
+         then
+     then
    adc-channel adc-mv-av Vntc Rntc ntc-sh
    &sample-buffer-ntc >circular-head f!
    &sample-buffer-ntc incr-cbuf-count
    &sample-buffer-ntc >cbuf-count @ #max-samples >=
       if   ['] send-data SetStage
-      then ;
+      then
+    ;
 
 : wait-for-next-sample ( - )  \ *5
    (local-time-now) f>s next-measurement-ntc  > \  tTotal tElapsed?
@@ -279,33 +283,63 @@ f# 5e0 f# 60e0 f* fvalue fcycle-time \ Time between two records in &CBdata
    </svg>
    <tr> <tdL>  \ .HtmlSpace \ <br>
    TempColor .Legend  +HTML| Temperature (C). |
-   &CBdata circular-range - .html   +HTML|  records.| <td>
+   &CBdata circular-range -  dup .html   +HTML|  records.|  2 <
+     if  +HTML|  The graph starts after 5 minutes.|
+     then  <td>
    <tdR> .forth-driven  <td>
    </tr> ;
 
 : start-ntc-page ( - )
    s" Ntc " html-header  +HTML| <body bgcolor="#FEFFE6">|
    <center> <h4>
-   +HTML| <table border="0" cellpadding="0" cellspacing="2" width="1%">|
+   +HTML| <table border="0" cellpadding="0" cellspacing="2" width="20%">|
    <tr> <tdL> <fieldset> +html| <legend align="left">|
          [ifdef] SitesIndex SitesIndex
          [then] ;
 
-
 ALSO TCP/IP DEFINITIONS
 
-
-: /home  ( - )  \ /home
+: /set_time_form  ( - )
    start-ntc-page
-   s" /list" s" List" <<TopLink>>
+   s" /home" s" Chart" <<TopLink>>
+   <strong> +HTML| Ntc&nbsp;outside| </strong>  .HtmlSpace </legend>
+   <br> +HTML| Set system date and time: |
+   <br> <br> +HTML|  <form> <input type="datetime-local" name="sys_time_user" value="0"> |
+   <br> <br> s" Set time" s" nn" <CssButton> </form>
+  </tr> </fieldset>   </td> </tr> </table>
+  </center>  </h4> </body> </html>
+;
+
+: /home  ( - )
+   time-server$ GotTime? @ or
+   if   start-ntc-page
+        s" /set_time_form" s" Set time" <<TopLink>>
+        s" /list" s" List" <<TopLink>>
             <strong> +HTML| Ntc Outside | </strong> +TimeDate/legend
-   +HTML| <table border="0" cellpadding="0" cellspacing="2"  heigth="1%" width="900px">|
-   html-chart
-   </table>
-   </fieldset> </td> </tr> </table> ;
+        +HTML| <table border="0" cellpadding="0" cellspacing="2"  heigth="1%" width="900px">|
+        html-chart
+        </table>
+         </fieldset> </td> </tr> </table>
+   else  /set_time_form  \ Need a local time first
+   then  ;
 
 : TcpTime ( UtcTics UtcOffset sunrise  sunset - ) \ Response to GetTcpTime see timediff.fth
-   SetLocalTime   ms@ to start-tic    cr .date .time bl emit ;
+   SetLocalTime   ms@ to start-tic tTotal start-timer cr .date .time cr ;
+
+: sys_time_user ( - ) \ Actions after /set_time_form
+  parse-word
+  2dup [char] - remove_seperator
+  2dup [char] T remove_seperator
+  2dup [char] % remove_seperator
+  2dup [char] A remove_seperator
+  evaluate nip 0
+  swap rot \ - Y m d H m s
+  3 roll 4 roll 5 roll
+  UtcTics-from-Time&Date f>s 0 0 0 SetLocalTime
+  ms@ to start-tic tTotal start-timer GotTime? ?
+  cr .date .time cr
+  ['] /home set-page ;
+
 
 : /List  ( -- )    \ /List Builds the HTML-page starting at HtmlPage$
    start-ntc-page
@@ -392,14 +426,14 @@ FORTH DEFINITIONS TCP/IP
    ['] take-ntc-samples SetStage
    set-next-measurement-ntc
    ALSO TCP/IP SEAL
-   cr ." The first results appear after 2 minutes." cr
+   cr ." The first results appear after 2 minutes in the list." cr
    send_ask_time
    latest-temperature ! sent-temp-hum-to-msgboard Sent-state
 
    10 ms 1 rtc-clk-cpu-freq-set
-   cr esp-clk-cpu-freq 1000000 / . ." Mhz "
+   100 ms esp-clk-cpu-freq 1000000 / . ." Mhz "
    500 ms>ticks to poll-interval
-
+   cr cr ." Now, the webserver is active!  "
    program-loop         \ Contains the loop of the server
    +f order cr quit ;
 
@@ -411,7 +445,6 @@ FORTH DEFINITIONS TCP/IP
 
 
 PREVIOUS PREVIOUS
-
 
 true to stages-
 cr .free
