@@ -2,6 +2,7 @@
 
 vocabulary environment  environment definitions
 
+true constant cforth
 #align constant /align
 1 chars constant /char
 td 255 constant /counted-string

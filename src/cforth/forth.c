@@ -556,7 +556,7 @@ execute:
      // Forth execution can be resumed where it left off
      // by calling inner_interpreter() without changing
      // the stacks.  The call to inner_interpreter() can
-     // be scheduled on a timer or an event 
+     // be scheduled on a timer or an event
      scr = 3;   // Return value from inner_interpreter
      goto out;
 
@@ -1524,7 +1524,7 @@ doccall(cell (*function_adr)(), u_char *format, cell *up)
     cell arg0 = 0, arg1 = 0, arg2 = 0, arg3 = 0, arg4 = 0, arg5 = 0,
         arg6 = 0, arg7 = 0, arg8 = 0, arg9 = 0, arg10 = 0, arg11 = 0;
     cell ret;
-    char cstr[4][128];
+    char cstr[4][140];
     int strn = 0;
 
 /* The following cases are ordered by expected frequency of occurrence */
@@ -1532,7 +1532,7 @@ doccall(cell (*function_adr)(), u_char *format, cell *up)
     switch(*format++) {\
         case 'i': var = *sp++; break;\
         case '-': goto doccall;\
-        case '$': ret = *sp++; var = (cell) altocstr((char *)(*sp++), ret, cstr[strn++], 128); break;\
+        case '$': ret = *sp++; var = (cell) altocstr((char *)(*sp++), ret, cstr[strn++], 140); break;\
         case 'a': var = (cell) (*sp++); break;\
         case 'l': var = *sp++; break;\
     }
