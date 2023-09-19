@@ -1,0 +1,4 @@
+:noname  " MySSID" ;  to wifi-sta-ssid
+:noname  " MyPassword"   ;  to wifi-sta-password
+
+wifi-sta-on
