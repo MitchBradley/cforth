@@ -57,38 +57,28 @@ also modem
 previous
 
 fl files.fth
-fl server.fth
-fl tasking_rtos.fth         \ Pre-empty multitasking
 
-fl tools/extra.fth
-fl tools/table_sort.f
-fl tools/timediff.fth      \ Time calculations. The local time was received from a RPI
-fl tools/webcontrols.fth   \ Extra tags in ROM
-fl tools/svg_plotter.f
-fl tools/rcvfile.fth
-fl tools/wsping.fth
-fl tools/schedule-tool.f   \ Daily schedule
-fl ../sps30/sps30.fth       \ For sps30_webV2.fth
+fl server.fth
+
+fl tasking_rtos.fth         \ Preemptive multitasking
+
 
 \ Replace 'quit' to make CForth auto-run some application code
 \ instead of just going interactive.
 \ : app  banner  hex init-i2c  showstack  quit  ;
 : interrupt?  ( -- flag )
    ." Type a key within 2 seconds to interact" cr
-\   #20 0  do  key?  if  key drop  true unloop exit  then  #100 ms  loop
-   #20 0  do  #100 ms  key?  if  key drop  true unloop exit  then   loop
+   #20 0  do  key?  if  key drop  true unloop exit  then  #100 ms  loop
    false
 ;
 : load-startup-file  ( -- )  " start" included   ;
 
-: app   \ 21 Ms
+: app
    banner  hex
    interrupt?  if  quit  then
    ['] load-startup-file catch drop
    quit
 ;
-
-[THEN] \ 1
 
 alias id: \
 
