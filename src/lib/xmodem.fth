@@ -55,7 +55,6 @@ d# 24 constant can
 ;
 d# 3000 timeout: short-timeout  d# 6000 timeout: long-timeout
 d# 60000 timeout: initial-timeout
-short-timeout
 
 : gobble  ( -- ) \ eat characters until they stop coming
    d# 100 timeout!   begin  timed-in  0=  while  drop  repeat   long-timeout
@@ -193,7 +192,7 @@ variable end-adr
 : start-receive  ( adr maxlen -- )
    over base-adr !        ( adr maxlen )
    + end-adr !            ( )
-   receive-setup  gobble	      
+   receive-setup  gobble
    nak m-emit
 ;
 : (receive)  ( adr maxlen -- adr len )  start-receive  +receive drop  ;
@@ -209,7 +208,7 @@ modem definitions
       true exit
    then
 [then]
-   
+
    #errors off
    begin
       ?interrupt
@@ -258,8 +257,8 @@ variable sector#
 : padch  ( -- b )  control Z  sector# @  0<>  and  ;
 \ Send without confirmation
 : send-packet  ( adr len big? -- )
-   if  1k  stx  else  128by soh  then  ( adr len /sec start ) 
-   m-emit                                       ( adr len /sec ) 
+   if  1k  stx  else  128by soh  then  ( adr len /sec start )
+   m-emit                                       ( adr len /sec )
 
    \ Sector number
    sector# @  dup m-emit  h# ff xor m-emit      ( adr len /sec )
@@ -275,7 +274,7 @@ variable sector#
       swap 0  ?do  padch  dup m-emit  +  loop   ( sum' )
       m-emit                                    ( )
    then                                         ( )
-; 
+;
 
 \ Send until delivery confirmed
 : deliver-packet  ( adr len big? -- )
