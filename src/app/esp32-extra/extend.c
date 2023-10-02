@@ -75,6 +75,7 @@ extern void uart_read_bytes(void);
 extern void time_t_now(void);
 extern void time_t_ms(void);
 extern void time_t_sec(void);
+extern void my_spiffs_unmount(void);
 
 int xTaskGetTickCount(void);
 void raw_emit(char c);
@@ -334,6 +335,8 @@ cell ((* const ccalls[])()) = {
 	C(rename_file)		//c rename-file    { $.old $.new -- }
 	C(delete_file)		//c delete-file    { $.name -- }
 	C(fs_avail)		//c fs-avail       { -- i.bytes }
+        C(my_spiffs_unmount)	//c spiffs-unmount { -- }
+
 
 	C(raw_emit)		//c m-emit         { i.char -- }
 

@@ -487,8 +487,7 @@ PREVIOUS SPS30 DEFINITIONS
    time-server$ 0<>
      if     cr ." Ask time from: " 100 ms time-server$ count type
             ms@ >r asktime ms@ r> - dup space . ." ms "  1000 >
-                 if   cr ." Stream failed. Rebooting." 1500 ms
-                      esp-wifi-stop 200 ms 2 deep-sleep
+                 if   cr ." Stream failed. Rebooting." 1500 ms 3 DeepSleep
                  then
      then ;
 

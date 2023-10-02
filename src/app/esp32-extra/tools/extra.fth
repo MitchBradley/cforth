@@ -273,10 +273,13 @@ test-1second
          else  r> drop 2drop 0 0
          then ;
 
-: Reboot ( - )
-  ." Rebooting..."
-    [ifdef]  esp-wifi-stop esp-wifi-stop 50 ms
-    [then]   1 deep-sleep ;
+: DeepSleep ( sec - )
+   [ifdef] esp-wifi-stop  esp-wifi-stop  spiffs-unmount 3 rtc-clk-cpu-freq-set
+   [else]  wifi-off
+   [then]
+   1 max deep-sleep ;
+
+: Reboot ( - )  ." Rebooting..." 1 DeepSleep ;
 
 : ##$        ( seperator n -- adr cnt ) s>d <# # #  2 pick hold  #> rot 0= abs /string ;
 
@@ -455,12 +458,8 @@ create TcpPort$ ," 8080"     create UdpPort$ ," 8899"
 
 : SleepIfNotConnected ( #sec-deep-sleep - )
     ipaddr@ @ 0=
-      if    100 ms cr  ." No connection. Entering sleep mode..."
-           [ifdef]  spi_master_write64  wifi-off drop 100 ms deep-sleep
-           [else]   3 rtc-clk-cpu-freq-set esp-wifi-stop 100 ms deep-sleep
-           [then]
-
-      else drop
+      if    100 ms cr  ." No connection. Entering sleep mode..." 1 DeepSleep
+      else  drop
       then ;
 
 : crlf$		( -- adr n )    " "r"n" ;

@@ -235,8 +235,8 @@ s" ' (sort-schedule) is sort-schedule" evaluate
 : #seconds-deep-sleeping  ( #seconds - )
    dup .time-duration
    range-Gforth-servers 2@ -ArpRange 2000 ms
-   esp-wifi-stop 1 rtc-clk-cpu-freq-set 10 ms
-   cr ."  SLEEPING." deep-sleep ;
+   esp-wifi-stop spiffs-unmount 1 rtc-clk-cpu-freq-set 10 ms
+   cr ."  SLEEPING." 3 max deep-sleep ;
 
 60 60 * value seconds-before-sunset
 200 9 range-Gforth-servers 2! \ Network depended !
@@ -330,7 +330,7 @@ ALSO HTML
       loop ;
 
 : html-schedule-list ( xt-option-list - )
-   +HTML| <table border="0" cellpadding="0" cellspacing="12" width="380px">|
+   +HTML| <table border="0" cellpadding="0" cellspacing="12" width="400px">|
       <tr> 2 <#tdL> +HTML| Daily schedule:| </td> </tr>
       <tr>   <td>  +HTML| Start| </td> <td>  +HTML| Action| </td>
              <td>  +HTML| Confirm| </td>

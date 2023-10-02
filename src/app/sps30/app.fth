@@ -58,7 +58,7 @@ previous
 
 fl files.fth
 fl server.fth
-fl tasking_rtos.fth         \ Pre-empty multitasking
+fl tasking_rtos.fth        \ Pre-empty multitasking
 
 fl tools/extra.fth
 fl tools/table_sort.f
@@ -68,27 +68,29 @@ fl tools/svg_plotter.f
 fl tools/rcvfile.fth
 fl tools/wsping.fth
 fl tools/schedule-tool.f   \ Daily schedule
-fl ../sps30/sps30.fth       \ For sps30_webV2.fth
+fl ../sps30/sps30.fth      \ For sps30_webV2.fth
 
-\ Replace 'quit' to make CForth auto-run some application code
-\ instead of just going interactive.
-\ : app  banner  hex init-i2c  showstack  quit  ;
+
 : interrupt?  ( -- flag )
    ." Type a key within 2 seconds to interact" cr
-\   #20 0  do  key?  if  key drop  true unloop exit  then  #100 ms  loop
    #20 0  do  #100 ms  key?  if  key drop  true unloop exit  then   loop
    false
 ;
-: load-startup-file  ( -- )  " start" included   ;
 
-: app   \ 21 Ms
-   banner  hex
-   interrupt?  if  quit  then
-   ['] load-startup-file catch drop
+: load-startup-file  ( -- ior )   " start" ['] included catch   ;
+
+: app ( - ) \ Sometimes SPIFFS or a wifi connection causes an error. A reboot solves that.
+   banner  hex  interrupt? 0=
+      if     s" start" file-exist?
+           if   load-startup-file
+                if   ." Reading SPIFFS. " cr interrupt? 0=
+                    if    reboot
+                    then
+                then
+           then
+      then
    quit
 ;
-
-[THEN] \ 1
 
 alias id: \
 
