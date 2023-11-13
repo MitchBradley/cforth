@@ -1,4 +1,4 @@
-marker -rcvfile.fth  cr lastacf .name #19 to-column  .( 17-07-2023 ) \ By J.v.d.Ven
+marker -rcvfile.fth  cr lastacf .name #19 to-column  .( 11-11-2023 ) \ By J.v.d.Ven
 \ To receive an ASCII file over a wifi connection
 
 \ Needed in ROM

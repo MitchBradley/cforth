@@ -528,6 +528,11 @@ char *expand_path(char *name)
     return path;
 }
 
+void my_spiffs_unmount(void)
+{
+    spiffs_unmount(0);
+}
+
 void *open_dir(void)
 {
     return opendir(expand_path(""));
@@ -591,23 +596,16 @@ void IRAM_ATTR us(cell us)
     ets_delay_us(us);
 }
 
-int IRAM_ATTR time_t_now()
+int IRAM_ATTR get_system_time(struct timeval *tp)
 {
 struct timeval tv = { .tv_sec = 0, .tv_usec = 0 };
-         gettimeofday(&tv, NULL);
-return tv.tv_sec*(uint64_t)1000000+tv.tv_usec;
+        gettimeofday(&tv, NULL);
+        *tp = tv;
+        return 0;
 }
 
-int IRAM_ATTR time_t_ms()
+void set_system_time(cell sec)
 {
-struct timeval tv = { .tv_sec = 0, .tv_usec = 0 };
-         gettimeofday(&tv, NULL);
-return tv.tv_sec*(uint64_t)1000+tv.tv_usec/1000;
-}
-
-int IRAM_ATTR time_t_sec()
-{
-struct timeval tv = { .tv_sec = 0, .tv_usec = 0 };
-         gettimeofday(&tv, NULL);
-return tv.tv_sec;
+struct timeval tv = { .tv_sec =  sec };
+         settimeofday(&tv,NULL);
 }

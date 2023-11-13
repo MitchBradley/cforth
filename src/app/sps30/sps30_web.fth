@@ -1,22 +1,20 @@
 s" MachineSettings.fth" file-exist? [if] fl MachineSettings.fth [then]
-marker -sps30_web.fth  cr lastacf .name #19 to-column .( 04-05-2023 ) \ By J.v.d.Ven
+marker -sps30_web.fth  cr lastacf .name #19 to-column .( 11-11-2023 ) \ By J.v.d.Ven
 
 \ To see the air quality in a web browser.
 \ The SPS30 should be connected to an extra UART on the ESP32. See sps30.fth
 
 \ Needed in ROM:
-needs /circular      ../esp/extra.fth
-needs AskTime        ../esp/timediff.fth
-needs Html	     ../esp/webcontrols.fth
-needs svg_plotter.f  ../esp/svg_plotter.f
+needs /circular       tools/extra.fth
+needs AskTime         tools/timediff.fth
+needs Html	      tools/webcontrols.fth
+needs -svg_plotter.f  tools/svg_plotter.f
 
 ALSO HTML ALSO SPS30 DEFINITIONS
-needs handle-sps30   ../sps30/sps30.fth  \ Needs to be compiled in ROM
+needs handle-sps30   ../sps30/sps30.fth  \ Needs also to be compiled in ROM
 
 esp8266? [IF] cr .( Needs an extended version of Cforth on an ESP32! )
 cr .( See https://github.com/Jos-Ven/cforth/tree/WIP  ) QUIT [THEN]
-
-cr cr .(  WAIT for the webserver! ) cr
 
 DECIMAL
 
@@ -245,9 +243,6 @@ here dup to &options-table
 ' start-sleep    dup , >name$ , ,
 ' start-cleaning dup , >name$ , ,
 
-
-\ ' initial-sleep  dup , >name$ , ,
-
 here swap - /option-record  / to #option-records
 create file-schedule-sps30 ," schedule-sps30.dat"
 
@@ -264,17 +259,21 @@ create file-schedule-sps30 ," schedule-sps30.dat"
 
 : .pause-msg ( - ) cr  ." [<Esc>,Pause,Resume,View,Html]" ;
 
+: ticks-next-second ( us-start - #ticks )
+   f# 1e6 us-to-deadline fus>fms fround f>d drop ms>ticks  ;
+
 : sensor+http-responder   ( timeout -- )
-   timed-accept us@ >r stages-
+   usf@ timed-accept stages-
        if  dup abs .
        then
        if   handle-sps30 \  runs measurements and the schedule of the sps30
        else http-responder
        then
-   1000 us@ r> - 1000 / - 200 max ms>ticks to poll-interval ;
+   ticks-next-second 20 max to poll-interval ;
+
 
 : poll-pause-sps30 ( timeout -- )
-   1000 ms>ticks to poll-interval
+   usf@ ticks-next-second  to poll-interval
    timed-accept 0=
      if  http-responder
      then
@@ -313,22 +312,26 @@ create file-schedule-sps30 ," schedule-sps30.dat"
     0 n>sched.option@  Sleep-till-sunset-option =  \ Sleep option active? Then sleep until the next item!
     scheduled @ 1+ n>sched.time@  2359 < and  ;    \ Current entry inside schedule?
 
+: check-sleep-schedule
+   sleep-needed?     \ if true sleep until the next item in the schedule
+      if  .pause-msg ."   Starting the sleeping-schedule" cr
+          ['] poll-pause-sps30      to responder
+          ['] (sleeping-schedule) is schedule-entry
+      then
+ ;
 
 ALSO TCP/IP DEFINITIONS
 
 : TcpTime ( UtcTics UtcOffset sunrise  sunset - ) \ Response to GetTcpTime see timediff.fth
    SetLocalTime
-   ms@ to start-tic
+   usf@ fdup to start-tic  to tcycle
+   tSps30 start-timer  tTotal start-timer
    boot-time f0=
      if   @time to boot-time
      then
    set-next-measurement-sps30
    cr .date .time bl emit tTotal start-timer restart-schedule
-   sleep-needed?     \ if true sleep until the next item in the schedule
-      if  .pause-msg ."   Starting the sleeping-schedule" cr
-          ['] poll-pause-sps30      to responder
-          ['] (sleeping-schedule) is schedule-entry
-      then ;
+   check-sleep-schedule ;
 
 : /set_time_form  ( - )
    start-Sps30-page
@@ -341,7 +344,7 @@ ALSO TCP/IP DEFINITIONS
   </center>  </h4> </body> </html> ;
 
 : /home ( - )
-   time-server$ GotTime? @ or
+   time-server$ GotTime? or
       if    start-Sps30-page
             [ifdef]  SitesIndex  SitesIndex [then]
             s" /set_time_form" s" Set time" <<TopLink>>
@@ -351,9 +354,8 @@ ALSO TCP/IP DEFINITIONS
             s" /Tps"      s" Tps"      <<TopLink>>
             +TimeDate/legend
             pm-chart
-      else  /set_time_form  \ Need a local time first
+      else  /set_time_form    \ Need a local time first
       then  ;
-
 
 : sys_time_user ( - ) \ Actions after /set_time_form
   parse-word
@@ -361,13 +363,19 @@ ALSO TCP/IP DEFINITIONS
   2dup [char] T remove_seperator
   2dup [char] % remove_seperator
   2dup [char] A remove_seperator
-  evaluate nip 0
-  swap rot \ - Y m d H m s
-  3 roll 4 roll 5 roll
-  UtcTics-from-Time&Date f>s 0 0 0 SetLocalTime
-  ms@ to start-tic tTotal start-timer restart-schedule
-  cr .date .time cr
-  ['] /home set-page ;
+  evaluate depth
+     if   nip 0
+          swap rot \ - Y m d H m s
+          3 roll 4 roll 5 roll
+          UtcTics-from-Time&Date f>s 0 0 0 SetLocalTime
+          usf@ to tcycle
+          tSps30 start-timer  tTotal start-timer
+          usf@ to start-tic tTotal start-timer restart-schedule
+          check-sleep-schedule
+     then
+   cr .date .time cr
+   ['] /home set-page
+ ;
 
 : /NumConc ( - )
    start-Sps30-page
@@ -403,6 +411,7 @@ ALSO TCP/IP DEFINITIONS
 \  ---- Schedule page ----
 
 : /Schedule  ( - ) ['] Schedule-page set-page ;
+: /Scheduled  ( - ) clr-req-buf ['] Schedule-page set-page ;
 
 : SetEntrySchedule \ ( id hh mm #DropDown - ) | ( id  #DropDown - )
    SetEntry-schedule  /Schedule ;
@@ -418,28 +427,22 @@ alias / /home
 \ --------------
 
 
-PREVIOUS SPS30 DEFINITIONS
+SPS30 DEFINITIONS
 
 
 : init-res ( - )
    ['] sensor+http-responder to responder
    wifi-logon-state  -2 =
-     if  #500000 us logon
+     if  #1000000 us logon
      then
    1800 SleepIfNotConnected
-   s" 192.168.0.212" dup 1+ allocate drop dup to msg-board$ place
-   s" 192.168.0.201" dup 1+ allocate drop dup to sensor-web$  place
-
-\   s" -" tmp$ lplace ipaddr@ ipaddr$ 10 /string tmp$ +lplace
-\   s" - Sps30 sensor." tmp$ +lplace
-\   tmp$ lcount dup 1+ allocate drop dup to pagetitle$ place
-
    file-schedule-sps30 init-schedule
    init-HtmlPage
-
    InitDataParms
    #20 to #Max_X_Lines
    http-listen ;
+
+PREVIOUS
 
 : .inverted ( n - not-n )  not dup  if  ."  Yes." else ."  No." then ;
 
@@ -457,6 +460,11 @@ PREVIOUS SPS30 DEFINITIONS
           .pause-msg
    endcase ;
 
+: empty-keybuf  ( - )
+   begin  key?
+   while  key drop 50 ms
+   repeat ;
+
 : program-loop ( - )
    begin key?
            if  key dup #27 =
@@ -466,38 +474,63 @@ PREVIOUS SPS30 DEFINITIONS
                     +f ONLY FORTH ALSO SPS30  order cr quit
                else  set-responder
                then
-           begin  key?  while key  drop
-           repeat
+           empty-keybuf
            then
          1800 SleepIfNotConnected    \ Sleep for 30 minutes if there is no wifi connection
-         poll-interval responder
+          usf@ ticks-next-second responder
         \  1 to fmeasure-complete es \ To test the schedule without a sps30
    again ;
 
 : faster ( - )
    1 to cycle-time
    1 to #max-samples
-   #1000 to time-1-sample
-   #1000 to warm-up-time ;
+   f# 1e3 to time-1-sample
+   f# 1e3 to warm-up-time ;
 
 
 1 value sps30?
 
 : send_ask_time ( - )
    time-server$ 0<>
-     if     cr ." Ask time from: " 100 ms time-server$ count type
-            ms@ >r asktime ms@ r> - dup space . ." ms "  1000 >
-                 if   cr ." Stream failed. Rebooting." 1500 ms 3 DeepSleep
-                 then
+     if  GotTime?
+          if    check-sleep-schedule
+          else  cr ." Ask time from: " 100 ms time-server$ count type
+                ms@ >r asktime ms@ r> - dup space . ." ms "  1000 >
+                  if   cr ." Stream failed. Rebooting..." 1500 ms 3 DeepSleep
+                  then
+          then
      then ;
 
+: .homepage-adr ( - )
+    bold ."  http://" ipaddr@ .ipaddr ." /home " norm  ;
+
+: set-timings ( - )
+   cr ." Cycle time: "   cycle-time f# 60000000 f/ f>s . ." minutes."
+   cr ." Max log time: " /CBdata-sps30 s>f cycle-time f*
+         f# 3600000000 f/ f>s 24 /mod . ." days and " . ." hours." cr
+   ['] 1st-measurement SetStage
+   10 ms 1 rtc-clk-cpu-freq-set
+   cr esp-clk-cpu-freq 1000000 / . ." Mhz "
+   cr ." Alarm-limit: " alarm-limit f.
+   0  to WaitForSleeping-
+   empty-keybuf
+   1000 ms>ticks to poll-interval
+   cr ." The first results appear after 30 seconds in the list." cr
+   time-server$ 0=
+     if   space GotTime? 0=
+               if  cr ." Enter the date and time in the webserver."
+               then
+     else  send_ask_time \ check-time
+     then
+   cr ." The home page of the webserver is:" .homepage-adr cr ;
+
 : start-web-server  ( -- )
+   cr .date .time
    cr htmlpage$ 0=
        if      init-res
-       else    restart-schedule
-               ." Listening again."
+       else    ." Listening again."
        then
-   TCP/IP SEAL
+   restart-schedule TCP/IP SEAL
    sps30?
       if  init-sps30 .device-information
               3 startMeasurement wait-status-reg
@@ -506,27 +539,11 @@ PREVIOUS SPS30 DEFINITIONS
                if  init-res-sps30
                then
       then
-   cr ." Cycle time: "   cycle-time 60000 / . ." minutes."
-   cr ." Max log time: " /CBdata-sps30 cycle-time *
-         3600000 / 24 /mod . ." days and " . ." hours." cr
-   ['] 1st-measurement SetStage
-   10 ms 1 rtc-clk-cpu-freq-set
-   cr esp-clk-cpu-freq 1000000 / . ." Mhz "
-   cr ." Alarm-limit: " alarm-limit f.
-   0  to WaitForSleeping-
-   send_ask_time \ check-time
-   500 ms>ticks to poll-interval
-   cr ." The first results appear after 30 seconds in the list." cr
-   cr cr ." Now, the webserver is active!  "
-   time-server$ 0=
-     if   cr ." Enter the date and time in the webserver." cr
-     then
+   set-timings
    program-loop   \ Contains the loop of the server
  ;
 
 f# 3.0e0 to alarm-limit
-
-
 
 cr .free cr  ORDER cr
 

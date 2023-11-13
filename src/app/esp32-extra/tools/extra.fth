@@ -1,13 +1,11 @@
-marker -extra.fth  cr lastacf .name #19 to-column .( 06-08-2023 ) \ By J.v.d.Ven
+marker -extra.fth  cr lastacf .name #19 to-column .( 11-11-2023 ) \ By J.v.d.Ven
 \ Additional words I often use.
 
 alias b   bye
 alias cls reset-terminal
 alias h.  .h
-alias ms@ get-msecs
 alias word-join  wljoin
 alias word-split lwsplit
-
 
 : lower-char ( C -- c )
    dup [char] A [char] Z between
@@ -19,6 +17,9 @@ alias word-split lwsplit
          do  i c@ lower-char i c!
          loop
    $sift ;
+
+: s>f         ( n -- ) ( f: - n )  s>d d>f ;
+: f>s         ( -- n ) ( f: n - )  f>d d>s ;
 
 [ifdef]  spi_master_write64  true  [else]  false  [then]  constant esp8266?
 
@@ -51,12 +52,83 @@ alias cpu_freq@   esp-clk-cpu-freq
 \ For an extra uart
 0    value uart_num
 #130 value /RxBuf
- 0   value &RxBuf
+0    value &RxBuf
 
 : send-tx ( adr cnt -  )
    tuck swap uart_num uart-write-bytes <> abort" uart-write-bytes failed" ;
 
 : read-rx ( - #read )  0 /RxBuf &RxBuf uart_num  uart-read-bytes ;
+
+: create-timer: ( <name> - ) 3 cells  buffer: ;  \ Map: cell-flag float-UsTimeStart
+: start-timer   ( timer - )  true over ! cell+ usf@ f! ;
+: .tElapsed     ( timer - )  dup usf@  cell+ f@  f- f# 0.001 f* f. ." ms" ;
+
+: tElapsed? ( f: us-elapsed - ) ( timer - flag )
+   dup @
+      if    cell+ f@  f+ usf@ f< \ Time elapsed?
+      else  2drop false          \ The timer is off
+      then ;
+
+0 [if] \ Usage:
+
+create-timer: ttimer
+
+: test-1second ( - )
+    ttimer start-timer   begin   f# 1e6 ttimer tElapsed?  until ;
+
+test-1second
+
+[then]
+
+: min>fus  ( minutes - ) ( F: - us ) s>f f# 60e6  f* ;
+: hrs>fus  ( hours - ) ( F: - us )   #60 * min>fus ;
+: fus>fsec ( F: us - sec ) f# 1e-6 f* ;
+: fus>fms  ( F: us - ms )  f# 1e-3 f* ;
+: fsec>fus ( F: sec - us ) f# 1e6 f* ;
+
+2variable (time-start)    f# 0 fvalue trim-time
+
+: set-trim-time ( - )
+    1 ms (time-start) get-system-time!
+    usf@ (time-start) 2@ system-time>f f- to trim-time ;
+
+: time-reset ( - )
+    trim-time f0=
+       if  set-trim-time
+       then
+    (time-start) get-system-time! ;
+
+: us-elapsed ( us-start seconds-start - ) ( f: usf@ - us-elapsed )
+     system-time>f f- trim-time f- ;
+
+: .elapsed ( - )
+   usf@  (time-start) 2@ us-elapsed fus>fsec fe. ." sec." ;
+
+: us-to-deadline ( us-start us-later - us-to-later )
+   f+  usf@  f- f# 0 fmax ;
+
+create-timer: tTotal
+0      value stages-
+f# 0  fvalue tcycle
+' noop value 'stage
+0 value fmeasure-complete
+
+variable #samples
+#25      value #max-samples
+\ In us:
+f# 1e6   fvalue time-1-sample
+f# 180e3 fvalue cycle-time
+f# 180e3 fvalue next-measurement
+
+: .tcycle ( - )
+    stages-
+        if  cr space usf@ tcycle f- f# 0.000001 f* f>d drop .
+        then  ;
+
+: SetStage ( cfa - )
+  stages-
+     if    .tcycle dup .name
+     then to 'stage ;
 
 [then]
 
@@ -67,13 +139,10 @@ alias cpu_freq@   esp-clk-cpu-freq
 : lplace      ( addr len dest -- )    0 over ! +lplace ;
 : es          ( ?? -- ) ( f: ?? -- )  clear fclear ; \ empty stacks
 : 16bit>32bit ( signed16bits - signed32bits )  dup $7FFF >  if  $FFFF0000 or  then ;
-: start-timer ( timer - )                      ms@ true rot 2! ;
 : 4drop       ( n4 n3 n2 n1 -- )   2drop 2drop ;
 : (number?)   ( addr len -- d1 f1 )  $number?  if   true   else 0. false  then ;
 : ftrunc      ( f: n - ftrunc )    fdup f0>   if   floor   else  fceil   then ;
 : -ftrunc     ( f: n - -ftrunc )   fdup ftrunc f-  ;
-: s>f         ( n -- ) ( f: - n )  s>d d>f ;
-: f>s         ( -- n ) ( f: n - )  f>d d>s ;
 : f2drop      ( fs: r1 r2 -- )     fdrop fdrop ;
 : dup>r       ( n1 -- n1 ) ( R: -- n1 ) s" dup >r"  evaluate ; immediate
 
@@ -210,26 +279,6 @@ PREVIOUS
 
 : bits!  ( n1 n2 bstart bend -- n1 ) \ Store n1 in n2 starting at bstart
    start-length  #bits!  ;           \ to and also using bend.
-
-
-: tElapsed? ( ms-elapsed timer - flag )
-   2@
-      if    + ms@ <     \ Time elapsed?
-      else  2drop false  \ The timer is off
-      then ;
-
-0 [if] \ Usage:
-
-2variable ttimer
-
-: test-1second ( - )
-    ttimer start-timer   begin   1000 ttimer tElapsed?   until ;
-
-test-1second
-[then]
-
-: .tElapsed ( timer - ) get-msecs swap cell+ @ - . ;
-
 
 
 : scan  ( addr len c -- addr2 len2 )
@@ -458,7 +507,7 @@ create TcpPort$ ," 8080"     create UdpPort$ ," 8899"
 
 : SleepIfNotConnected ( #sec-deep-sleep - )
     ipaddr@ @ 0=
-      if    100 ms cr  ." No connection. Entering sleep mode..." 1 DeepSleep
+      if    100 ms cr  ." No connection. Entering sleep mode..."  DeepSleep
       else  drop
       then ;
 
@@ -483,27 +532,5 @@ create TcpPort$ ," 8080"     create UdpPort$ ," 8899"
                   loop
         else set-ssid
         then  ;
-
-2variable tTotal
-0      value tcycle
-0      value stages-
-' noop value 'stage
-0 value fmeasure-complete
-
-variable #samples
-#25     value #max-samples
-#1000   value time-1-sample
-#180000 value cycle-time
-#180000 value next-measurement
-
-: .tcycle ( - )
-    stages-
-        if  cr space ms@ tcycle - #1000 / .
-        then  ;
-
-: SetStage ( cfa - )
-  stages-
-     if    .tcycle dup .name
-     then to 'stage ;
 
 \ \s
