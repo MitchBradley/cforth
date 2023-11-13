@@ -62,18 +62,6 @@ alias get-msecs ms@
 
 fl wifi.fth
 
-alias get-msecs ms@
-
-: ms ( ms -- )
-   s>d d>f f# 1000 f* usf@  f+
-     begin   fdup  usf@  f- f# 100000000 f>
-     while   #100000000 us
-     repeat
-   usf@  f- f>d d>s 0 max us
-;
-
-fl wifi.fth
-
 fl ../esp8266/xmifce.fth
 fl ../../lib/crc16.fth
 fl ../../lib/xmodem.fth
@@ -84,17 +72,7 @@ previous
 fl files.fth
 fl server.fth
 fl tasking_rtos.fth        \ Preemptive multitasking
-
 fl tools/extra.fth
-fl tools/table_sort.f
-fl tools/timediff.fth      \ Time calculations.
-fl tools/webcontrols.fth   \ Extra tags in ROM
-fl tools/svg_plotter.f
-fl tools/rcvfile.fth
-fl tools/wsping.fth
-fl tools/schedule-tool.f   \ Daily schedule
-fl ../ntc-web/ntc_steinhart.fth  \ For ntc_web.fth
-
 
 : interrupt?  ( -- flag )
    ." Type a key within 2 seconds to interact" cr
