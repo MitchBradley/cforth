@@ -1,8 +1,7 @@
-marker -timediff.fth cr lastacf .name #19 to-column .( 01-08-2023 ) \ By J.v.d.Ven
+marker -timediff.fth cr lastacf .name #19 to-column .( 11-11-2023 ) \ By J.v.d.Ven
 \ Time calculations.  Time specifications like  ( ss mm uu JD -  ) are in UTC
 \ unless otherwise indicated like: ( hhmmTargetLocal -- ) or ( f: UtcTics - ss mm uu dd mm yearLocal )
 
-f# -1 fvalue #diff-tics \ = #utcTicsRpi - ( msEsp / 1000 )
 f# -1 fvalue UtcOffset  \ Time zone depended
 f# -1 fvalue UtcSunRise
 f# -1 fvalue UtcSunSet
@@ -74,10 +73,6 @@ f# 86400. fconstant #SecondsOneDay
     2r@ 1 rot fixed-from-gregorian - 1+               ( day)
     r> swap r> ( month day year) ;
 
-: @time    ( - f: Utctics|-1 )
-    #diff-tics fdup f0>=
-       if  get-secs s>f f+
-       then ;
 
 : LocalTics-from-UtcTics ( f: UtcTics - LocalTics ) UtcOffset f+ ;
 : UtcTics-from-LocalTics ( f: UtcTics - LocalTics ) UtcOffset f- ;
@@ -102,15 +97,22 @@ f# 86400. fconstant #SecondsOneDay
 
 : week-day ( Julian-day - day )  ftrunc f>s 1+ 7 mod ; \ 0=Sunday
 
-: local-time-now   ( - f: UtcTics )   @time LocalTics-from-UtcTics  ;
 
 : .- ( n - )  (u.) type ." -"   ;
 
 : date-from-utc-time ( F: UtcTics -  dd mm yearLocal )
    LocalTics-from-UtcTics Jd-from-UtcTics Date-from-jd ;
 
-: date-now      ( - dd mm yearLocal )   @time date-from-utc-time ;
-: date>jjjjmmdd  ( d m j - jjjjmmdd )   10000 * swap 100 * + + ;
+: get-secs      ( - UtcTics )           dup dup sp@ get-system-time! nip ;
+: date-now      ( - dd mm yearLocal )   get-secs s>f date-from-utc-time ;
+: date>jjjjmmdd  ( d m j - jjjjmmdd )   #10000 * swap #100 * + + ;
+
+: GotTime? ( - flag ) date-now nip nip #2022 > ;
+
+: @time    ( - f: #secs )  get-secs s>f ;
+
+: local-time-now   ( - f: UtcTics )   @time LocalTics-from-UtcTics  ;
+
 
 : UtcTics-from-Time-today ( ss mm uu - f: UtcTics  )
    date-now UtcTics-from-Time&Date ;
@@ -130,25 +132,27 @@ f# 86400e0 fconstant #SecondsToDay
 : time>mmhh ( - mmhh )  local-time-now time-from-utctics #100 * + nip ;
 
 : .Html-Time-from-UtcTics (  f: UtcTics - )
-    fdup f0>=
+    base @ >r decimal fdup f0>=
       if   bl
       else fabs [char] -
       then
     >r Time-from-UtcTics
     r> swap ##$ +html
-    2 0 do  [char] : swap ##$ +html  loop ;
+    2 0 do  [char] : swap ##$ +html  loop
+    r> base ! ;
 
 : .Time-from-UtcTics (  f: UtcTics - )
-    fdup f0>=
+    base @ >r decimal fdup f0>=
       if   bl
       else fabs [char] -
       then
     >r Time-from-UtcTics
     r> swap ##$ type
-    2 0 do  [char] : swap ##$ type  loop ;
+    2 0 do  [char] : swap ##$ type  loop
+     r> base ! ;
 
 : .time  ( - )  local-time-now .Time-from-UtcTics ;
-: .date  ( - )  date-now  >r swap .-  .-  r> . ;
+: .date  ( - )  date-now   base @ >r decimal >r swap .-  .-  r> . r> base ! ;
 
 : Time&Date-from-UtcTics      ( f: UtcTics -  ss mm uu dd mm yearUtc )
    fdup Time-from-UtcTics Jd-from-UtcTics Date-from-jd ;
@@ -167,20 +171,13 @@ f# 86400e0 fconstant #SecondsToDay
    s"  Ask_time" HtmlPage$ +lplace
    HtmlPage$ lcount time-server$ TcpWrite  ;
 
-variable GotTime? GotTime? off
-0 value start-tic
-
 : SetLocalTime (  UtcTics UtcOffset sunrise sunset - )
    s>f to UtcSunSet   s>f  to UtcSunRise    s>f to UtcOffset
-   s>f get-secs s>f f- to #diff-tics true GotTime? ! ;
-
-: set-time-to-0  ( - )
-   #1671235201 0 0 0 SetLocalTime  true GotTime? ! cr .time space ;
+   set-system-time usf@ to us-start  ;
 
 : AskTime ( - )                            \ Adapt if needed!
    time-server$ 0<>
      if     gettcptime                     \ To get the UTC-time from an RPI
-     else   set-time-to-0                  \ See the note.
      then ;
 
 \ Note: set-tcptime-to-0 is used when no local time server is available.
@@ -192,11 +189,8 @@ variable GotTime? GotTime? off
 \ s" 192.168.0.201" dup 1+ allocate drop dup to time-server$ place
 
 : check-time ( - )
-   GotTime? @ 3 >
-     if    set-time-to-0
-     else  GotTime? @  0>=
-             if  AskTime  1 GotTime? +!
-             then
+   GotTime? 0=
+     if    AskTime
      then   ;
 
 \ Manual input:
@@ -233,7 +227,7 @@ variable GotTime? GotTime? off
        then
    extract-time  2r> r> f>s f>s and ;
 
-: set-time     ( - )
+: set-time     ( - ) \ Manual input for time
    base @ decimal
    enter-date-time
      if    UtcTics-from-Time&Date f>s

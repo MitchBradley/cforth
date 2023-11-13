@@ -1,12 +1,12 @@
-marker wsping.fth  cr lastacf .name #19 to-column .( 19-05-2023 ) \ By J.v.d.Ven
+marker -wsping.fth  cr lastacf .name #19 to-column .( 11-11-2023 ) \ By J.v.d.Ven
 
-\ For Web-server-light.f to update their ARP chache
+\ For Web-server-light.f to update ARP caches of the gforth webservers
 
 
 Also hidden decimal
 needs lwip-send rcvfile.fth
 
-create prefix$ ," 192.168.0."
+0 value prefix$
 #201 value master
 2variable range-gforth-servers
 
@@ -30,9 +30,7 @@ create prefix$ ," 192.168.0."
      then ;
 
 : ForUdpRange  ( from n cfa - )
-\  dup cr .name
-cr
-   -rot bounds
+   cr -rot bounds
       ?do  i prefix$ count pad lplace dec(.) pad +lplace
            pad lcount cr 2dup type
            2 pick execute

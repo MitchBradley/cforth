@@ -1,4 +1,4 @@
-marker svg_plotter.f  cr lastacf .name #19 to-column .( 05-01-2023 ) \ By J.v.d.Ven
+marker -svg_plotter.f  cr lastacf .name #19 to-column .( 11-11-2023 ) \ By J.v.d.Ven
  \ To plot simple charts for a web client
 
 needs /circular      extra.fth

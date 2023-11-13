@@ -63,6 +63,7 @@ extern void esp_clk_cpu_freq(void);
 extern void rtc_clk_cpu_freq_set(void);
 extern void esp_wifi_start(void);
 extern void esp_wifi_stop(void);
+extern void esp_wifi_disconnect(void);
 extern void adc_power_on(void);
 extern void adc_power_off(void);
 extern void gpio_intr_enable(void);
@@ -72,9 +73,8 @@ extern void uart_set_pin(void);
 extern void uart_driver_install(void);
 extern void uart_write_bytes(void);
 extern void uart_read_bytes(void);
-extern void time_t_now(void);
-extern void time_t_ms(void);
-extern void time_t_sec(void);
+extern void get_system_time(void);
+extern void set_system_time(void);
 extern void my_spiffs_unmount(void);
 
 int xTaskGetTickCount(void);
@@ -251,9 +251,8 @@ cell ((* const ccalls[])()) = {
 	C(build_date_adr)       //c 'build-date     { -- a.value }
 	C(version_adr)          //c 'version        { -- a.value }
         C(us)                   //c us		    { i.us -- }
-	C(time_t_now)           //c us@             { -- i.us }
-	C(time_t_ms)		//c get-msecs       { -- i.ms }
-	C(time_t_sec)		//c get-secs        { -- i.seconds }
+	C(set_system_time)      //c set-system-time { i.seconds -- }
+	C(get_system_time)      //c get-system-time! { a.2var_timeval -- }
 	C(xTaskGetTickCount)    //c get-ticks       { -- i.ticks }
 	C(software_reset)       //c restart         { -- }
 	C(set_log_level)	//c log-level!	    { i.level $component -- }
@@ -302,6 +301,7 @@ cell ((* const ccalls[])()) = {
 	C(wifi_open)		//c wifi-open { $ssid $password i.timeout -- i.error? }
  	C(esp_wifi_start)       //c esp-wifi-start             { -- }
  	C(esp_wifi_stop)        //c esp-wifi-stop              { -- }
+ 	C(esp_wifi_disconnect)  //c esp-wifi-disconnect        { -- }
 
   // LWIP sockets
   // Like Posix sockets but the socket descriptor space is not

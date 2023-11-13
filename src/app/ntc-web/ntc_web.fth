@@ -1,16 +1,14 @@
 \ ntc_web.fth   to see the measured temperature of an NTC in a browser.
 \ Compile this file in RAM when the ESP32 boots.
 
- cr cr .(  WAIT for the webserver! ) cr
+0 value sensor-web$  \ Used when the sensorweb is not active at port 8899
+0 value msg-board$   \ Used when there is no message board at port 8899
 
-0 value Rpi1-server$   \ Used when the sensorweb is not active at port 8899
-0 value ESP2-server$   \ Used when there is no message board at port 8899
-
-s" MachineSettings.fth" file-exist?  \ For Rpi1-server$ and ESP2-server$
+s" MachineSettings.fth" file-exist?  \ For sensor-web$ and msg-board$
   [if]    fl MachineSettings.fth     \ if they exist
   [then]
 
-marker -ntc_web.fth  cr lastacf .name #19 to-column .( 23-07-2023 ) \ By J.v.d.Ven
+marker -ntc_web.fth  cr lastacf .name #19 to-column .( 11-11-2023 ) \ By J.v.d.Ven
 
 
 esp8266? [IF] cr .( Needs an extended version of Cforth on an ESP32. )
@@ -22,7 +20,7 @@ DECIMAL ALSO HTML
 needs /circular      ../esp/extra.fth
 needs AskTime        ../esp/timediff.fth
 needs Html	     ../esp/webcontrols.fth
-needs svg_plotter.f  ../esp/svg_plotter.f
+needs -svg_plotter.f ../esp/svg_plotter.f
 needs av-ntc         ../esp/ntc_steinhart.fth
 
 0 [if]  Copy ntc_steinhart.fth to ~/cforth/src/app/esp
@@ -87,7 +85,7 @@ variable n/a -4141 n/a !
 variable #Floor  0 #Floor  !
 
 : Sent-state ( - )
-   Rpi1-server$ 0<>
+   sensor-web$ 0<>
    if  state$ off
        s" /Floor "                  +Fstate
        #Floor             [char] F  +StateVar
@@ -99,17 +97,17 @@ variable #Floor  0 #Floor  !
        ms@ here ! here    [char] M  +StateVar
        server-id          [char] @  +StateVar
        s"  "                        +Fstate
-       state$ lcount  Rpi1-server$  UdpWrite
+       state$ lcount  sensor-web$  UdpWrite
    then ;
 
 decimal
 
 : sent-temp-hum-to-msgboard  ( - )
-    ESP2-server$ 0<>
+    msg-board$ 0<>
        if decimal
           s" -2130706452 F0 T:" state$ lplace
           latest-temperature @  #10 /  #256 * #256 * (.)  state$ +lplace
-          state$  lcount  ESP2-server$   UdpWrite
+          state$  lcount  msg-board$   UdpWrite
        then ;
 
 0 [if] \ Some tests
@@ -118,7 +116,7 @@ decimal
 
 943   latest-temperature ! sent-temp-hum-to-msgboard \
 123   latest-temperature ! sent-temp-hum-to-msgboard \
-103   latest-temperature ! sent-temp-hum-to-msgboard \ = 1.2 DOWN=120
+103   latest-temperature ! sent-temp-hum-to-msgboard \
 
 
 220 latest-temperature ! sent-temp-hum-to-msgboard \ = 2.2
@@ -136,6 +134,7 @@ decimal
 
 
 f# 5e0 f# 60e0 f* fvalue fcycle-time \ Time between two records in &CBdata
+
 0 value next-measurement-ntc
 2 value #fields
 
@@ -144,8 +143,8 @@ f# 5e0 f# 60e0 f* fvalue fcycle-time \ Time between two records in &CBdata
 : set-next-measurement-ntc ( - )
     (local-time-now) fdup fdup   fcycle-time f+
     fcycle-time f/ ftrunc fcycle-time f*
-    fswap f- f# 1e0 fmax
-   cr ." New wait time:" fdup f. ." seconds  " f+ f>s to next-measurement-ntc ;
+    fswap f- f# 3e0  f- f# 1e0 fmax
+   cr ." New results after:" fdup f. ." seconds  " f+ f>s to next-measurement-ntc ;
 
 : clear-CBdata ( &cBufParms - )
    dup >r >&data-buffer @   r@ >max-records @ #fields floats * bounds
@@ -162,7 +161,7 @@ f# 5e0 f# 60e0 f* fvalue fcycle-time \ Time between two records in &CBdata
    1 to fmeasure-complete  ;
 
 : take-ntc-samples ( - )  \ *1
-   GotTime? @ 0=
+   GotTime? 0=
      if time-server$  0<>
          if  check-time \ Get the time from a local network
          \ else set-time  \ Input the time by hand.
@@ -181,12 +180,12 @@ f# 5e0 f# 60e0 f* fvalue fcycle-time \ Time between two records in &CBdata
      if  .tcycle   stages-
             if  ." End " &CBdata >cbuf-count ?  .time cr
             then
-          tTotal start-timer ms@ to tcycle
+          tTotal start-timer usf@ to tcycle
           ['] take-ntc-samples SetStage
      then ;
 
 : handle-ntc ( - )
-   'stage execute
+   'stage  execute
    fmeasure-complete 1 =
       if  0 to fmeasure-complete
           set-next-measurement-ntc
@@ -311,7 +310,7 @@ ALSO TCP/IP DEFINITIONS
 ;
 
 : /home  ( - )
-   time-server$ GotTime? @ or
+   time-server$ GotTime? or
    if   start-ntc-page
         s" /set_time_form" s" Set time" <<TopLink>>
         s" /list" s" List" <<TopLink>>
@@ -323,8 +322,9 @@ ALSO TCP/IP DEFINITIONS
    else  /set_time_form  \ Need a local time first
    then  ;
 
+
 : TcpTime ( UtcTics UtcOffset sunrise  sunset - ) \ Response to GetTcpTime see timediff.fth
-   SetLocalTime   ms@ to start-tic tTotal start-timer cr .date .time cr ;
+   SetLocalTime tTotal start-timer cr .date .time cr usf@ to tcycle ;
 
 : sys_time_user ( - ) \ Actions after /set_time_form
   parse-word
@@ -336,7 +336,7 @@ ALSO TCP/IP DEFINITIONS
   swap rot \ - Y m d H m s
   3 roll 4 roll 5 roll
   UtcTics-from-Time&Date f>s 0 0 0 SetLocalTime
-  ms@ to start-tic tTotal start-timer GotTime? ?
+  tTotal start-timer GotTime? .
   cr .date .time cr
   ['] /home set-page ;
 
@@ -364,7 +364,7 @@ FORTH DEFINITIONS TCP/IP
        if   handle-ntc
        else http-responder
        then
-   1000 ms@ r> - - 200 max ms>ticks to poll-interval ;
+   1000 ms@ r> - 0 max - 200 max ms>ticks to poll-interval ;
 
 
 #27 constant escape
@@ -389,22 +389,18 @@ FORTH DEFINITIONS TCP/IP
       then ;
 
 : init-res (  - )
-   set-time-to-0 GotTime? off
    adc-channel dup 3 3 init-ntc     2 set-precision
    1 floats /sample-buffer-ntc allocate-cbuffer to &sample-buffer-ntc \ ADC
    clr-sample-buffer-ntc
    f# 1.8e0 to av-trim
    cr adc-mv-av Vntc Rntc ntc-sh fdup f.
-   f# 10e0 f* fround f# 10e0 f* f>s
+   f# 10e0 f* fround f# 10e0 f* f>s latest-temperature !
    try-logon
-   ms@ to start-tic
    init-HtmlPage
    2 floats /CBdata allocate-cbuffer to &CBdata
    &CBdata clear-CBdata InitDataParms
    #20 to #Max_X_Lines
-   http-listen tTotal start-timer
-  ;
-
+   http-listen tTotal start-timer ;
 
 : send_ask_time ( - )
    time-server$ 0<>
@@ -415,6 +411,8 @@ FORTH DEFINITIONS TCP/IP
                  then
      then ;
 
+: .homepage-adr ( - )
+    bold ."  http://" ipaddr@ .ipaddr ." /home " norm  ;
 
 : start-web-server  ( -- )
    cr htmlpage$ 0=
@@ -428,12 +426,11 @@ FORTH DEFINITIONS TCP/IP
    ALSO TCP/IP SEAL
    cr ." The first results appear after 2 minutes in the list." cr
    send_ask_time
-   latest-temperature ! sent-temp-hum-to-msgboard Sent-state
+   sent-temp-hum-to-msgboard Sent-state
 
-   10 ms 1 rtc-clk-cpu-freq-set
    100 ms esp-clk-cpu-freq 1000000 / . ." Mhz "
-   500 ms>ticks to poll-interval
-   cr cr ." Now, the webserver is active!  "
+   1000 ms>ticks to poll-interval
+   cr ." The home page of the webserver is:" .homepage-adr cr
    program-loop         \ Contains the loop of the server
    +f order cr quit ;
 
@@ -449,5 +446,6 @@ PREVIOUS PREVIOUS
 true to stages-
 cr .free
 : s start-web-server ;
+
 start-web-server
-\  \s
+\ \s

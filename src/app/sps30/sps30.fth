@@ -1,4 +1,6 @@
-marker -sps30.fth  cr lastacf .name #19 to-column .( 18-06-2023 ) \ By J.v.d.Ven
+marker -sps30.fth  cr lastacf .name #19 to-column .( 11-11-2023 ) \ By J.v.d.Ven
+
+0 value msg-board$   0 value sensor-web$
 
 VOCABULARY SPS30 SPS30 DEFINITIONS DECIMAL
 
@@ -246,19 +248,21 @@ $7ff00000 0 pad 2! pad f@ fconstant Inf
     /RxBuf allocate drop to &RxBuf
     #256   allocate drop to &decoded-frame
     /fdata floats allocate drop to &fdata
-    rx-pin tx-pin uart_num init-uart-sps30 #100000 us clear-fdata
-    3 ( Minutes) 60 * 1000 * 6000 max to cycle-time           \ In MS. Includes the sleep time
-    4 ( Hours )  60 * cycle-time 1000 / 60 / 1 max / 2 max 1200 min to /CBdata-sps30 \ Logging
+    rx-pin tx-pin uart_num init-uart-sps30 #100 ms clear-fdata
+    3 ( Minutes) min>fus to cycle-time                        \ In us Includes the sleep time
+    4 ( Hours )  60 * cycle-time fus>fsec f>s
+                 60 / 1 max / 2 max 1200 min to /CBdata-sps30 \ Size logging
    #11 to #fields
    #fields floats /CBdata-sps30 allocate-cbuffer to &CBdata-sps30
-   &CBdata-sps30 clear-data-buffer-sps30
- ;
+   &CBdata-sps30 clear-data-buffer-sps30 ;
+
+0 fvalue start-tic
 
 : init-sps30 ( - )
    &RxBuf 0=
       if   init-res-sps30
       then
-   ms@ ( cycle-time + ) to start-tic
+   usf@ to start-tic
    wakeup reset-sps30
    cr ." Starting up. " #20 0
        do    get-status-register 0=
@@ -279,7 +283,7 @@ $7ff00000 0 pad 2! pad f@ fconstant Inf
              i floats &fdata + dup f@  f+  f!
        loop ;
 
-2variable tSps30
+create-timer: tSps30
 #1  floats constant pm1.0-offset
 #2  floats constant pm2.5-Offset
 #3  floats constant pm4.0-Offset
@@ -293,14 +297,12 @@ $7ff00000 0 pad 2! pad f@ fconstant Inf
 
 : init-fmeasure ( - )
    clear-fdata 0 to fmeasure-complete
-   #samples off  ms@ to tcycle
+   #samples off  usf@ to tcycle
    tSps30 start-timer
    tTotal start-timer ;
 
-0 value msg-board$
 create UdpPortESP   ," 8899"
 
-0 value sensor-web$
 
 : send-tmp$-msg-board$ ( - )
    tmp$ lcount msg-board$ UdpWrite ;
@@ -332,16 +334,14 @@ variable alarm-off-cnt  #3 alarm-off-cnt !
    s"  @31" tmp$ +lplace  send-tmp$-msg-board$ ;
 
 : send-alarm ( f: n - )
-   alarm-cmp @old-PM25 cr ." New - old " f.s f- alarm-limit f> dup .
+   alarm-cmp @old-PM25 ." Alarm-compare " f- alarm-limit f> dup .
     if    s" -2130706452 F0 A:1" tmp$ lplace
           s"  @31" tmp$ +lplace  send-tmp$-msg-board$
           #3 alarm-off-cnt !
     else  alarm-off-cnt @ 0>=
             if   send-alarm-off -1 alarm-off-cnt +!
             then
-    then ;
-
-
+    then cr ;
 
 : send-pm2.5 ( - )
   1 @old-PM25   fdup cr ." PM2.5: " f. cr
@@ -349,29 +349,28 @@ variable alarm-off-cnt  #3 alarm-off-cnt !
   fdup send-pm2.5-Sensorweb
        send-alarm  ;
 
-
 : add-to-ring-buffer ( - )
    &fdata  &CBdata-sps30 >circular-head tuck 1 floats +  10 floats cmove>
    local-time-now  stages-
       if  ." Add record:" fdup .Time-from-UtcTics
       then  f!  &CBdata-sps30 incr-cbuf-count ;
 
-: take-sample ( ms-time -   )
+: take-sample ( f: us-time -   )
    tSps30  tElapsed?
       if  .tcycle readMeasurement dup 0>
              if  +fdata  #samples @ #max-samples <=
-                    if   1 #samples +! tSps30 start-timer
-                         #samples @ #max-samples =
-                               if  stopMeasurement
-                                   &fdata /fdata #max-samples avg-fdata add-to-ring-buffer
-                                   msg-board$ 0>
-                                      if   send-pm2.5
-                                      then
-                                   1 to fmeasure-complete
-                               then
+                    if  1 #samples +! tSps30 start-timer
+                        #samples @ #max-samples =
+                           if  stopMeasurement
+                               &fdata /fdata #max-samples avg-fdata add-to-ring-buffer
+                               msg-board$ 0>
+                                  if   send-pm2.5
+                                  then
+                               1 to fmeasure-complete
+                           then
                     then
-              else 2drop
-              then
+             else 2drop
+             then
       then ;
 
 
@@ -381,9 +380,10 @@ variable alarm-off-cnt  #3 alarm-off-cnt !
    fmeasure-complete 3 =  if  exit then
    time-1-sample take-sample ;
 
-#30000 value warm-up-time
+f# 30e6 fvalue warm-up-time
+
 : warming-up  ( - )                 \ *3
-   warm-up-time time-1-sample - tSps30 tElapsed?
+   warm-up-time time-1-sample f- tSps30 tElapsed?
      if  tSps30 start-timer  ['] take-samples SetStage
      then ;
 
@@ -392,17 +392,21 @@ variable alarm-off-cnt  #3 alarm-off-cnt !
      if   tSps30 start-timer ['] warming-up SetStage
      then ;
 
-: set-next-measurement-sps30 ( - )
-   &CBdata-sps30 >cbuf-count @ 2 - cycle-time * cycle-time + 1 max
-   ms@ start-tic - - 1 max
-   cr ." New wait time:" dup . ." ms" to next-measurement ;
+: set-next-measurement-sps30 ( - ) \ To get to the next end of the cycle.
+   cycle-time fdup  &CBdata-sps30 >cbuf-count @ 2 - s>f f* f+
+   usf@ start-tic f- f- f# 1000e0 fmax fdup  fus>fms f>s
+   dup #10000 >
+      if    cr ." New results after:"  . ." ms"
+      else  drop
+      then
+   to next-measurement ;
 
 : start-measurements  ( - )         \ *1
    3 startMeasurement
    ['] wait-for-status-registor SetStage ;
 
 : Wait-till-next-measurement ( - )  \ *5 After 1st-measurement only
-   next-measurement   tTotal tElapsed?
+   next-measurement tTotal tElapsed?
        if  .tcycle   stages-
               if  ." End "  .time cr
               then
@@ -410,7 +414,7 @@ variable alarm-off-cnt  #3 alarm-off-cnt !
        then ;
 
 : sleep-sensor ( - )                \ *5 After all other measurements
-   next-measurement   tTotal tElapsed?
+   next-measurement  tTotal tElapsed?
      if  .tcycle   stages-
             if  ." End " .time cr
             then
@@ -418,16 +422,13 @@ variable alarm-off-cnt  #3 alarm-off-cnt !
      then ;
 
 : 1st-measurement  ( - )            \ *0
-   #15000 time-1-sample - tSps30 tElapsed?
+   f# 15e6 time-1-sample f-  tSps30 tElapsed?
      if   clear-fdata  check-time
           readMeasurement +fdata  add-to-ring-buffer
           stopMeasurement
           set-next-measurement-sps30
           ['] Wait-till-next-measurement SetStage
-     then ;
-
-2variable range-Gforth-servers
-#200 #9 range-Gforth-servers 2!
+     then ; 
 
 : start-sleep ( - ) startSleep (sleeping-schedule)  ;
 
@@ -441,23 +442,11 @@ variable alarm-off-cnt  #3 alarm-off-cnt !
            stopMeasurement
       then ;
 
-0 [if]
-: run-schedule ( - )
-   find-action swap
-      case
-         $0 of dup sleep-schedule endof
-         $2 of clean-schedule     endof
-    endcase
-  drop
- ;
-
-[then]
-
 : take-samples- ( - )  ;
 
 : handle-sps30 ( - )
    'stage execute   fmeasure-complete 1 =
-      if  warm-up-time #15000 >
+      if  warm-up-time f# 15e6 f>
                if  schedule
                    WaitForSleeping-
                      if   StopRunSchedule?  \ After start-sleep

@@ -1,5 +1,5 @@
 marker -schedule-tool.f   s" cforth" ENVIRONMENT?
-   [IF]   drop cr lastacf .name #19 to-column .( 21-06-2023 ) \ By J.v.d.Ven
+   [IF]   drop cr lastacf .name #19 to-column .( 11-11-2023 ) \ By J.v.d.Ven
    [THEN]
 
 0 [if]
@@ -123,7 +123,7 @@ S" gforth" ENVIRONMENT? [IF] 2drop \ No polling under gforth
    next-scheduled-time time>mmhh <= \  All entries should be complete at 23:59
            if     scheduled @ 1+ &schedule-table nt>record sched.record-->opt.record \ inside tabel?
                    if    s" Schedule: " pad place
-                         >opt.xt @  dup >name$ +pad pad" +log
+                          >opt.xt @  dup >name$ +upad upad" +log
                          execute 1 scheduled +!
                    else  drop
                    then
@@ -218,14 +218,17 @@ s" ' (sort-schedule) is sort-schedule" evaluate
 : restart-changed-schedule  ( mmhh-done - )
    sort-schedule 1+ find-schedule-record  scheduled ! true to StopRunSchedule? ;
 
-2variable ttimer-WaitForsleeping
+create-timer: ttimer-WaitForsleeping
 1 value Sleep-till-sunset-option              \ The id for sleep-at-boot in &options-table
 
-: tTilEnd  ( waittime ttimer - ms )  cell+ @ + get-msecs - ;
+
+: tTilEnd  ( ttimer - ) ( f: us-waittime - us )  cell+ f@ f+ usf@ f- ;
 
 : .msgTimeout ( - )
-    cr 30000 ttimer-WaitForsleeping tTilEnd 1000 / .
+    cr f# 30e6 ttimer-WaitForsleeping tTilEnd f# 1e-6 f* fround f>s .
    ." seconds before deep-sleep."  ;
+
+\  ttimer-WaitForsleeping start-timer   .msgTimeout
 
 : .time-duration ( #seconds - )
    #3600 /mod bl swap ##$ type
@@ -236,29 +239,31 @@ s" ' (sort-schedule) is sort-schedule" evaluate
    dup .time-duration
    range-Gforth-servers 2@ -ArpRange 2000 ms
    esp-wifi-stop spiffs-unmount 1 rtc-clk-cpu-freq-set 10 ms
-   cr ."  SLEEPING." 3 max deep-sleep ;
+   cr ."  SLEEPING." 3 max  deep-sleep ;
 
 60 60 * value seconds-before-sunset
-200 9 range-Gforth-servers 2! \ Network depended !
 
 : sleep-seconds-before-sunset        ( SecondsBeforeSunset - )
     UtcSunSet  @time f- s>f f- fdup f0>
-       if    cr .date .time ."  Needed sleep " f>s  #seconds-deep-sleeping
+       if    cr .date .time ."  Needed sleep " f>d drop  #seconds-deep-sleeping
        else  fdrop cr .date .time ."  No sleep needed."
              false to WaitForSleeping-
        then
       ;
 
+: pass-this-second ( - )  usf@ f# 1e6 us-to-deadline f>d drop us ;
+
 : scheduled-wakeup ( - #seconds )
    cr  .date .time ."  sleep-schedule deep-sleep time:"
-   next-scheduled-time 2359 min  #NsTill Nanoseconds f/ f>s ;
+   next-scheduled-time 2359 min  #NsTill Nanoseconds f/ f>s
+   pass-this-second ;
 
 : (sleeping-schedule) ( - )
     next-scheduled-time 2359 min time>mmhh >
       if WaitForSleeping- 0=
            if    true to WaitForSleeping-  ttimer-WaitForsleeping start-timer
-           else  30000 ttimer-WaitForsleeping tElapsed?
-                   if    scheduled-wakeup #seconds-deep-sleeping
+           else  f# 30e6 ttimer-WaitForsleeping tElapsed?
+                   if    scheduled-wakeup  #seconds-deep-sleeping
                    else  .msgTimeout
                    then
            then
@@ -432,8 +437,8 @@ TCP/IP DEFINITIONS
 
 
 S" cforth" ENVIRONMENT? [IF] DROP
-        : /Scheduled ( -- )    req-buf /req-buf s" %3A" BlankString 2drop ;
-[ELSE]  : /Scheduled ( -- )    req-buf lcount   s" %3A" BlankString 2drop ;
+        : clr-req-buf ( -- )    req-buf /req-buf s" %3A" BlankString 2drop ;
+[ELSE]  : clr-req-buf ( -- )    req-buf lcount   s" %3A" BlankString 2drop ;
 [THEN]
 
 FORTH DEFINITIONS
