@@ -1,4 +1,4 @@
-marker -webcontrols.fth  cr lastacf .name #19 to-column .( 11-11-2023 ) \ By J.v.d.Ven
+marker -webcontrols.fth  cr lastacf .name #19 to-column .( 05-12-2023 ) \ By J.v.d.Ven
 
 needs /circular    extra.fth
 
@@ -358,12 +358,15 @@ $1006 constant SO_RCVTIMEO
 : SetSolOpt	( tcp-sock optval p2 p1 size - )
    >r pad 2! r> pad rot SOL_SOCKET 4 roll setsockopt drop ;
 
+\ Set SO_LINGER so lwip-close does not discard any pending data
+: linger-tcp ( handle - ) SO_LINGER 1 sp@ [ 2 cells ] literal SetSolOpt ;
+
 : recv		( sock -- length|-1 )
    dup >r SO_RCVTIMEO #200 1 [ 2 cells ] literal SetSolOpt
    req-buf /req-buf r> lwip-read ;
 
 : http-responder ( sock - )
-   dup to lsock  recv dup 0>
+   dup to lsock  dup linger-tcp recv dup 0>
      if   req-buf swap handle-request
      else drop
      then

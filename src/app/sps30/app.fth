@@ -39,26 +39,24 @@ alias m-init noop
      then  #3 /
 ;
 
- f# 0 fvalue us-start   \ Must be updated after set-system-time
-
 : system-time>f ( us seconds -- ) ( f: -- us )
    s" s>d d>f f# 1000000 f*  s>d d>f  f+ "  evaluate ; immediate
 
 : usf@         ( f: -- us )
    s" dup dup sp@ get-system-time! system-time>f" evaluate ; immediate
 
-: ms@         ( -- ms )
-   f# .001 usf@ us-start f- f* f>d drop ;
+: ms@         ( -- ms ) f# .001 usf@ f* f>d drop ;
 
 alias get-msecs ms@
 
-: ms ( ms -- )
-   s>d d>f f# 1000 f* usf@  f+
+: fus  ( f: us - )
+   usf@  f+
      begin   fdup  usf@  f- f# 100000000 f>
      while   #100000000 us
      repeat
-   usf@  f- f>d drop abs us
-;
+   usf@  f- f>d drop abs us ;
+
+: ms ( ms -- )   s>d d>f f# 1000 f* fus ;
 
 fl wifi.fth
 
@@ -71,11 +69,12 @@ previous
 
 fl files.fth
 fl server.fth
-fl tasking_rtos.fth        \  Preemptive multitasking
+fl tasking_rtos.fth        \ Preemptive multitasking
 
 fl tools/extra.fth
 fl tools/table_sort.f
-fl tools/timediff.fth      \ Time calculations.
+fl tools/timezones.f
+fl tools/timediff.fth      \ Time calculations
 fl tools/webcontrols.fth   \ Extra tags in ROM
 fl tools/svg_plotter.f
 fl tools/rcvfile.fth
@@ -93,7 +92,6 @@ fl ../sps30/sps30.fth      \ For sps30_web.fth
 : load-startup-file  ( -- ior )   " start" ['] included catch   ;
 
 : app ( - ) \ Sometimes SPIFFS or a wifi connection causes an error. A reboot solves that.
-   usf@ to us-start
    banner  hex  interrupt? 0=
       if     s" start" file-exist?
            if   load-startup-file
