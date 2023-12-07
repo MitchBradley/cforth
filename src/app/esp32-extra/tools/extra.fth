@@ -1,4 +1,4 @@
-marker -extra.fth  cr lastacf .name #19 to-column .( 11-11-2023 ) \ By J.v.d.Ven
+marker -extra.fth  cr lastacf .name #19 to-column .( 25-11-2023 ) \ By J.v.d.Ven
 \ Additional words I often use.
 
 alias b   bye
@@ -104,9 +104,6 @@ test-1second
 : .elapsed ( - )
    usf@  (time-start) 2@ us-elapsed fus>fsec fe. ." sec." ;
 
-: us-to-deadline ( us-start us-later - us-to-later )
-   f+  usf@  f- f# 0 fmax ;
-
 create-timer: tTotal
 0      value stages-
 f# 0  fvalue tcycle
@@ -132,8 +129,11 @@ f# 180e3 fvalue next-measurement
 
 [then]
 
-: bold        ( -- )  .esc[ '1' (emit  'm' (emit ; \ VT100
-: norm        ( -- )  .esc[ '0' (emit  'm' (emit ; \ VT100
+: bold        ( -- ) .esc[ '1' (emit  'm' (emit ; \ VT100
+: norm        ( -- ) .esc[ '0' (emit  'm' (emit ;
+: hide-cursor ( -- ) #out @ .esc[ s" ?25l" type #out ! ;
+: show-cursor ( -- ) #out @ .esc[ s" ?25h" type #out ! ;
+
 : lcount      ( addr -- addr' count ) dup cell + swap @ ;
 : +lplace     ( addr len dest -- )    2dup  >r >r  lcount + swap  cmove r> r> +! ;
 : lplace      ( addr len dest -- )    0 over ! +lplace ;
@@ -190,10 +190,45 @@ patch check-conditional here <resolve
    does>  ( adr -- adr' )  @ + ;
 
 : field:     ( n1 <"name"> -- n2 ) ( addr -- 'addr )  aligned cell +field ;
+: bfield:    ( n1 <"name"> -- n2 ) ( addr -- 'addr )  1 +field ;
+: wfield:    ( n1 <"name"> -- n2 ) ( addr -- 'addr )  2 +field ;
 : xfield:    ( n1 <"name"> -- n2 ) ( addr -- 'addr )  8 +field ;
 
 : f2dup   ( fs: r1 r2 -- r1 r2 r1 r2 )  fover fover ;
 : perform ( adr - )  s" @ execute " evaluate ; immediate
+
+#27 constant escape
+: escape? ( - flag )
+    key?
+     if  key escape =
+          if    true
+          else
+                begin  key?
+                while  key drop
+                repeat
+              false
+          then
+     else 0
+     then ;
+
+: us-to-deadline ( f: us-base us-incr - us-wait )
+   f+ usf@ f- f# 0 fmax ;  \ us-base + us-incr should be > then usf@
+
+: find-deadline ( addr-fus-base addr-fus-timeout - ) ( f: - us-to-deadline )
+   over f@  f@ f2dup f+ f! us-to-deadline ;
+
+: execute-until-escape  ( xt -- )  ( f: #ms-timeout - )
+    0 0   { xt &#ms-timeout &usstrt -- }
+    /f allocate drop dup to &#ms-timeout f!
+    /f allocate drop dup usf@ fus>fsec fround fsec>fus to &usstrt f!
+       begin  xt execute
+              &usstrt &#ms-timeout find-deadline
+              fus                \ No drift in the software
+\             fdrop 1000 ms      \ Replace the previous line with this line and it drifts
+\             usf@ &usstrt f@ f- fe.  ." us deviation.  "   \ Show the drift
+              escape?
+       until
+     &#ms-timeout free drop &usstrt free drop ;
 
 begin-structure /circular
    field: >(cbuf-count)
@@ -370,7 +405,7 @@ char , value seperator
 
 : SendHtmlPage ( - )
    HtmlPage$ lcount dup 0>
-     if    lsock lwip-write drop 20 ms
+     if    lsock lwip-write drop
      else  2drop
      then ;
 
@@ -492,14 +527,13 @@ char , value seperator
 
 create TcpPort$ ," 8080"     create UdpPort$ ," 8899"
 
-
 : UdpWrite ( send$ cnt ip-server$ - )
    count UdpPort$ count 2swap udp-connect
    >r   r@ lwip-write  50 ms  r> lwip-close drop ;
 
 : TcpWrite ( bufer cnt ip-server$ - )
    >r #1000 TcpPort$ count r> count stream-connect >r
-   r@ lwip-write drop
+   r@ lwip-write drop 50 ms
    r> lwip-close ;
 
 \ After "WiFi station connection failed":

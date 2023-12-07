@@ -1,4 +1,4 @@
-marker -sps30.fth  cr lastacf .name #19 to-column .( 11-11-2023 ) \ By J.v.d.Ven
+marker -sps30.fth  cr lastacf .name #19 to-column .( 05-12-2023 ) \ By J.v.d.Ven
 
 0 value msg-board$   0 value sensor-web$
 
@@ -428,7 +428,7 @@ f# 30e6 fvalue warm-up-time
           stopMeasurement
           set-next-measurement-sps30
           ['] Wait-till-next-measurement SetStage
-     then ; 
+     then ;
 
 : start-sleep ( - ) startSleep (sleeping-schedule)  ;
 

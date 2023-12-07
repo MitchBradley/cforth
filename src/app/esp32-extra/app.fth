@@ -39,26 +39,24 @@ alias m-init noop
      then  #3 /
 ;
 
- f# 0 fvalue us-start   \ Must be updated after set-system-time
-
 : system-time>f ( us seconds -- ) ( f: -- us )
    s" s>d d>f f# 1000000 f*  s>d d>f  f+ "  evaluate ; immediate
 
 : usf@         ( f: -- us )
    s" dup dup sp@ get-system-time! system-time>f" evaluate ; immediate
 
-: ms@         ( -- ms )
-   f# .001 usf@ us-start f- f* f>d drop ;
+: ms@         ( -- ms ) f# .001 usf@ f* f>d drop ;
 
 alias get-msecs ms@
 
-: ms ( ms -- )
-   s>d d>f f# 1000 f* usf@  f+
+: fus  ( f: us - )
+   usf@  f+
      begin   fdup  usf@  f- f# 100000000 f>
      while   #100000000 us
      repeat
-   usf@  f- f>d drop abs us
-;
+   usf@  f- f>d drop abs us ;
+
+: ms ( ms -- )   s>d d>f f# 1000 f* fus ;
 
 fl wifi.fth
 
@@ -83,7 +81,6 @@ fl tools/extra.fth
 : load-startup-file  ( -- ior )   " start" ['] included catch   ;
 
 : app ( - ) \ Sometimes SPIFFS or a wifi connection causes an error. A reboot solves that.
-   usf@ to us-start
    banner  hex  interrupt? 0=
       if     s" start" file-exist?
            if   load-startup-file

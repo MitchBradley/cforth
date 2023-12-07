@@ -1,5 +1,5 @@
 marker -schedule-tool.f   s" cforth" ENVIRONMENT?
-   [IF]   drop cr lastacf .name #19 to-column .( 11-11-2023 ) \ By J.v.d.Ven
+   [IF]   drop cr lastacf .name #19 to-column .( 05-12-2023 ) \ By J.v.d.Ven
    [THEN]
 
 0 [if]
@@ -69,7 +69,6 @@ variable scheduled \ Entry lately has been scheduled
 f# 0.0e0 fvalue boot-time
 
 
-: .mmhh               ( mmhh - ) s>d <# # # [char] : hold  # # #> type ;
 : next-scheduled-time ( - mmhh ) scheduled @ 1+ n>sched.time@  ;
 
 : /schedule-file ( - #records )
@@ -244,19 +243,19 @@ create-timer: ttimer-WaitForsleeping
 60 60 * value seconds-before-sunset
 
 : sleep-seconds-before-sunset        ( SecondsBeforeSunset - )
-    UtcSunSet  @time f- s>f f- fdup f0>
+    UtcSunSet  local-time-now  f- s>f f- fdup f0>
        if    cr .date .time ."  Needed sleep " f>d drop  #seconds-deep-sleeping
        else  fdrop cr .date .time ."  No sleep needed."
              false to WaitForSleeping-
-       then
-      ;
+       then ;
 
-: pass-this-second ( - )  usf@ f# 1e6 us-to-deadline f>d drop us ;
+: ftime-till-next-second ( - )
+   usf@ fus>fsec fround fsec>fus  [ f# 1 fsec>fus ] fliteral us-to-deadline  ;
 
 : scheduled-wakeup ( - #seconds )
    cr  .date .time ."  sleep-schedule deep-sleep time:"
-   next-scheduled-time 2359 min  #NsTill Nanoseconds f/ f>s
-   pass-this-second ;
+   next-scheduled-time 2359 min  UtcTill f>s
+   ftime-till-next-second fus ;
 
 : (sleeping-schedule) ( - )
     next-scheduled-time 2359 min time>mmhh >
@@ -289,7 +288,7 @@ create-timer: ttimer-WaitForsleeping
 
 : (sleep-at-boot)   ( - )
    boot-time date-from-utc-time date>jjjjmmdd
-   @time     date-from-utc-time date>jjjjmmdd =  \ Only today
+   local-time-now   date-from-utc-time date>jjjjmmdd =  \ Only today
       if 0 n>sched.option@
          Sleep-till-sunset-option = \ Is sleep-at-boot the FIRST entry in the schedule?
            if  (sleep-till-sunset)

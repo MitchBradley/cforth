@@ -8,7 +8,7 @@ s" MachineSettings.fth" file-exist?  \ For sensor-web$ and msg-board$
   [if]    fl MachineSettings.fth     \ if they exist
   [then]
 
-marker -ntc_web.fth  cr lastacf .name #19 to-column .( 11-11-2023 ) \ By J.v.d.Ven
+marker -ntc_web.fth  cr lastacf .name #19 to-column .( 05-12-2023 ) \ By J.v.d.Ven
 
 
 esp8266? [IF] cr .( Needs an extended version of Cforth on an ESP32. )
@@ -22,13 +22,6 @@ needs AskTime        ../esp/timediff.fth
 needs Html	     ../esp/webcontrols.fth
 needs -svg_plotter.f ../esp/svg_plotter.f
 needs av-ntc         ../esp/ntc_steinhart.fth
-
-0 [if]  Copy ntc_steinhart.fth to ~/cforth/src/app/esp
-        and add the line:
-fl ../esp/ntc_steinhart.fth
-        before the definition of interrupt?
-        in the file ~/forth/src/app/esp32/apt.fth
-[then]
 
 5 constant adc-channel
 
@@ -306,8 +299,8 @@ ALSO TCP/IP DEFINITIONS
    <br> <br> +HTML|  <form> <input type="datetime-local" name="sys_time_user" value="0"> |
    <br> <br> s" Set time" s" nn" <CssButton> </form>
   </tr> </fieldset>   </td> </tr> </table>
-  </center>  </h4> </body> </html>
-;
+  </center>  </h4> </body> </html> ;
+
 
 : /home  ( - )
    time-server$ GotTime? or
@@ -324,7 +317,8 @@ ALSO TCP/IP DEFINITIONS
 
 
 : TcpTime ( UtcTics UtcOffset sunrise  sunset - ) \ Response to GetTcpTime see timediff.fth
-   SetLocalTime tTotal start-timer cr .date .time cr usf@ to tcycle ;
+   SetLocalTime-from-network tTotal start-timer
+   cr bold .date .time norm cr usf@ to tcycle ;
 
 : sys_time_user ( - ) \ Actions after /set_time_form
   parse-word
@@ -357,28 +351,22 @@ ALSO TCP/IP DEFINITIONS
 FORTH DEFINITIONS TCP/IP
 
 
+fvariable &us-cum      f# 0        &us-cum f!
+fvariable &us-timeout  f# 1000000  &us-timeout f!
+
 : sensor+http-responder  ( timeout -- ) \  Handles ntc + http-responder KEEP
-   timed-accept ms@ >r stages-
+   timed-accept stages-
        if  dup abs .
        then
        if   handle-ntc
        else http-responder
-       then
-   1000 ms@ r> - 0 max - 200 max ms>ticks to poll-interval ;
-
-
-#27 constant escape
+       then ;
 
 : program-loop ( - )
-   begin
-      poll-interval responder
-      key?
-         if  key escape =
-               if    exit
-               else     begin key? while key drop repeat
-               then
-         then
-   again ;
+   usf@ f# 1000 f+ &us-cum f! \ setting the time base
+      begin  &us-cum &us-timeout find-deadline
+             fus>fms f>s ms>ticks responder escape?
+      until ;
 
 : try-logon ( - )
     wifi-logon-state 0<>
@@ -429,10 +417,9 @@ FORTH DEFINITIONS TCP/IP
    sent-temp-hum-to-msgboard Sent-state
 
    100 ms esp-clk-cpu-freq 1000000 / . ." Mhz "
-   1000 ms>ticks to poll-interval
    cr ." The home page of the webserver is:" .homepage-adr cr
    program-loop         \ Contains the loop of the server
-   +f order cr quit ;
+   +f order cr decimal quit ;
 
 : faster ( - )
    f# 1e0 to fcycle-time
