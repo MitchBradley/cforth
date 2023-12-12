@@ -289,6 +289,10 @@ f# 5e0 f# 60e0 f* fvalue fcycle-time \ Time between two records in &CBdata
          [ifdef] SitesIndex SitesIndex
          [then] ;
 
+
+fvariable &us-cum      f# 0          &us-cum f!
+fvariable &us-timeout  f# 1 fsec>fus &us-timeout f!
+
 ALSO TCP/IP DEFINITIONS
 
 : /set_time_form  ( - )
@@ -318,7 +322,8 @@ ALSO TCP/IP DEFINITIONS
 
 : TcpTime ( UtcTics UtcOffset sunrise  sunset - ) \ Response to GetTcpTime see timediff.fth
    SetLocalTime-from-network tTotal start-timer
-   cr bold .date .time norm cr usf@ to tcycle ;
+   cr bold .date .time norm cr usf@ to tcycle
+   usf@ &us-cum f! ; \ Setting the time base after a time update
 
 : sys_time_user ( - ) \ Actions after /set_time_form
   parse-word
@@ -330,7 +335,7 @@ ALSO TCP/IP DEFINITIONS
   swap rot \ - Y m d H m s
   3 roll 4 roll 5 roll
   UtcTics-from-Time&Date f>s 0 0 0 SetLocalTime
-  tTotal start-timer GotTime? .
+  tTotal start-timer GotTime? .  usf@ &us-cum f!
   cr .date .time cr
   ['] /home set-page ;
 
@@ -351,9 +356,6 @@ ALSO TCP/IP DEFINITIONS
 FORTH DEFINITIONS TCP/IP
 
 
-fvariable &us-cum      f# 0        &us-cum f!
-fvariable &us-timeout  f# 1000000  &us-timeout f!
-
 : sensor+http-responder  ( timeout -- ) \  Handles ntc + http-responder KEEP
    timed-accept stages-
        if  dup abs .
@@ -363,8 +365,8 @@ fvariable &us-timeout  f# 1000000  &us-timeout f!
        then ;
 
 : program-loop ( - )
-   usf@ f# 1000 f+ &us-cum f! \ setting the time base
-      begin  &us-cum &us-timeout find-deadline
+   usf@ &us-cum f! \ setting the time base
+      begin  &us-cum &us-timeout  find-deadline
              fus>fms f>s ms>ticks responder escape?
       until ;
 
