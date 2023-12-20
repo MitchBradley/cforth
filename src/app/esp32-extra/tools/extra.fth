@@ -1,4 +1,4 @@
-marker -extra.fth  cr lastacf .name #19 to-column .( 25-11-2023 ) \ By J.v.d.Ven
+marker -extra.fth  cr lastacf .name #19 to-column .( 12-12-2023 ) \ By J.v.d.Ven
 \ Additional words I often use.
 
 alias b   bye
@@ -39,12 +39,26 @@ alias cpu_freq@ esp_clk_cpu_freq
 : cpu_freq!        ( 1=80Mhz|2=160Mhz|3=240Mhz -- ) 10 ms  rtc-clk-cpu-freq-set ;
 alias cpu_freq@   esp-clk-cpu-freq
 
+
+[ifdef] rtc-fast  \ For esp-idf-v3.3.6 and better
+
+#3584 constant /fast_mem \ The maximum size of RTC-fast memory defined in interface.c
+variable >top_fast_mem   >top_fast_mem off \ -/- 34 bytes used by the os
+
+: allocate-fast-mem ( n - addr ior )
+   aligned >top_fast_mem @ 2dup + /fast_mem >
+     if    2drop 0 true
+     else  + dup >top_fast_mem ! rtc-fast false
+     then ;
+
+[then]
+
 #32 value sysled
 : init-sysled       ( -- )  sysled gpio-is-output ;
 : sysledOn          ( -- )  1 sysled gpio-pin!    ;
 : sysledOff         ( -- )  0 sysled gpio-pin!    ;
 
-60000 to wifi-timeout
+#60000 to wifi-timeout
 : wifi-open-station ( retr wifi-timeout wifi-storage &ss sscnt  &pw pwcnt - flag )
 \    0 " wifi" log-level!
     5 roll 10 ms wifi-open nip nip ;

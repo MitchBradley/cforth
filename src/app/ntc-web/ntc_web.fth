@@ -8,7 +8,7 @@ s" MachineSettings.fth" file-exist?  \ For sensor-web$ and msg-board$
   [if]    fl MachineSettings.fth     \ if they exist
   [then]
 
-marker -ntc_web.fth  cr lastacf .name #19 to-column .( 05-12-2023 ) \ By J.v.d.Ven
+marker -ntc_web.fth  cr lastacf .name #19 to-column .( 11-11-2023 ) \ By J.v.d.Ven
 
 
 esp8266? [IF] cr .( Needs an extended version of Cforth on an ESP32. )
@@ -22,6 +22,13 @@ needs AskTime        ../esp/timediff.fth
 needs Html	     ../esp/webcontrols.fth
 needs -svg_plotter.f ../esp/svg_plotter.f
 needs av-ntc         ../esp/ntc_steinhart.fth
+
+0 [if]  Copy ntc_steinhart.fth to ~/cforth/src/app/esp
+        and add the line:
+fl ../esp/ntc_steinhart.fth
+        before the definition of interrupt?
+        in the file ~/forth/src/app/esp32/apt.fth
+[then]
 
 5 constant adc-channel
 
@@ -289,10 +296,6 @@ f# 5e0 f# 60e0 f* fvalue fcycle-time \ Time between two records in &CBdata
          [ifdef] SitesIndex SitesIndex
          [then] ;
 
-
-fvariable &us-cum      f# 0          &us-cum f!
-fvariable &us-timeout  f# 1 fsec>fus &us-timeout f!
-
 ALSO TCP/IP DEFINITIONS
 
 : /set_time_form  ( - )
@@ -303,8 +306,8 @@ ALSO TCP/IP DEFINITIONS
    <br> <br> +HTML|  <form> <input type="datetime-local" name="sys_time_user" value="0"> |
    <br> <br> s" Set time" s" nn" <CssButton> </form>
   </tr> </fieldset>   </td> </tr> </table>
-  </center>  </h4> </body> </html> ;
-
+  </center>  </h4> </body> </html>
+;
 
 : /home  ( - )
    time-server$ GotTime? or
@@ -321,9 +324,7 @@ ALSO TCP/IP DEFINITIONS
 
 
 : TcpTime ( UtcTics UtcOffset sunrise  sunset - ) \ Response to GetTcpTime see timediff.fth
-   SetLocalTime-from-network tTotal start-timer
-   cr bold .date .time norm cr usf@ to tcycle
-   usf@ &us-cum f! ; \ Setting the time base after a time update
+   SetLocalTime tTotal start-timer cr .date .time cr usf@ to tcycle ;
 
 : sys_time_user ( - ) \ Actions after /set_time_form
   parse-word
@@ -335,7 +336,7 @@ ALSO TCP/IP DEFINITIONS
   swap rot \ - Y m d H m s
   3 roll 4 roll 5 roll
   UtcTics-from-Time&Date f>s 0 0 0 SetLocalTime
-  tTotal start-timer GotTime? .  usf@ &us-cum f!
+  tTotal start-timer GotTime? .
   cr .date .time cr
   ['] /home set-page ;
 
@@ -357,18 +358,27 @@ FORTH DEFINITIONS TCP/IP
 
 
 : sensor+http-responder  ( timeout -- ) \  Handles ntc + http-responder KEEP
-   timed-accept stages-
+   timed-accept ms@ >r stages-
        if  dup abs .
        then
        if   handle-ntc
        else http-responder
-       then ;
+       then
+   1000 ms@ r> - 0 max - 200 max ms>ticks to poll-interval ;
+
+
+#27 constant escape
 
 : program-loop ( - )
-   usf@ &us-cum f! \ setting the time base
-      begin  &us-cum &us-timeout  find-deadline
-             fus>fms f>s ms>ticks responder escape?
-      until ;
+   begin
+      poll-interval responder
+      key?
+         if  key escape =
+               if    exit
+               else     begin key? while key drop repeat
+               then
+         then
+   again ;
 
 : try-logon ( - )
     wifi-logon-state 0<>
@@ -419,9 +429,10 @@ FORTH DEFINITIONS TCP/IP
    sent-temp-hum-to-msgboard Sent-state
 
    100 ms esp-clk-cpu-freq 1000000 / . ." Mhz "
+   1000 ms>ticks to poll-interval
    cr ." The home page of the webserver is:" .homepage-adr cr
    program-loop         \ Contains the loop of the server
-   +f order cr decimal quit ;
+   +f order cr quit ;
 
 : faster ( - )
    f# 1e0 to fcycle-time

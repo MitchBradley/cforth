@@ -1,12 +1,11 @@
 s" MachineSettings.fth" file-exist? [if] fl MachineSettings.fth [then]
-marker -sps30_web.fth  cr lastacf .name #19 to-column .( 05-12-2023 ) \ By J.v.d.Ven
+marker -sps30_web.fth  cr lastacf .name #19 to-column .( 11-11-2023 ) \ By J.v.d.Ven
 
 \ To see the air quality in a web browser.
 \ The SPS30 should be connected to an extra UART on the ESP32. See sps30.fth
 
 \ Needed in ROM:
 needs /circular       tools/extra.fth
-needs tz-local        tools/timezones.f
 needs AskTime         tools/timediff.fth
 needs Html	      tools/webcontrols.fth
 needs -svg_plotter.f  tools/svg_plotter.f
@@ -15,7 +14,7 @@ ALSO HTML ALSO SPS30 DEFINITIONS
 needs handle-sps30   ../sps30/sps30.fth  \ Needs also to be compiled in ROM
 
 esp8266? [IF] cr .( Needs an extended version of Cforth on an ESP32! )
-cr .( See https://github.com/Jos-Ven/cforth ) QUIT [THEN]
+cr .( See https://github.com/Jos-Ven/cforth/tree/WIP  ) QUIT [THEN]
 
 DECIMAL
 
@@ -313,7 +312,6 @@ create file-schedule-sps30 ," schedule-sps30.dat"
     0 n>sched.option@  Sleep-till-sunset-option =  \ Sleep option active? Then sleep until the next item!
     scheduled @ 1+ n>sched.time@  2359 < and  ;    \ Current entry inside schedule?
 
-
 : check-sleep-schedule
    sleep-needed?     \ if true sleep until the next item in the schedule
       if  .pause-msg ."   Starting the sleeping-schedule" cr
@@ -325,14 +323,14 @@ create file-schedule-sps30 ," schedule-sps30.dat"
 ALSO TCP/IP DEFINITIONS
 
 : TcpTime ( UtcTics UtcOffset sunrise  sunset - ) \ Response to GetTcpTime see timediff.fth
-   SetLocalTime-from-network
+   SetLocalTime
    usf@ fdup to start-tic  to tcycle
    tSps30 start-timer  tTotal start-timer
    boot-time f0=
-     if   local-time-now to boot-time
+     if   @time to boot-time
      then
    set-next-measurement-sps30
-   cr bold .date .time norm bl emit tTotal start-timer restart-schedule
+   cr .date .time bl emit tTotal start-timer restart-schedule
    check-sleep-schedule ;
 
 : /set_time_form  ( - )
@@ -375,7 +373,7 @@ ALSO TCP/IP DEFINITIONS
           usf@ to start-tic tTotal start-timer restart-schedule
           check-sleep-schedule
      then
-   cr bold .date .time norm cr
+   cr .date .time cr
    ['] /home set-page
  ;
 
@@ -471,7 +469,7 @@ PREVIOUS
    begin key?
            if  key dup #27 =
                if   drop
-                    \ 2 ms 3 rtc-clk-cpu-freq-set
+                    2 ms 3 rtc-clk-cpu-freq-set
                     cr esp-clk-cpu-freq 1000000 / . ." Mhz "
                     +f ONLY FORTH ALSO SPS30  order cr quit
                else  set-responder
@@ -493,10 +491,15 @@ PREVIOUS
 1 value sps30?
 
 : send_ask_time ( - )
-    cr ." Ask time from: " 100 ms time-server$ count type
-    ms@ >r asktime ms@ r> - dup space . ." ms "  1000 >
-       if   cr ." Stream failed. Rebooting..." 1500 ms 3 DeepSleep
-       then  ;
+   time-server$ 0<>
+     if  GotTime?
+          if    check-sleep-schedule
+          else  cr ." Ask time from: " 100 ms time-server$ count type
+                ms@ >r asktime ms@ r> - dup space . ." ms "  1000 >
+                  if   cr ." Stream failed. Rebooting..." 1500 ms 3 DeepSleep
+                  then
+          then
+     then ;
 
 : .homepage-adr ( - )
     bold ."  http://" ipaddr@ .ipaddr ." /home " norm  ;
@@ -514,7 +517,7 @@ PREVIOUS
    1000 ms>ticks to poll-interval
    cr ." The first results appear after 30 seconds in the list." cr
    time-server$ 0=
-     if    space GotTime? 0=
+     if   space GotTime? 0=
                if  cr ." Enter the date and time in the webserver."
                then
      else  send_ask_time \ check-time
@@ -522,7 +525,7 @@ PREVIOUS
    cr ." The home page of the webserver is:" .homepage-adr cr ;
 
 : start-web-server  ( -- )
-   cr  .date .time
+   cr .date .time
    cr htmlpage$ 0=
        if      init-res
        else    ." Listening again."
