@@ -1,4 +1,4 @@
-\ test_time.fth 05-12-2023
+\ test_time.fth 20-12-2023
 
 DECIMAL
 
@@ -50,20 +50,22 @@ DECIMAL
     tmp$ lcount evaluate         \ Test the code of the input
     -1 #tz +! .last-input-tz ;   \ Show the Forth code for timezones.f
 
-: time-list-zoom-meeting ( sec mm hh dd mm yyyy-GMT  -- )
+: time-list-meeting ( sec mm hh dd mm yyyy-GMT  -- )
    cr utctics-from-time&date greenwich-mean-time
    0 lmargin ! #60 rmargin ! #13 tabstops ! ??cr
      ." Local times for the zoom meeting at:"
    fdup  .time-from-utctics
-   fdup space .date-from-utctics  ." UTC" cr
+   fdup space .date-from-utctics  ."  UTC" cr
    tz-Endlist  #tz @ 0
        do    ?cr >link link@
-             2dup >body fdup convert-to-tz  bold .time-from-utctics norm space
+             2dup >body fdup convert-to-tz
+             fdup bold .time-from-utctics norm space
+              date-from-utc-time 2drop .## space
              dup  >name$ shorten-tz-name type
        loop
     2drop fdrop cr ;
 
-\ Use : 0 0 13 9 12 2023 time-list-zoom-meeting
+ \ Use : 0 0 13 9 12 2023 time-list-meeting
 
 
 : world-clock ( - )

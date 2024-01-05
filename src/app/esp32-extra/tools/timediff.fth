@@ -1,4 +1,4 @@
-marker -timediff.fth cr lastacf .name #19 to-column .( 05-12-2023 ) \ By J.v.d.Ven
+marker -timediff.fth cr lastacf .name #19 to-column .( 14-12-2023 ) \ By J.v.d.Ven
 
 f# -1 fvalue UtcSunRise
 f# -1 fvalue UtcSunSet
@@ -71,9 +71,6 @@ f# 86400. fconstant #SecondsOneDay
     r>  r> ( day month  year) ;
 
 : Jd-from-UtcTics        ( f: UtcTics - fjd )  #SecondsOneDay f/ f# 2440588 f+  ;
-
-: 0UtcTics-from-Jd&Time  ( ss mm uu JD -  ) ( f: - UtcTics )
-   #2440588 - s>f #SecondsOneDay f* #SecondsOneHour * swap #60 * + + s>f f+ ;
 
 : UtcTics-from-Jd&Time  ( ss mm uu JD -  ) ( f: - UtcTics )
    #2440588 - s>f #SecondsOneDay f* #SecondsOneHour * swap #60 * + + s>f f+ ;
@@ -292,7 +289,7 @@ end-structure
     then s"            " pad +lplace pad lcount #14 min ;
 
 : date>jjjjmmdd    ( d m j - jjjjmmdd )   #10000 * swap #100 * + + ;
-: GotTime?         ( - flag ) date-now nip nip #2022 > ;
+
 : local-time-now   ( - f: #secs-local )   @time LocalTics-from-UtcTics  ;
 
 : UtcTics-from-Time-today ( ss mm uu - f: UtcTics  )
@@ -347,13 +344,18 @@ f# 86400e0 fconstant #SecondsToDay
    HtmlPage$ lcount time-server$ TcpWrite  ;
 
 : SetLocalTime (  LocalTics UtcOffset sunrise sunset - )
-   s>f to UtcSunSet   s>f  to UtcSunRise  drop
-   s>f UtcTics-from-LocalTics f>s set-system-time  ; \ 05-12-2023 In UTC!
+   s>f LocalTics-from-UtcTics to UtcSunSet         \ In local time
+   s>f LocalTics-from-UtcTics to UtcSunRise  drop  \ In local time
+   s>f UtcTics-from-LocalTics f>s set-system-time  ; \ In UTC!
 
 : AskTime ( - )                            \ Adapt if needed!
    time-server$ 0<>
      if     gettcptime                     \ To get the UTC-time from an RPI
      then ;
+
+: GotTime?         ( - flag )
+    local-time-now time-from-utctics nip nip #23 <=
+    date-now  nip nip #2022 > and ;
 
 \ When gettcptime is used the time server should respond with a tcp packet like:
 \ GET 1671279235 3600 1671259560 1671287340  TcpTime HTTP/1.1
