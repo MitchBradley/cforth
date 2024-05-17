@@ -76,6 +76,11 @@ extern void uart_read_bytes(void);
 extern void get_system_time(void);
 extern void set_system_time(void);
 extern void my_spiffs_unmount(void);
+extern void spi_bus_init(void);
+extern void spi_bus_setup(void);
+extern void spi_master_data(void);
+extern void spi_slave_data(void);
+extern void spi_bus_init_slave(void);
 
 int xTaskGetTickCount(void);
 void raw_emit(char c);
@@ -402,4 +407,13 @@ cell ((* const ccalls[])()) = {
  	C(get_max_payload_size)      //c get-max-payload-size       { -- i.max-payload-size-enow }
 	C(set_esp_now_callback_rcv)  //c set-esp-now-callback-rcv   { i.HQueueEnow -- }
 	C(esp_now_unregister_recv_cb) //c esp-now-unregister-recv_cb { -- }
+
+// Spi master
+ 	C(spi_bus_init)              //c spi-bus-init               { i.dma, i.sclk i.miso, i.mosi --  i.res }
+ 	C(spi_bus_setup)             //c spi-bus-setup              { i.qsize, i.mode i.clkspeed --  i.handle }
+ 	C(spi_master_data)           //c spi-master-data            { i.len, a.send, a.receive, i.handle -- res }
+
+// Spi slave
+ 	C(spi_bus_init_slave)  //c spi-bus-init-slave    { i.qsize, i.dma, i.mode, i.spics, i.sclk, i.miso, i.mosi -- i.res }
+ 	C(spi_slave_data)      //c spi-slave-data        { a.recvbuf, a.sendbuf, i.size i.ticks_to_wait -- i.res }
 };
