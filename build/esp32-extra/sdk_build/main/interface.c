@@ -513,6 +513,8 @@ cell my_lwip_read(cell handle, cell len, void *adr)
 #include "esp_vfs_fat.h"
 #include "esp_log.h"
 #include "spiffs_vfs.h"
+#include "driver/spi_master.h"
+#include "driver/spi_slave.h"
 
 void init_filesystem(void)
 {
@@ -608,4 +610,71 @@ void set_system_time(cell sec)
 {
 struct timeval tv = { .tv_sec =  sec };
          settimeofday(&tv,NULL);
+}
+
+esp_err_t spi_bus_init(int mosi, int miso, int sclk, int dma)
+{
+    spi_bus_config_t buscfg={
+        .mosi_io_num=mosi,
+        .miso_io_num=miso,
+        .sclk_io_num=sclk,
+        .quadwp_io_num=-1,
+        .quadhd_io_num=-1
+    };
+  return spi_bus_initialize(VSPI_HOST, &buscfg, dma);
+}
+
+spi_device_handle_t spi_bus_setup(int clkspeed, int SpiMode, int qsize) {
+        spi_device_handle_t handle;
+        spi_device_interface_config_t devcfg={
+        .command_bits=0,
+        .address_bits=0,
+        .dummy_bits=0,
+        .clock_speed_hz=clkspeed,
+        .mode=SpiMode,
+        .spics_io_num=-1,
+        .queue_size=qsize,
+    };
+  spi_bus_add_device(VSPI_HOST, &devcfg, &handle);
+  return handle;
+}
+
+//Send data to the LCD. Uses spi_device_transmit, which waits until the transfer is complete.
+int32_t  spi_master_data(spi_device_handle_t spi, uint8_t *receive, uint8_t *send, uint16_t size)  {
+	spi_transaction_t trans_t;
+	trans_t.rx_buffer = receive;
+	trans_t.tx_buffer = send;
+	trans_t.rxlength = 0;
+	trans_t.length = 8 * size;
+	trans_t.flags = 0;
+	trans_t.cmd = 0;
+	trans_t.addr = 0;
+	trans_t.user = NULL;
+	return spi_device_transmit(spi, &trans_t);
+}
+
+int32_t spi_bus_init_slave( int mosi, int miso, int sclk, int spics, int mode, int dma, int qsize)  {
+    spi_bus_config_t buscfg={
+        .mosi_io_num=mosi,
+        .miso_io_num=miso,
+        .sclk_io_num=sclk
+    };
+
+    spi_slave_interface_config_t slvcfg={
+        .mode=mode,
+        .spics_io_num=spics=spics,
+        .queue_size=qsize,
+        .flags=0,
+    };
+
+       return spi_slave_initialize(VSPI_HOST, &buscfg, &slvcfg, dma);
+}
+
+int32_t spi_slave_data(int ticks_to_wait, int size, void *sendbuf, void *recvbuf)  {
+   spi_slave_transaction_t t;
+        //Set up a transaction of 128 bytes to send/receive
+        t.length=size*8;
+        t.tx_buffer=sendbuf;
+        t.rx_buffer=recvbuf;
+       return spi_slave_transmit(VSPI_HOST, &t, ticks_to_wait);
 }
