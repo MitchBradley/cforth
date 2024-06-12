@@ -419,7 +419,7 @@ execute:
     push(scr);
     next;
 
-/*$p key? */    case KEY_QUESTION:
+/*$p key? */    case KEY_QUERY:
     scr = key_avail(up);
     if (scr == -2) {
         // Save interpreter state, return, and expect reentry

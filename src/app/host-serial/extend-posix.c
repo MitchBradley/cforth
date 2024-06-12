@@ -270,7 +270,7 @@ cell open_com(cell portnum)		// Open COM port
 			return (cell)res;
 		}
 	} else if ((u_cell)portnum < 200) {
-		snprintf(comname_buf, 31, "/dev/ttyUSB%ld", portnum);
+		snprintf(comname_buf, 31, "/dev/ttyUSB%d", (int) portnum);
 		comname = comname_buf;
 	} else {
                 comname = (char *)portnum;
