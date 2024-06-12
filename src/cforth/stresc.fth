@@ -63,3 +63,66 @@ decimal
    get-escaped-string
    state @  if  postpone sliteral  then
 ; immediate
+
+: (next-char) ( c-addr u -- c-addr' u' char ) over c@ >r 1 /string r> ;
+: (parse-hex-digit) ( char -- u )
+   dup '0' '9' 1+ within if '0' - exit then
+   dup 'a' 'g' within if 'a' - exit then
+   dup 'A' 'G' within if 'A' - exit then
+   true abort" Invalid hex digit in string after \x."
+;
+
+: (parse-\x) ( c-addr u -- c-addr' u' )
+   dup 2 < abort" Premature end of string after \x."
+   (next-char) (parse-hex-digit) >r
+   (next-char) (parse-hex-digit) r> 4 lshift or c,
+;
+
+: (parse-\) ( c-addr u -- c-addr' u' )
+   dup 0= abort" Premature end of string after \."
+   (next-char) case
+      'a' of #7 c, endof
+      'b' of #8 c, endof
+      'e' of #27 c, endof
+      'f' of #12 c, endof
+      'l' of #10 c, endof
+      'm' of #13 c, #10 c, endof
+      'n' of #10 c, endof
+      'q' of #34 c, endof
+      'r' of #13 c, endof
+      't' of #9 c, endof
+      'v' of #11 c, endof
+      'z' of #0 c, endof
+      '"' of #34 c, endof
+      'x' of (parse-\x) endof
+      '\' of #92 c, endof
+      true abort" Invalid escape character."
+   endcase
+;
+
+: (parse-s\"-loop) ( c-addr u -- c-addr' u' )
+   begin dup while
+      (next-char) case
+	 '\' of (parse-\) endof
+	 '"' of exit endof
+	 dup c,
+      endcase
+   repeat
+;
+
+\ Parse STRING, translating \-escape characters.  Store the translated
+\ string after HERE.  U is the length of the string.
+: (parse-s\") ( "string" -- u )
+   here                                      ( here )
+   source >in @ /string (parse-s\"-loop)     ( here c-addr' u' )
+   drop source drop - >in !		     ( here )
+   here swap -				     ( u )
+   dup negate allot
+;
+
+: s\" ( "string" -- c-addr u )
+   source >in @ /string drop	( c-addr )   \ save start of parse area
+   (parse-s\")			( c-addr u )
+   2dup here rot rot move	( c-addr u ) \ overwrite parse area
+   state @  if postpone sliteral  then
+; immediate
