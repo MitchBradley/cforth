@@ -21,9 +21,11 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <limits.h>
+#include <fcntl.h>
 
 #include "forth.h"
 #include "compiler.h"
+
 
 int ansi_emit(int c, FILE *fd);
 extern int key();
@@ -101,18 +103,27 @@ pfsize(cell f, u_cell *high, u_cell *low, cell *up)
     return((cell)(end==-1 ? SIZEFAIL : 0));
 }
 
+static char path[16] = "/spiffs/";
+
 char *
 expand_name(char *name)
 {
   char envvar[64], *fnamep, *envp, paren, *fullp;
   static char fullname[PATH_MAX];
   int ndx;
-
-  strcpy(fullname, "/spiffs/");
+  ndx = strlen(name);
+  char tmp[9];
+  strncpy(tmp, name, 8);
+  tmp[8] = '\0';
+    if (((strcmp(tmp, "/sdcard/") == 0 ) || (strcmp(tmp, "/spiffs/") == 0 )) && (ndx > 8)) {
+       return (name);
+        }  else { if (((strcmp(tmp, "/sdcard/") == 0 ) || (strcmp(tmp, "/spiffs/") == 0 )) && (ndx == 8)) {
+           return ("");
+          }
+        }
+  strcpy(fullname, path);
   fullp = fullname + strlen(fullname);
-
   fnamep = name;
-
   while (*fnamep) {
     if (*fnamep == '$') {
       fnamep++;
@@ -156,15 +167,28 @@ expand_name(char *name)
 // w/o create-flag or ???
 
 // 0:r/o 1:w/o 2:r/w 3: undefined
-static char *open_modes[]   = { "rb",  "ab", "r+b", "" };
-static char *popen_modes[]  = { "r",  "w", "rw", "" };
+static char *popen_modes[]  = { "rb",  "wb", "r+b", "" };
 cell pfopen(char *name, int len, int mode, cell *up)
 {
+static char s[256];
+    if ((len == 0) && (mode == -9)) {
+       return (cell)path;
+    }
     char cstrbuf[PATH_MAX];
-    char *s = expand_name(altocstr(name, len, cstrbuf, PATH_MAX));
+    if ((len < 0)  && (mode == -9)) {
+    int length= abs(len);
+    char *s = expand_name(altocstr(name, length, cstrbuf, PATH_MAX));
+    return (cell)s;
+    }  else {
+         char *s = expand_name(altocstr(name, len, cstrbuf, PATH_MAX));
 
-    FILE *res = fopen(s, open_modes[mode&3]);
-    return (cell)res;
+       FILE *fp;
+       int fd;
+           if ((fd = open(s, mode)) == -1) {
+              return(0);
+           }
+       return ( (cell)fdopen(fd, popen_modes[mode&3]));
+    }
 }
 
 static char *create_modes[] = { "a+b", "wb", "w+b", "" };

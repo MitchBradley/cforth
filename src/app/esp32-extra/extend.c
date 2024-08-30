@@ -36,8 +36,14 @@ cell errno_val(void) {  return (cell)errno;  }
 // sdk_build/main/interface.c is compiled after the SDK configurator
 // has run, so it can include whatever it needs.
 
-extern void software_reset(void);
 
+extern void open_dir(void);
+extern void dirent_size(void);
+// extern void sd_mount(void);
+extern void sd_unmount(void);
+
+
+extern void software_reset(void);
 extern void adc1_config_width(void);
 extern void adc1_config_channel_atten(void);
 extern void adc1_get_voltage(void);
@@ -76,11 +82,14 @@ extern void uart_read_bytes(void);
 extern void get_system_time(void);
 extern void set_system_time(void);
 extern void my_spiffs_unmount(void);
+
 extern void spi_bus_init(void);
 extern void spi_bus_setup(void);
 extern void spi_master_data(void);
-extern void spi_slave_data(void);
+
 extern void spi_bus_init_slave(void);
+extern void spi_slave_data(void);
+
 
 int xTaskGetTickCount(void);
 void raw_emit(char c);
@@ -332,13 +341,13 @@ cell ((* const ccalls[])()) = {
 	C(my_select)		//c lwip-select    { i.sec a.exc a.wr a.rd i.n -- i.cnt }
 	C(tcpip_adapter_get_ip_info) //c ip-info@  { a.buf i.adapter# -- i.error }
 
-	C(open_dir)		//c open-dir       { -- a.dir }
+	C(open_dir)		//c open-dir	   { $.base_path -- a.dir }
 	C(closedir)		//c close-dir      { a.dir -- }
 	C(next_file)		//c next-file      { a.dir -- a.dirent }
-	C(dirent_size)		//c file-bytes     { a.dir -- i.size }
+	C(dirent_size)		//c file-bytes     { $.name-full a.dir -- i.size }
 	C(dirent_name)		//c file-name      { a.dir -- a.name }
-	C(rename_file)		//c rename-file    { $.old $.new -- }
-	C(delete_file)		//c delete-file    { $.name -- }
+	C(rename_file)		//c rename-file    { $.full-old $.full-new -- i.ior }
+	C(delete_file)		//c delete-file    { $.full-name -- i.ior }
 	C(fs_avail)		//c fs-avail       { -- i.bytes }
         C(my_spiffs_unmount)	//c spiffs-unmount { -- }
 
@@ -411,9 +420,13 @@ cell ((* const ccalls[])()) = {
 // Spi master
  	C(spi_bus_init)              //c spi-bus-init               { i.dma, i.sclk i.miso, i.mosi --  i.res }
  	C(spi_bus_setup)             //c spi-bus-setup              { i.qsize, i.mode i.clkspeed --  i.handle }
- 	C(spi_master_data)           //c spi-master-data            { i.len, a.send, a.receive, i.handle -- res }
+ 	C(spi_master_data)           //c spi-master-data            { i.len, a.send, a.receive, i.handle -- i.res }
 
 // Spi slave
  	C(spi_bus_init_slave)  //c spi-bus-init-slave    { i.qsize, i.dma, i.mode, i.spics, i.sclk, i.miso, i.mosi -- i.res }
  	C(spi_slave_data)      //c spi-slave-data        { a.recvbuf, a.sendbuf, i.size i.ticks_to_wait -- i.res }
+
+// SDcard
+	C(sd_mount)		     //c mount-sd-card	{ i.sd_spics i.sd_clk i.sd_miso i.sd_mosi i.format_option i.sd_speed -- i.ior }
+	C(sd_unmount)		     //c sd-unmount	{ -- }
 };

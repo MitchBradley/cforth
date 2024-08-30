@@ -71,6 +71,8 @@ fl files.fth
 fl server.fth
 fl tasking_rtos.fth        \ Preemptive multitasking
 fl tools/extra.fth
+fl tools/rcvfile.fth
+fl sdcard.fth
 
 : interrupt?  ( -- flag )
    ." Type a key within 2 seconds to interact" cr

@@ -48,14 +48,12 @@ cell my_lwip_read(cell handle, cell len, void *adr);
 cell my_select(cell maxfdp1, void *reads, void *writes, void *excepts, cell milliseconds);
 cell tcpip_adapter_get_ip_info(cell ifce, void *info);
 
-void *open_dir(void);
 //void *readdir(void *dir);
 void *next_file(void *dir);
 void closedir(void *dir);
-cell dirent_size(void *ent);
+void delete_file(char *path); 
 char *dirent_name(void *ent);
 void rename_file(char *new, char *old);
-void delete_file(char *path);
 cell fs_avail(void);
 
 void us(cell us);
@@ -264,5 +262,5 @@ cell esp_now_add_peer(const esp_now_peer_info_t *peer);
 cell esp_now_send(const uint8_t *peer_addr, const uint8_t *data, cell len);
 cell esp_now_register_recv_cb(esp_now_recv_cb_t cb);
 cell esp_now_unregister_recv_cb(void);
-
+cell sd_mount (int sd_spics, int sd_clk, int sd_miso, int sd_mosi, int format_option, int sd_speed);
 
