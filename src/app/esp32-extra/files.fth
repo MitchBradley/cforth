@@ -35,10 +35,11 @@ create &valid-paths ," /spiffs/" ," /sdcard/"
    &valid-paths +str count 2swap $= r> or
 ;
 
-: get-path  ( - path$ )  0. -9 open-file drop cscount ;
+: get-path     ( - path$ )  0. -9 open-file drop cscount ;
+: .path        ( - ) get-path type ;
 : expand-name  ( name$ - fullname$ )  negate -9 open-file drop cscount ;
 
-: set-path  ( path$ - )
+: set-path     ( path$ - )
    2dup valid-path?   if
        0. -9 open-file drop swap cmove
    else

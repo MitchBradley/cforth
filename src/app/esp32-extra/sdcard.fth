@@ -51,6 +51,9 @@ Change in menuconfig: Component config > FAT Filesystem support > Long filename 
   mount-sd-card
 ;
 
+: spiffs ( - ) s" /spiffs/" set-path ;
+: sdcard ( - ) s" /sdcard/" set-path ;
+
 0 [if] \ EG:
 
 .SDcard-settings sd-mount .

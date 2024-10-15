@@ -56,7 +56,7 @@ char *dirent_name(void *ent);
 void rename_file(char *new, char *old);
 cell fs_avail(void);
 
-void us(cell us);
+void us(uint32_t us);
 
 void esp_deep_sleep(uint64_t time_in_us);
 

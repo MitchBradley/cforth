@@ -1,5 +1,4 @@
 \ Load file for application-specific Forth extensions
-
 fl ../../lib/misc.fth
 fl ../../lib/dl.fth
 fl ../../lib/random.fth
@@ -28,35 +27,38 @@ alias m-init noop
    key?  if  key true exit  then
    false
 ;
-
 : ms>ticks  ( ms -- ticks )
-   esp-clk-cpu-freq #80000000 over =
-     if    drop
-     else  #240000000 =
-             if   exit
-             else #1 lshift
-             then
-     then  #3 /
+   esp-clk-cpu-freq #80000000 over =  if
+      drop
+   else
+      #240000000 =  if
+         exit
+      else
+         #1 lshift
+      then
+   then  #3 /
 ;
 
 : system-time>f ( us seconds -- ) ( f: -- us )
    s" s>d d>f f# 1000000 f*  s>d d>f  f+ "  evaluate ; immediate
 
-: usf@         ( f: -- us )
+: usf@  ( f: -- us )
    s" dup dup sp@ get-system-time! system-time>f" evaluate ; immediate
 
-: ms@         ( -- ms ) f# .001 usf@ f* f>d drop ;
+: ms@   ( -- ms ) f# 0.001 usf@ f* f>d drop ;
 
 alias get-msecs ms@
 
 : fus  ( f: us - )
-   usf@  f+
-     begin   fdup  usf@  f- f# 100000000 f>
-     while   #100000000 us
-     repeat
-   usf@  f- f>d drop abs us ;
+   usf@ f+  begin
+         fdup  usf@  f# 6000 f-  f>
+      while
+         #6000 us
+      repeat
+      usf@ fswap f- f>d drop abs us
+;
 
-: ms ( ms -- )   s>d d>f f# 1000 f* fus ;
+: ms  ( ms -- )   s>d d>f f# 1000 f* fus ;
 
 fl wifi.fth
 
@@ -81,15 +83,15 @@ fl tools/extra.fth
 : load-startup-file  ( -- ior )   " start" ['] included catch   ;
 
 : app ( - ) \ Sometimes SPIFFS or a wifi connection causes an error. A reboot solves that.
-   banner  hex  interrupt? 0=
-      if     s" start" file-exist?
-           if   load-startup-file
-                if   ." Reading SPIFFS. " cr interrupt? 0=
-                    if    reboot
-                    then
-                then
-           then
+   banner  hex  interrupt? 0=  if
+      s" start" file-exist?  if
+         load-startup-file  if
+            ." Reading SPIFFS. " cr interrupt? 0=  if
+               reboot
+            then
+         then
       then
+   then
    quit
 ;
 
