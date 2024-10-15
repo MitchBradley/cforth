@@ -1,4 +1,4 @@
-marker -extra.fth  cr lastacf .name #19 to-column .( 12-12-2023 ) \ By J.v.d.Ven
+marker -extra.fth  cr lastacf .name #19 to-column .( 15-10-2024 ) \ By J.v.d.Ven
 \ Additional words I often use.
 
 alias b   bye
@@ -206,6 +206,7 @@ patch check-conditional here <resolve
 : field:     ( n1 <"name"> -- n2 ) ( addr -- 'addr )  aligned cell +field ;
 : bfield:    ( n1 <"name"> -- n2 ) ( addr -- 'addr )  1 +field ;
 : wfield:    ( n1 <"name"> -- n2 ) ( addr -- 'addr )  2 +field ;
+: lfield:    ( n1 <"name"> -- n2 ) ( addr -- 'addr )  4 +field ;
 : xfield:    ( n1 <"name"> -- n2 ) ( addr -- 'addr )  8 +field ;
 
 : f2dup   ( fs: r1 r2 -- r1 r2 r1 r2 )  fover fover ;
@@ -380,33 +381,6 @@ PREVIOUS
 : Reboot ( - )  ." Rebooting..." 1 DeepSleep ;
 
 : ##$        ( seperator n -- adr cnt ) s>d <# # #  2 pick hold  #> rot 0= abs /string ;
-
-char , value seperator
-
-: (xud,.)       ( ud seperator -- a1 n1 )
-   >r
-   <#                         \ every 'seperator' digits from right
-   r@ 0 do # 2dup d0= ?leave loop
-        begin   2dup d0= 0=   \ while not a double zero
-        while   seperator hold
-                r@ 0 do # 2dup d0= ?leave loop
-        repeat  #> r> drop ;
-
-: (ud,.)        ( ud -- a1 n1 )
-   base @                     \ get the base
-   dup  #10 =                 \ if decimal use seperator every 3 digits
-   swap #8 = or               \ or octal   use seperator every 3 digits
-   #4 + (xud,.) ;             \ display seperators every 3 or 4 digits
-
-: ud,.r         ( ud l -- )   \ display double right justified, with seperator
-   >r (ud,.) r> over - spaces type ;
-
-: ud,.          ( ud -- )     \ display double unsigned, with seperator
-   0 ud,.r ;
-
-: u,.r          ( u l -- )    \ display number unsigned, justified in field, with seperator
-   0 swap ud,.r ;
-
 : f>dint ( f: n magn - ) ( d: - n )  f* fround f>d tuck dabs ;
 : .#-> [char] . hold  #s rot sign #>  ;
 : (f.2) ( f -- ) ( -- c-addr u )  f# 100e0  f>dint <# # # .#-> ;
@@ -580,5 +554,10 @@ create TcpPort$ ," 8080"     create UdpPort$ ," 8899"
                   loop
         else set-ssid
         then  ;
+
+\ For setvbuf
+0 constant _IOFBF \ set fully buffered
+1 constant _IOLBF \ set line buffered
+2 constant _IONBF \ set unbuffered
 
 \ \s

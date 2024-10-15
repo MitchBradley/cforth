@@ -1,5 +1,14 @@
-marker -svg_plotter.f  cr lastacf .name #19 to-column .( 11-11-2023 ) \ By J.v.d.Ven
+marker svg_plotter.f  cr lastacf .name #19 to-column .( 15-10-2024 ) \ By J.v.d.Ven
  \ To plot simple charts for a web client
+
+
+[ifndef] |f@|
+
+alias |f@| f@
+alias |@| @
+0 value fhandle
+
+[then]
 
 needs /circular      extra.fth
 needs Html	     webcontrols.fth
@@ -107,17 +116,17 @@ Black   value color-x-labels
     0 LeftMargin +  SvgHeight BottomMargin -   SvgWidth RightMargin -   0 TopMargin + ;
 
 : fpoly-points> { #end #start &dataline -- } ( interval - )
-    &DataLine >CfaDataLine @ to &DataLine
+    &DataLine >CfaDataLine |@| to &DataLine
     #X_Lines xResolution * 1+ 0
       do  fdup i s>f f* #start s>f f+
-          fdup f>s &DataLine execute f@ fpoly
+          fdup f>s &DataLine execute |f@| fpoly
       loop  fdrop ;
 
 : FindPeak ( cfa-offset #end #start - ) ( f: - Ypart )
     2dup <=
-      if drop swap execute f@
-      else  dup 3 pick execute f@ fdup    \ f: fmin fmax
-               do  i over execute f@ fdup
+      if    drop swap execute |f@|
+      else  dup 3 pick execute |f@| fdup    \ f: fmin fmax
+               do  i over execute |f@| fdup
                           frot fmax fswap
                           frot fmin fswap
                loop drop
@@ -128,7 +137,7 @@ Black   value color-x-labels
        then ;
 
 : LastPointExact ( #end #start  &DataLine  - ) ( f: - Ypart#End )
-    nip >CfaDataLine perform f@ ;
+    nip >CfaDataLine perform |f@| ;
 
 : Maximized-fpoly-points> { #end #start ptr_dataline -- } ( f: interval - )
     #end  #start - s>f
@@ -136,9 +145,9 @@ Black   value color-x-labels
     r> dup 1-  to #end 0
       do  fdup i  s>f f* #start s>f f+  fdup  f>s   \ X part
           i 0=
-             if    1- 0 max ptr_dataline >CfaDataLine perform f@       \ First in Y part the plot
+             if    1- 0 max ptr_dataline >CfaDataLine perform |f@|     \ First in Y part the plot
              else  f2dup fswap f- f>s #start max  \ ok
-                   #end i =                                             \ last plot
+                   #end i =                                            \ last plot
                      if    ptr_dataline dup >CfaLastDataPoint perform  \ Get last point. Y part
                      else  ptr_dataline >CfaDataLine @ -rot FindPeak   \ Peak value Y part
                      then
@@ -154,15 +163,15 @@ Black   value color-x-labels
 
 : Round10 ( f: Up/down-val n - rounded )  fswap f# 10e0 f* f+ fround f# 10e0 f/ ;
 
-: SetMinMaxY { #end #start ptr_data -- }
+: SetMinMaxY { i_end i_start ptr_data -- }
     ptr_data  dup >CfaDataLine @ to ptr_data
     f# 0e0 to fTotal  #added off
-    #end  #start 1- 0 max
-    #start ptr_data execute f@ fdup  to MinYBot to MaxYtop
-      do  i ptr_data execute f@ fdup
+    i_end  i_start 1- 0 max
+    i_start ptr_data execute |f@| fdup  to MinYBot to MaxYtop
+      do  i ptr_data execute |f@| fdup
           fTotal f+ to fTotal  1 #added +!  MinMaxYf!
        loop   \ Takes ALL data of the logfile in account within the plotted range
-    #end #start rot
+    i_end i_start rot
     dup dup >r >CfaLastDataPoint perform MinMaxYf! \ Including the optional LastDataPoint
     r> >compression f@ f# 1e0 fmax
     MinYBot fdup to MinYBotExact fover f/ f# -0.5e0 Round10  to MinYBot
@@ -195,12 +204,12 @@ Black   value color-x-labels
     Hw.MinMax               MinXBot MinYBot   MaxXtop  MaxYtop set-gwindow  \ Zero is left down
     Maximized-fpoly-points> ;
 
-defer r>Time  ( - Relative_offset_to_time )
-defer r>Date  ( - Relative_offset_to_date )
+defer r>Time  ( i-adr - Relative_offset_to_time )
+defer r>Date  ( i-adr - Relative_offset_to_date )
 
 : x-label-text ( n - )
-    dup  r>Time @ 100 / 4w.intHtml .HtmlBl
-    r>Date @ dup 10000 / 10000 * - 4w.intHtml ;
+    dup  r>Time |@| 100 / 4w.intHtml .HtmlBl
+    r>Date |@| dup 10000 / 10000 * - 4w.intHtml ;
 
 : x-label ( F: x y - ) ( n 'Text color Rotation - )
     scale  swap 2dup

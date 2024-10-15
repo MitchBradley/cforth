@@ -516,18 +516,12 @@ cell my_lwip_read(cell handle, cell len, void *adr)
 #include "driver/spi_master.h"
 #include "driver/spi_slave.h"
 
+
+
 void init_filesystem(void)
 {
     esp_log_level_set("[SPIFFS]", 0);
     vfs_spiffs_register();
-}
-
-char *expand_path(char *name)
-{
-    static char path[256];
-    strcpy(path, "/spiffs/");
-    strncat(path, name, 256 - strlen("/spiffs/"));
-    return path;
 }
 
 void my_spiffs_unmount(void)
@@ -535,10 +529,11 @@ void my_spiffs_unmount(void)
     spiffs_unmount(0);
 }
 
-void *open_dir(void)
+void *open_dir(char *name)
 {
-    return opendir(expand_path(""));
+    return opendir(name);
 }
+
 
 void *next_file(void *dir)
 {
@@ -557,22 +552,19 @@ char *dirent_name(void *ent)
     return ((struct dirent *)ent)->d_name;
 }
 
-cell dirent_size(void *ent)
+
+cell dirent_size(void *ent, char *name)
 {
     struct stat statbuf;
-    if (stat(expand_path(((struct dirent *)ent)->d_name), &statbuf)) {
+     if (stat(name, &statbuf)) {
 	return -1;
     }
     return statbuf.st_size;
 }
 
-void rename_file(char *new, char *old)
+cell rename_file(char *new, char *old)
 {
-    static char path[256];
-    strcpy(path, "/spiffs/");
-    strncat(path, new, 256 - strlen("/spiffs/"));
-
-    rename(expand_path(old), path);
+    return  rename(old, new);
 }
 
 cell fs_avail(void)
@@ -582,9 +574,9 @@ cell fs_avail(void)
   return (cell)(total - used);
 }
 
-void delete_file(char *name)
+cell delete_file(char *name)
 {
-    remove(expand_path(name));
+    return remove(name);
 }
 
 void restart(void)
@@ -593,7 +585,8 @@ void restart(void)
 }
 
 #include <rom/ets_sys.h>
-void IRAM_ATTR us(cell us)
+
+void IRAM_ATTR us(uint32_t us)
 {
     ets_delay_us(us);
 }
@@ -631,9 +624,11 @@ spi_device_handle_t spi_bus_setup(int clkspeed, int SpiMode, int qsize) {
         .address_bits=0,
         .dummy_bits=0,
         .clock_speed_hz=clkspeed,
+//        .duty_cycle_pos=128,        // 50% duty cycle
         .mode=SpiMode,
         .spics_io_num=-1,
         .queue_size=qsize,
+//        .cs_ena_posttrans=3,        // Keep the CS low 3 cycles after transaction,
     };
   spi_bus_add_device(VSPI_HOST, &devcfg, &handle);
   return handle;
@@ -677,4 +672,65 @@ int32_t spi_slave_data(int ticks_to_wait, int size, void *sendbuf, void *recvbuf
         t.tx_buffer=sendbuf;
         t.rx_buffer=recvbuf;
        return spi_slave_transmit(VSPI_HOST, &t, ticks_to_wait);
+}
+
+#include "sdmmc_cmd.h"
+
+static const char *TAG = "SDcard: ";
+
+cell sd_mount(int sd_speed, int format_option, int sd_mosi, int sd_miso, int sd_clk, int sd_cs )
+{
+// Pin mapping when using SPI mode.
+    sdmmc_host_t host = SDSPI_HOST_DEFAULT();
+    host.max_freq_khz = sd_speed;  // 20000 is too high
+    sdspi_slot_config_t slot_config = SDSPI_SLOT_CONFIG_DEFAULT();
+    slot_config.gpio_miso = sd_miso;
+    slot_config.gpio_mosi = sd_mosi;
+    slot_config.gpio_sck  = sd_clk;
+    slot_config.gpio_cs   = sd_cs;
+    // This initializes the slot without card detect (CD) and write protect (WP) signals.
+    // Modify slot_config.gpio_cd and slot_config.gpio_wp if your board has these signals.
+
+    // Options for mounting the filesystem.
+    // If format_if_mount_failed is set to true, SD card will be partitioned and
+    // formatted in case when mounting fails.
+    esp_vfs_fat_sdmmc_mount_config_t mount_config = {
+        .format_if_mount_failed = format_option,
+        .max_files = 5,
+        .allocation_unit_size = 16 * 1024
+    };
+
+    // Use settings defined above to initialize SD card and mount FAT filesystem.
+    // Note: esp_vfs_fat_sdmmc_mount is an all-in-one convenience function.
+    // Please check its source code and implement error recovery when developing
+    // production applications.
+    sdmmc_card_t* card;
+    esp_err_t ret = esp_vfs_fat_sdmmc_mount("/sdcard", &host, &slot_config, &mount_config, &card);
+
+    if (ret != ESP_OK) {
+        if (ret == ESP_FAIL) {
+            ESP_LOGE(TAG, "Failed to mount filesystem. "
+                "If you want the card to be formatted, set format_if_mount_failed = true.");
+        } else {
+            ESP_LOGE(TAG, "Failed to initialize the card (%s). "
+                " ", esp_err_to_name(ret));
+        }
+        return ret;
+    }
+    // Card has been initialized, print its properties
+    printf( " \n" );
+    sdmmc_card_print_info(stdout, card);
+    return ret;
+}
+
+void sd_unmount()
+{
+      esp_vfs_fat_sdmmc_unmount();
+      ESP_LOGI(TAG, "Card unmounted");
+}
+
+cell mysetvbuf(int size, void *buf, int method, FILE* fp)
+{
+      esp_err_t ret = setvbuf(fp, buf, method, size);
+      return ret;
 }

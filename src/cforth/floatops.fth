@@ -75,7 +75,7 @@ decimal
 22 fintop: f0>=
 23 fintop: fpick
 24 fintop: fnumber?
-25 fintop: fnumber 
+25 fintop: fnumber
 26 fintop: fscale
 27 fintop: represent
 28 fintop: f~
@@ -93,11 +93,9 @@ alias fix    fround
 16\ d# 16 constant cell-bits
 
 : f>d  ( real -- d )
-   fdup f0<  >r r@  if  fabs  then
-   floor fdup  cell-bits negate fscale    ( r.n r.high )
-   fswap fover floor cell-bits fscale f-  ( r.high r.low )
-   int  int
-   r>  if  dnegate  then
+   #places @  0 #places ! fstring $number? 0=
+      if  0. then
+   rot #places !
 ;
 : d>f  ( d -- real )
    dup 0<  if
