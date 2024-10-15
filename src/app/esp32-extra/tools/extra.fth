@@ -1,4 +1,4 @@
-marker -extra.fth  cr lastacf .name #19 to-column .( 28-08-2024 ) \ By J.v.d.Ven
+marker -extra.fth  cr lastacf .name #19 to-column .( 15-10-2024 ) \ By J.v.d.Ven
 \ Additional words I often use.
 
 alias b   bye
@@ -206,6 +206,7 @@ patch check-conditional here <resolve
 : field:     ( n1 <"name"> -- n2 ) ( addr -- 'addr )  aligned cell +field ;
 : bfield:    ( n1 <"name"> -- n2 ) ( addr -- 'addr )  1 +field ;
 : wfield:    ( n1 <"name"> -- n2 ) ( addr -- 'addr )  2 +field ;
+: lfield:    ( n1 <"name"> -- n2 ) ( addr -- 'addr )  4 +field ;
 : xfield:    ( n1 <"name"> -- n2 ) ( addr -- 'addr )  8 +field ;
 
 : f2dup   ( fs: r1 r2 -- r1 r2 r1 r2 )  fover fover ;
@@ -553,5 +554,10 @@ create TcpPort$ ," 8080"     create UdpPort$ ," 8899"
                   loop
         else set-ssid
         then  ;
+
+\ For setvbuf
+0 constant _IOFBF \ set fully buffered
+1 constant _IOLBF \ set line buffered
+2 constant _IONBF \ set unbuffered
 
 \ \s
