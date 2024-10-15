@@ -585,7 +585,8 @@ void restart(void)
 }
 
 #include <rom/ets_sys.h>
-void IRAM_ATTR us(cell us)
+
+void IRAM_ATTR us(uint32_t us)
 {
     ets_delay_us(us);
 }
@@ -677,9 +678,9 @@ int32_t spi_slave_data(int ticks_to_wait, int size, void *sendbuf, void *recvbuf
 
 static const char *TAG = "SDcard: ";
 
-cell sd_mount(int sd_speed, int format_option, int sd_mosi, int sd_miso, int sd_clk, int sd_cs ) {
+cell sd_mount(int sd_speed, int format_option, int sd_mosi, int sd_miso, int sd_clk, int sd_cs )
+{
 // Pin mapping when using SPI mode.
-
     sdmmc_host_t host = SDSPI_HOST_DEFAULT();
     host.max_freq_khz = sd_speed;  // 20000 is too high
     sdspi_slot_config_t slot_config = SDSPI_SLOT_CONFIG_DEFAULT();
@@ -698,6 +699,7 @@ cell sd_mount(int sd_speed, int format_option, int sd_mosi, int sd_miso, int sd_
         .max_files = 5,
         .allocation_unit_size = 16 * 1024
     };
+
     // Use settings defined above to initialize SD card and mount FAT filesystem.
     // Note: esp_vfs_fat_sdmmc_mount is an all-in-one convenience function.
     // Please check its source code and implement error recovery when developing
@@ -716,6 +718,7 @@ cell sd_mount(int sd_speed, int format_option, int sd_mosi, int sd_miso, int sd_
         return ret;
     }
     // Card has been initialized, print its properties
+    printf( " \n" );
     sdmmc_card_print_info(stdout, card);
     return ret;
 }
@@ -726,3 +729,8 @@ void sd_unmount()
       ESP_LOGI(TAG, "Card unmounted");
 }
 
+cell mysetvbuf(int size, void *buf, int method, FILE* fp)
+{
+      esp_err_t ret = setvbuf(fp, buf, method, size);
+      return ret;
+}
