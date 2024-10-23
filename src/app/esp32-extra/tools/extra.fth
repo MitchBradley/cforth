@@ -1,4 +1,5 @@
-marker -extra.fth  cr lastacf .name #19 to-column .( 15-10-2024 ) \ By J.v.d.Ven
+marker -extra.fth  cr lastacf .name #19 to-column .( 23-10-2024 ) \ By J.v.d.Ven
+
 \ Additional words I often use.
 
 alias b   bye
@@ -155,7 +156,6 @@ f# 180e3 fvalue next-measurement
 : 16bit>32bit ( signed16bits - signed32bits )  dup $7FFF >  if  $FFFF0000 or  then ;
 : 4drop       ( n4 n3 n2 n1 -- )   2drop 2drop ;
 : (number?)   ( addr len -- d1 f1 )  $number?  if   true   else 0. false  then ;
-: ftrunc      ( f: n - ftrunc )    fdup f0>   if   floor   else  fceil   then ;
 : -ftrunc     ( f: n - -ftrunc )   fdup ftrunc f-  ;
 : f2drop      ( fs: r1 r2 -- )     fdrop fdrop ;
 : dup>r       ( n1 -- n1 ) ( R: -- n1 ) s" dup >r"  evaluate ; immediate
