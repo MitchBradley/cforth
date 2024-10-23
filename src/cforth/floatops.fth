@@ -92,8 +92,11 @@ alias fix    fround
 32\ d# 32 constant cell-bits
 16\ d# 16 constant cell-bits
 
+: ftrunc      ( f: n - ftrunc )
+   fdup f0>  if  floor  else  fceil  then
+;
 : f>d  ( real -- d )
-   #places @  0 #places ! fstring $number? 0=
+   #places @  0 #places ! ftrunc fstring $number? 0=
       if  0. then
    rot #places !
 ;
