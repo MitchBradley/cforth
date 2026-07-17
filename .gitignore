@@ -31,3 +31,4 @@ init.x
 dicthdr.h
 dict.h
 userarea.h
+vars.h
