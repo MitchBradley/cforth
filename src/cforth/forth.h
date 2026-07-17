@@ -2,8 +2,13 @@
 #include "config.h"
 
 #ifndef MAKEPRIMS
-#include "vars.h"
-#include "prims.h"
+  #ifdef ESP32_BUILD_DIR
+    #include "vars.h"
+    #include "prims.h"
+  #else
+    #include "../../build/esp32-extra/vars.h"
+    #include "../../build/esp32-extra/prims.h"
+  #endif
 #endif
 
 #define INTERPRETING (cell)0
