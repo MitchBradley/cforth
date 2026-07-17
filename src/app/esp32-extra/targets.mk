@@ -1,93 +1,68 @@
-# APPPATH is the path to the application code, i.e. this directory
-APPPATH ?= $(TOPDIR)/src/app/esp32-extra
+# targets.mk
 
-# APPLOADFILE is the top-level "Forth load file" for the application code.
-APPLOADFILE ?= app.fth
+# PATHS
+TARGETS_MK_DIR := $(dir $(lastword $(MAKEFILE_LIST)))
+ROOT_DIR := $(abspath $(TARGETS_MK_DIR)/../../..)
 
-# APPSRCS is a list of Forth source files that the application uses,
-# i.e. the list of files that APPLOADFILE floads.  It's for dependency checking.
-APPSRCS += $(wildcard $(APPPATH)/*.fth)
+SRC_CFORTH := $(ROOT_DIR)/src/cforth
+SRC_EXTRA  := $(ROOT_DIR)/src/app/esp32-extra
+SRC_LIB    := $(ROOT_DIR)/src/lib
 
-TCPATH=$(TOPDIR)/src/app/esp32-extra
-include $(TCPATH)/sdk.mk
+V ?= 0
+ifeq ($(V),1)
+    Q =
+else
+    Q = @
+endif
 
+# HOST TOOLCHAIN
+HOST_CC := gcc
+HOST_CFLAGS := -DBITS32 -I. -I../../src/cforth -I../../src/app/esp32-extra -I../../src/lib
+HOST_CFLAGS += -m32 -DFLOATING -DMORE_FP -DNOSYSCALL -fno-common
+HOST_LDFLAGS := -lm -m32
 
-# Makefile fragment for the final target application
+# GENERATED HEADERS
+GENERATED_HEADERS := prims.h vars.h init.x
 
-SRC=$(TOPDIR)/src
+# OBJECT FILES - extend.o is nodig voor ccalls!
+META_OBJS := meta.o compiler.o io.o dictfile.o mallocl.o lineedit.o getc-kbd.o
+FORTH_OBJS := main.o io.o nullbi.o dictfile.o mallocl.o lineedit.o linux-kbd.o \
+              forth.o compiler.o syscall.o floatops.o extend.o
 
-# Target compiler definitions
-CROSS ?= $(XTGCCPATH)/xtensa-esp32-elf-
-TCC=$(CROSS)gcc
-TLD=$(CROSS)ld
-TOBJDUMP=$(CROSS)objdump
-TOBJCOPY=$(CROSS)objcopy
+.PHONY: pipeline
 
-LIBDIRS=-L$(dir $(shell $(TCC) $(TCFLAGS) -print-libgcc-file-name))
+# GENERATE HEADERS
+forth.ip: $(SRC_CFORTH)/forth.c
+	$(HOST_CC) -E -C -DMAKEPRIMS $(HOST_CFLAGS) $< > $@
 
-VPATH += $(APPPATH)
-INCS += -I$(APPPATH)
-VPATH += $(TCPATH)
-INCS += -I$(TCPATH)
-VPATH += $(SRC)/cforth
-VPATH += $(SRC)/lib
-INCS += -I$(IDF_PATH)components/esp32/include/
-INCS += -I$(IDF_PATH)components/driver/include/
-INCS += -I$(IDF_PATH)components/soc/include/
-INCS += -I$(IDF_PATH)components/soc/esp32/include/
+makename: $(SRC_CFORTH)/makename.c
+	$(HOST_CC) -o $@ $<
 
-include $(SRC)/common.mk
-include $(SRC)/cforth/targets.mk
+$(GENERATED_HEADERS): forth.ip makename
+	./makename forth.ip
+	@touch $(GENERATED_HEADERS)
 
-OPTIMIZE = -O2
+# BUILD RULES
+%.o: $(SRC_CFORTH)/%.c $(GENERATED_HEADERS)
+	$(Q)$(HOST_CC) $(HOST_CFLAGS) -c $< -o $@
 
-TCFLAGS += \
-  -g \
-  -fno-inline-functions \
-  -nostdlib \
-  -mlongcalls \
-  -mtext-section-literals \
-  -DXTENSA
+# TOOLS
+meta: $(META_OBJS)
+	$(Q)$(HOST_CC) $(HOST_CFLAGS) $(META_OBJS) -o meta $(HOST_LDFLAGS)
 
-DUMPFLAGS = --disassemble -z -x -s
+forth: $(FORTH_OBJS)
+	$(Q)$(HOST_CC) $(HOST_CFLAGS) $(FORTH_OBJS) -o forth $(HOST_LDFLAGS)
 
-# Platform-specific object files for low-level startup and platform I/O
+makebi: $(SRC_CFORTH)/embed/makebi.c
+	$(HOST_CC) -DBITS32 -I. -I$(SRC_CFORTH) -I$(SRC_EXTRA) -I$(SRC_LIB) \
+		-m32 -o makebi $(SRC_CFORTH)/embed/makebi.c $(HOST_LDFLAGS)
 
-ttmain.o: vars.h
+# DICTIONARIES
+kernel.dic: $(SRC_CFORTH)/interp.fth meta $(GENERATED_HEADERS)
+	./meta $< kernel.dic
 
-PLAT_OBJS +=  ttmain.o
-PLAT_OBJS +=  tfileio.o
+forth.dic: $(SRC_CFORTH)/load.fth forth kernel.dic
+	./forth kernel.dic $(SRC_CFORTH)/load.fth
 
-# Object files for the Forth system and application-specific extensions
-
-FORTH_OBJS = tembed.o textend.o
-
-# Recipe for linking the final image
-
-DICTIONARY=ROM
-DICTSIZE=0x4000
-
-app.o: tdate.o
-	@echo Linking $@ ...
-	@$(TLD)  -o $@  -r  $(PLAT_OBJS) $(FORTH_OBJS) tdate.o
-
-# This rule builds a date stamp object that you can include in the image
-# if you wish.
-
-tdate.o: $(PLAT_OBJS) $(FORTH_OBJS)
-	@(echo "`git rev-parse --verify --short HEAD``if git diff-index --exit-code --name-only HEAD >/dev/null; then echo '-dirty'; fi`" || echo UNKNOWN) >version
-	@echo 'const char version[] = "'`cat version`'";' >tdate.c
-	@echo 'const char build_date[] = "'`date --utc +%F\ %R`'";' >>tdate.c
-	@cat tdate.c
-	@echo TCC $@
-	@$(TCC) -c tdate.c -o $@
-
-EXTRA_CLEAN += *.elf *.dump *.nm *.img tdate.c version
-EXTRA_CLEAN += $(FORTH_OBJS) $(PLAT_OBJS)
-
-PREFIX += CBP=$(realpath $(TOPDIR)/src)
-
-include $(SRC)/cforth/embed/targets.mk
-
-
-$(PLAT_OBJS): $(XTGCCPATH)
+# PIPELINE
+pipeline: kernel.dic forth.dic makebi

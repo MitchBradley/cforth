@@ -1,23 +1,22 @@
-marker -wsping.fth  cr lastacf .name #19 to-column .( 06-05-2025 ) \ By J.v.d.Ven
+marker -wsping.fth lastacf .name #20 to-column .( 06-09-2025 )
 
-\ For Web-server-light.f to update ARP caches of the gforth webservers
-
+\ For Web-server-light.f to update ARP caches of the gforth webservers.
 
 also hidden decimal
-needs lwip-send rcvfile.fth
 
 0 value prefix$
 #201 value master
+#8899 constant udp-port#
 
-: dec(.) ( n - adr$ cnt )
+: dec(.) ( n -- adr$ cnt )
    base @ >r decimal (.) r> base !
 ;
-: connect-udp-neigh? ( ip$ cnt - handle|0 )
-  2dup tmp$ place  ip" compare  if
+: connect-udp-neigh? ( ip$ cnt -- handle|0 )
+  2dup tmp$ place  ip" compare if
      udp-port# dec(.) tmp$ count udp-connect  else  false  then
 ;
-: SendUdpMsg+ip ( ip$ cnt msg cnt - )
-   2swap connect-udp-neigh? dup 0>  if
+: SendUdpMsg+ip ( ip$ cnt msg cnt -- )
+   2swap connect-udp-neigh? dup 0> if
       >r  htmlpage$  lplace
       ip" htmlpage$  +lplace
       htmlpage$  lcount   space  2dup type
@@ -27,7 +26,7 @@ needs lwip-send rcvfile.fth
       3drop
    then
 ;
-: ForUdpRange  ( from n cfa - )
+: ForUdpRange  ( from n cfa -- )
    cr -rot bounds  ?do
       i prefix$ count pad lplace dec(.) pad +lplace
       pad lcount cr 2dup type
@@ -35,15 +34,15 @@ needs lwip-send rcvfile.fth
    loop
    drop
 ;
-: arpnew ( - )
+: arpnew ( -- )
    prefix$ count tmp$ lplace     master dec(.) tmp$ +lplace
    tmp$ lcount pad place
    pad count  s"  arpnew "  SendUdpMsg+ip
 ;
-: wsPing ( ip$ cnt - ) s" -2130706456 wsping " SendUdpMsg+ip ;
-: -arp   ( ip$ cnt - ) s"  -arp "       SendUdpMsg+ip ;
-: wsPingRange ( from n - )  ['] wsPing  ForUdpRange ;
-: -ArpRange   ( from n - )  [']  -arp   ForUdpRange ;
+: wsPing ( ip$ cnt -- ) s" -2130706456 wsping " SendUdpMsg+ip ;
+: -arp   ( ip$ cnt -- ) s"  -arp "       SendUdpMsg+ip ;
+: wsPingRange ( from n -- )  ['] wsPing  ForUdpRange ;
+: -ArpRange   ( from n -- )  [']  -arp   ForUdpRange ;
 
 previous
 

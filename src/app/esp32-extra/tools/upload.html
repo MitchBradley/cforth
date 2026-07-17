@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>Upload</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+body{background:#FEFFE6;font-family:monospace;margin:0;padding:0}
+fieldset{border:2px solid black;border-radius:8px;padding:15px;margin:0}
+legend{font-weight:bold;font-size:16px}
+.drop-zone{border:3px dashed #666;border-radius:16px;padding:25px;text-align:center;background:#f8f8f8;cursor:pointer}
+.drop-zone.drag-over{border-color:#0a0;background:#e8ffe8}
+.file-list-container{max-height:220px;overflow-y:auto;border:1px solid #ddd;border-radius:8px;
+	margin-top:10px;margin-bottom:10px;background:white}
+.file-item{background:#f0f0f0;margin:4px;padding:6px 8px;border-radius:6px;display:flex;
+	justify-content:space-between;align-items:center;font-size:13px}
+.file-item:nth-child(even){background:#e8e8e8}
+.file-item button{padding:2px 8px;margin-left:10px}
+.btn{background:#e7e7e7;border:none;padding:6px 12px;border-radius:15px;cursor:pointer;
+	margin:2px;width:140px}
+.btn-send{background:#FF6400;color:white}
+.progress-container{width:100%;background:#ddd;border-radius:10px;margin-top:10px}
+.progress-bar{width:0%;height:22px;border-radius:10px;text-align:center;
+	line-height:22px;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.progress-bar.error{color:#FF0000;font-weight:bold}
+.progress-bar.normal{color:#000000}
+.button-bar{display:flex;justify-content:center;flex-wrap:wrap;gap:5px;margin-top:10px}
+</style>
+</head>
+<body>
+<fieldset style="width:100%;box-sizing:border-box">
+<legend>📡 Send</legend>
+<div id="dropZone" class="drop-zone" ondragover="onDragOver(event)" ondragleave="onDragLeave(event)"
+	ondrop="onDrop(event)">
+	<div style="font-size:28px">📎</div>
+	<div>Drag files here or click</div>
+</div>
+<input type="file" id="fileInput" multiple style="display:none" onchange="onFileSelect(event)">
+<div class="file-list-container"><div id="fileList" style="padding:4px">No files selected</div></div>
+<div class="progress-container"><div id="progressBar" class="progress-bar normal"></div></div>
+<div class="button-bar">
+	<button onclick="uploadFiles()" class="btn btn-send">Send</button>
+	<button onclick="clearAll()" class="btn">Clear</button>
+	<button onclick="testConnection()" class="btn">Ping</button>
+	<button onclick="sendReboot()" class="btn">Reboot</button>
+</div>
+</fieldset>
+<script>
+if(typeof window === 'undefined' || typeof document === 'undefined'){
+	document.write('<div style="background:#ffd4d4;color:#c00;padding:20px">⚠️ JavaScript is not working!</div>');
+}
+
+const CHUNK_SIZE = 4096;
+const MAX_CHUNKS = 5000000;
+const MAX_RETRIES = 5;
+
+let pendingFiles = [];
+let isUploading = false;
+let uploadAborted = false;
+let lastUploadedName = '';
+
+function formatBytes(bytes){ return bytes.toLocaleString(); }
+function shortError(msg){ if(msg.length > 80) return msg.substring(0, 77) + '...'; return msg; }
+
+function getBaseUrl(){ let hostname = window.location.hostname; let port = window.location.port;
+	return port ? `http://${hostname}:${port}` : `http://${hostname}`; }
+
+async function minimalFetch(url) {
+	return fetch(url, { method: 'GET' });
+}
+
+async function minimalPostFetch(url, body) {
+	return fetch(url, {
+		method: 'POST',
+		body: body
+	});
+}
+
+function abortUpload(){
+	if(isUploading){ uploadAborted = true; isUploading = false; updateProgress(0, 'Upload aborted', true); }
+}
+
+document.body.addEventListener('dragover', function(e){ e.preventDefault(); });
+document.body.addEventListener('drop', function(e){ e.preventDefault(); });
+
+function clearAll(){ abortUpload(); pendingFiles = []; displayFiles(); updateProgress(0, '', false); }
+
+function onDragOver(e){ e.preventDefault(); e.stopPropagation();
+	document.getElementById('dropZone').classList.add('drag-over'); }
+function onDragLeave(e){ e.preventDefault(); e.stopPropagation();
+	document.getElementById('dropZone').classList.remove('drag-over'); }
+function onDrop(e){ e.preventDefault(); e.stopPropagation();
+	document.getElementById('dropZone').classList.remove('drag-over');
+	let files = e.dataTransfer.files; if(files.length > 0) addFiles(files); }
+function onFileSelect(e){ addFiles(e.target.files); document.getElementById('fileInput').value = ''; }
+document.getElementById('dropZone').onclick = function(){ document.getElementById('fileInput').click(); };
+
+function setBarColor(){
+	let bar = document.getElementById('progressBar');
+	if(isUploading){
+		bar.style.backgroundColor = '#4CAF50';
+	} else {
+		bar.style.backgroundColor = '#aaaaaa';
+	}
+}
+
+function updateProgress(pct, text, isError){
+	let bar = document.getElementById('progressBar');
+	let r = Math.round(pct);
+	setBarColor();
+	if(isError){
+		bar.classList.remove('normal');
+		bar.classList.add('error');
+	} else {
+		bar.classList.remove('error');
+		bar.classList.add('normal');
+	}
+	if(text !== undefined && text !== ''){
+		bar.style.width = '100%';
+		if(isError){
+			bar.textContent = '❌ ' + text;
+		} else {
+			bar.textContent = text;
+		}
+	} else if(lastUploadedName && !isUploading && pct === 0 && !isError){
+		bar.style.width = '100%';
+		bar.textContent = `Last uploaded: ${lastUploadedName}`;
+	} else {
+		bar.style.width = r + '%';
+		bar.textContent = r + '%';
+	}
+}
+
+function addFiles(files){
+	for(let f of files){
+		let i = pendingFiles.findIndex(p => p.name === f.name);
+		let n = { name: f.name, size: f.size, file: f };
+		if(i !== -1){ pendingFiles[i] = n; updateProgress(0, `Updated: ${f.name} (${formatBytes(f.size)} bytes)`, false);
+		} else { pendingFiles.push(n); updateProgress(0, `Added: ${f.name} (${formatBytes(f.size)} bytes)`, false); }
+	}
+	displayFiles();
+}
+
+function displayFiles(){
+	let c = document.getElementById('fileList');
+	if(pendingFiles.length === 0){
+		c.innerHTML = '<div style="color:#888;text-align:center;padding:20px">No files selected</div>';
+		return;
+	}
+	let h = '';
+	for(let i = 0; i < pendingFiles.length; i++){
+		let f = pendingFiles[i];
+		h += `<div class="file-item"><span>${f.name} (${formatBytes(f.size)} bytes)</span>
+			<button onclick="removeFile(${i})">X</button></div>`;
+	}
+	c.innerHTML = h;
+}
+
+function removeFile(i){ pendingFiles.splice(i, 1); displayFiles(); updateProgress(0, 'File removed', false); }
+
+async function testConnection(){
+	abortUpload();
+	try{
+		let r = await minimalFetch(getBaseUrl() + '/ping');
+		if(r.ok){
+			updateProgress(0, 'Connected', false);
+			setTimeout(() => {
+				if(!isUploading && lastUploadedName){ updateProgress(0, '', false); }
+				else if(!lastUploadedName){ updateProgress(0, 'Ready', false); }
+			}, 2000);
+			return true;
+		} else {
+			updateProgress(0, 'Error', true);
+			setTimeout(() => {
+				if(!isUploading && lastUploadedName){ updateProgress(0, '', false); }
+				else if(!lastUploadedName){ updateProgress(0, 'Ready', false); }
+			}, 2000);
+			return false;
+		}
+	} catch(e){
+		updateProgress(0, 'Not responding', true);
+		setTimeout(() => {
+			if(!isUploading && lastUploadedName){ updateProgress(0, '', false); }
+			else if(!lastUploadedName){ updateProgress(0, 'Ready', false); }
+		}, 2000);
+		return false;
+	}
+}
+
+async function sendReboot(){
+	if(isUploading){ updateProgress(0, 'Cannot reboot during upload', true); return; }
+	abortUpload(); updateProgress(0, 'Rebooting the server...', false);
+	try{ await minimalFetch(getBaseUrl() + '/target-reboot'); } catch(e){}
+	updateProgress(0, 'Waiting for the server...', false);
+	for(let i = 0; i < 15; i++){
+		try{ let r = await minimalFetch(getBaseUrl() + '/ping');
+			if(r.ok){
+				updateProgress(0, 'The server is back online', false);
+				if(pendingFiles.length > 0){
+					updateProgress(0, `${pendingFiles.length} file(s) still available`, false);
+				} else if(lastUploadedName){
+					setTimeout(() => { if(!isUploading && lastUploadedName){ updateProgress(0, '', false); } }, 2000);
+				}
+				return;
+			}
+		} catch(e){}
+		await new Promise(r => setTimeout(r, 2000));
+	}
+	updateProgress(0, 'The server is not back', true);
+}
+
+async function sendChunk(url, data, retryCount){
+	try{
+		let r = await minimalPostFetch(url, data);
+		if(!r.ok){ let errText = await r.text(); throw new Error(shortError(errText)); }
+		let reply = await r.text();
+		if(reply === 'ERROR'){
+			throw new Error('Transfer error: The server reported an error');
+		}
+		return reply;
+	} catch(e){
+		if(retryCount < MAX_RETRIES){
+			return sendChunk(url, data, retryCount + 1);
+		}
+		throw e;
+	}
+}
+
+async function getChunkData(file, chunk, chunkSize){
+	let start = chunk * chunkSize; let end = Math.min(start + chunkSize, file.size);
+	return await file.slice(start, end).arrayBuffer();
+}
+
+async function uploadFiles(){
+	if(isUploading){ updateProgress(0, 'Upload already in progress', true); return; }
+	if(pendingFiles.length === 0){ updateProgress(0, 'No files selected', true); return; }
+	let connected = false;
+	for(let i = 0; i < 3; i++){
+		try{ let r = await minimalFetch(getBaseUrl() + '/ping'); if(r.ok){ connected = true; break; } }
+		catch(e){}
+		await new Promise(r => setTimeout(r, 1000));
+	}
+	if(!connected){ updateProgress(0, 'The server not reachable. Click Reboot first.', true); return; }
+	isUploading = true; setBarColor(); uploadAborted = false; updateProgress(0, '0%', false);
+	let filesToUpload = [...pendingFiles];
+	for(let f of filesToUpload){
+		if(uploadAborted) break;
+		let name = f.name; let file = f.file; let size = file.size;
+		let totalChunks = Math.ceil(size / CHUNK_SIZE); let nextChunk = 0;
+		updateProgress(0, `${name} (${formatBytes(size)} bytes)`, false);
+		let url = `${getBaseUrl()}/upload?file=${encodeURIComponent(name)}&${nextChunk}=chunk&${size}=fsize_upl`;
+		try{
+			let firstData = await getChunkData(file, 0, CHUNK_SIZE);
+			let reply = await sendChunk(url, firstData, 0);
+			while(!uploadAborted){
+				if(reply === 'OK'){ break; }
+				if(reply.startsWith('chunk ')){
+					nextChunk = parseInt(reply.split(' ')[1]);
+					if(isNaN(nextChunk)){ throw new Error(`Invalid chunk number: ${reply}`); }
+					if(nextChunk >= totalChunks){ break; }
+					let chunkUrl = `${getBaseUrl()}/upload?file=${encodeURIComponent(name)}&${nextChunk}=chunk&${size}=fsize_upl`;
+					let chunkData = await getChunkData(file, nextChunk, CHUNK_SIZE);
+					reply = await sendChunk(chunkUrl, chunkData, 0);
+					let percent = ((nextChunk + 1) / totalChunks) * 100;
+					updateProgress(percent, '', false);
+				} else { throw new Error(`Receiver: ${reply} Upload aborted!`); }
+			}
+		} catch(e){
+			let errorMsg = e.message;
+			if(errorMsg.includes('NotReadableError') || errorMsg.includes('permission')
+				|| errorMsg.includes('locked')){
+				updateProgress(0, `${name} not accessible, please select it again.`, true);
+				pendingFiles = []; displayFiles();
+			} else {
+				updateProgress(0, errorMsg, true);
+			}
+			isUploading = false; setBarColor();
+			uploadAborted = true;
+			return;
+		}
+		if(!uploadAborted){
+			lastUploadedName = name;
+			updateProgress(100, `${name} uploaded (${formatBytes(size)} bytes)`, false);
+			await new Promise(r => setTimeout(r, 200));
+			updateProgress(0, '', false);
+			let idx = pendingFiles.findIndex(p => p.name === name);
+			if(idx !== -1){ pendingFiles.splice(idx, 1); displayFiles(); }
+		}
+	}
+	isUploading = false; setBarColor();
+	if(uploadAborted){
+	} else if(lastUploadedName){
+		if(pendingFiles.length > 0){
+			displayFiles();
+			updateProgress(0, `Last uploaded: ${lastUploadedName} - ${pendingFiles.length} file(s) remaining`, false);
+			setTimeout(() => { if(!isUploading && lastUploadedName){ updateProgress(0, '', false); } }, 3000);
+		} else {
+			updateProgress(0, `Last uploaded: ${lastUploadedName}`, false);
+		}
+	} else {
+		updateProgress(0, 'All uploaded', false);
+	}
+}
+</script>
+</body>
+</html>

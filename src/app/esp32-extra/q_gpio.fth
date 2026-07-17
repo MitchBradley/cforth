@@ -1,5 +1,5 @@
 [ifdef]   -q_gpio.fth bye  [then]
-marker    -q_gpio.fth cr lastacf .name #19 to-column .( 23-05-2022 )
+marker    -q_gpio.fth lastacf .name #20 to-column .( 15-04-2026 )
 
 1 constant GPIO_INTR_POSEDGE  \ GPIO interrupt type : rising edge
 2 constant GPIO_INTR_NEGEDGE  \ GPIO interrupt type : falling edge
@@ -16,7 +16,7 @@ $ffffffff constant portMAX_DELAY    2   constant QUEUE_TYPE_COUNTING_SEMAPHORE
 
 \ itemsize: The number of bytes each item in the queue will require.
 \ qlength:  The maximum number of items that the queue can contain.
-: xQueueCreate ( itemsize qlength -- qHandleEnow )
+: xQueueCreate ( itemsize qlength -- qHandle )
    QUEUE_TYPE_COUNTING_SEMAPHORE -rot xQueueGenericCreate 10 vTaskDelay  ;
 
 : CreateGpioQue ( /itemsizeQGpio /xQueueLengthQGpio - qGpioHandle &ulValReceived )

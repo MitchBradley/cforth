@@ -1,4 +1,4 @@
-marker -svg_plotter.fth  cr lastacf .name #19 to-column .( 07-05-2025 ) \ By J.v.d.Ven
+marker -svg_plotter.fth  lastacf .name #20 to-column .( 07-05-2025 ) \ By J.v.d.Ven
 \ To plot simple charts for a web client
 
 [ifndef] |f@|
@@ -122,7 +122,7 @@ Black   value color-x-labels
    loop  fdrop ;
 
 : FindPeak ( cfa-offset #end #start - ) ( f: - Ypart )
-   2dup <=  if
+   2dup <= if
       drop swap execute |f@|
    else
       dup 3 pick execute |f@| fdup  do     \ f: fmin fmax
@@ -130,7 +130,7 @@ Black   value color-x-labels
          frot fmax fswap
          frot fmin fswap
       loop
-      drop fdup Average  f-   Average 3 fpick f- f>  if  \ bigger than Average ?
+      drop fdup Average  f-   Average 3 fpick f- f> if  \ bigger than Average ?
          fswap fdrop  \ keep fmax as Y part  << Opt
       else
          fdrop        \ keep fmin as Y part
@@ -145,7 +145,7 @@ Black   value color-x-labels
    #X_Lines xResolution * dup >r s>f f/  fswap
    r> dup 1-  to #end 0  do
       fdup i  s>f f* #start s>f f+  fdup  f>s   \ X part
-      i 0=   if
+      i 0=  if
          1- 0 max ptr_dataline >CfaDataLine perform |f@|     \ First in Y part the plot
       else
          f2dup fswap f- f>s #start max #end i = if \ last plot

@@ -1,4 +1,4 @@
-marker -timediff.fth cr lastacf .name #19 to-column .( 02-02-2025 ) \ By J.v.d.Ven
+marker -timediff.fth lastacf .name #20 to-column .( 04-03-2026 ) \ By J.v.d.Ven
 
 f# -1 fvalue UtcSunRise
 f# -1 fvalue UtcSunSet
@@ -70,13 +70,13 @@ f# 86400. fconstant #SecondsOneDay
     2r@ 1 rot fixed-from-gregorian - 1+               ( day)
     r>  r> ( day month  year) ;
 
-: Jd-from-UtcTics        ( f: UtcTics -- fjd )  #SecondsOneDay f/ f# 2440588 f+  ;
+: Jd-from-UtcTics        ( f: UtcTics -- fjd )  #SecondsOneDay f/ f# 2440588 f+ ;
 
 : UtcTics-from-Jd&Time  ( ss mm uu JD -- ) ( f: -- UtcTics )
    #2440588 - s>f #SecondsOneDay f* #SecondsOneHour * swap #60 * + + s>f f+ ;
 
 : UtcTics-from-Time&Date      ( ss mm uu dd mm year -- ) ( f: -- UtcTics )
-   jd UtcTics-from-Jd&Time  ;
+   jd UtcTics-from-Jd&Time ;
 
 : Time-from-UtcTics      ( f: UtcTics -- ) ( -- ss mm uu )
    Jd-from-UtcTics -ftrunc #SecondsOneDay f* fround f>s
@@ -112,7 +112,7 @@ f# 86400. fconstant #SecondsOneDay
     r> 7 * + ;
 
 : last-day-month ( month year -- day )
-    over #12 =  if
+    over #12 = if
          #31 -rot
       else
          swap 1+ swap  2>r
@@ -129,18 +129,18 @@ f# 86400. fconstant #SecondsOneDay
    >r  0 0 0 r> gregorian-from-fixed UtcTics-from-Time&Date ;
 
 : unsigned>f ( unsigned -- ) ( f: -- n )
-    dup 0<  if   s>d drop 1   else   s>d   then   d>f ;
+    dup 0< if s>d drop 1 else s>d then d>f ;
 
-: .##      ( -- n )        s>d <# # # #> type  ;
-: .-       ( n -- )        .##  ." -"   ;
+: .##      ( -- n )        s>d <# # # #> type ;
+: .-       ( n -- )        .##  ." -" ;
 : get-secs ( -- UtcTics )  dup dup sp@ get-system-time! nip ; \ 05-12-2023 In UTC!
 : @time    ( -- f: UtcTics ) get-secs unsigned>f ;     \
 : .(date)  ( d m y -- )    base @ >r decimal >r swap .-  .-  r> (.) type r> base ! ;
 : .Date-from-utctics ( f: UtcTics -- )   Date-from-UtcTics .(date) ;
 
 begin-structure /tz \ Only 18
-wfield: >tz-utc
-wfield: >tz-Shift
+wfield: >tz-utc    \ When DST is active 
+wfield: >tz-Shift   
 
 wfield: >tz-time-start
 wfield: >tz-weekday-date-start
@@ -155,17 +155,12 @@ bfield: >tz-month-end
 bfield: >tz-weekdays-subtract-end
 end-structure
 
-: utc-only? ( coded-minutes -- flag )  $7000 <  ; \ Below $7000 ?
-
+: utc-only? ( coded-minutes -- flag )  $7000 < ;
 : seconds-from-w-minutes ( tz-minutes -- seconds )
    dup utc-only?   if   $5fff   else 16bneg   then   - #60 * ;
 
 : @tz-Shift   ( tz-list-item -- tz-Shift )    >tz-Shift w@ seconds-from-w-minutes ;
 : @utc_offset ( &tz -- utc-offset  )          >tz-utc w@ seconds-from-w-minutes ;
-: @dst-start  ( tz-list-item --  utc-offset ) dup @tz-Shift swap @utc_offset + ;
-
-: current-year ( &tz-list-item  -- year )
-   @time  @dst-start  s>f f+ Date-from-UtcTics nip nip ;
 
 : @dst-date ( &weekday-date year -- fixed-date )
    >r dup>r w@ 16bneg - r@ 2 + c@ r@ 4 + c@ - r> 3 + c@
@@ -174,47 +169,34 @@ end-structure
 : utc-offset-from-tzdata ( &weekday-date year -- ) ( f: -- utc00:00 )
    @dst-date utc-from-fixed ;
 
-: get-offset-Shift  ( &tz  --  utc-offset ) ( f: utc -- utc+Shift )
-   dup >tz-time-start w@ seconds-from-w-minutes s>f f+
-   @utc_offset ;
+alias Dst-start @utc_offset  ( &tz -- shiftOffsetStart )
+: Dst-end ( &tz -- shiftOffsetEnd ) dup @utc_offset swap @tz-Shift - ;
 
-: Dst-start  ( &tz -- shift+utc-offset-start )  ( f: utc -- utc+shift+OffsetStart )
-   dup>r get-offset-Shift dup 0<   if   r> @tz-Shift +   else r> drop   then ;
+: @seconds-to-dst-change ( &tz-weekday-date -- )  ( f: - seconds-before-change )   
+   2 -  w@ 16bneg - 60 * s>f ;
 
-: Dst-end ( &tz -- shift+utc+offsetEnd )  ( f: utc -- shift+utcoffsetEnd )
-   dup>r get-offset-Shift dup 0>   if   r> @tz-Shift +   else r> drop   then ;
+ : dst? ( tz-list-item -- flag  )  ( f: -- )
+   >r fdup fdup Date-from-UtcTics nip nip 
+    r@ >tz-weekday-date-start dup @seconds-to-dst-change
+    over utc-offset-from-tzdata f+ f>
+    r> >tz-weekday-date-end  dup @seconds-to-dst-change  
+    rot utc-offset-from-tzdata f+ f< and  
+ ;
 
-: find-utc-offset-in-year (  tz-list-item year -- utc-offset ) 
-   swap >r
-   r@ >tz-weekday-date-start  over utc-offset-from-tzdata  \ >tz-weekday-date-start buien jr?
-   r@ fdup Dst-start f> \ beyond start?
-   r@ >tz-weekday-date-end 3 roll utc-offset-from-tzdata
-   r> fdup Dst-end f<   \ before end?
-   rot and   if    nip   else  drop   then ;
-
-: current-year-from-utc-tics ( &tz-list-item  -- year )  ( f: utc-tics -- )
-   @dst-start  s>f f+ Jd-from-UtcTics Date-from-jd nip nip ;
-
-: find-utc-offset-at-utc ( tz-list-item -- )  ( f: utc-tics -- utc-offset )
-   dup w@ utc-only?   if
-      fdrop w@ seconds-from-w-minutes
+: find-utc-offset-at-utc ( tz-list-item -- utc-offset  )  ( f: utc-tics -- )
+   dup w@ utc-only? if
+      fdrop w@ seconds-from-w-minutes 
    else
-      fdup  dup current-year-from-utc-tics \  current-year *** offset adr year
-      find-utc-offset-in-year
-   then
-   s>f ;
-
-: find-utc-offset ( tz-list-item -- )  ( f: -- utc-offset )
-   dup w@ utc-only?   if
-      fdrop w@ seconds-from-w-minutes
-   else
-      dup current-year
-      find-utc-offset-in-year
-   then   s>f ;
+      dup dst? if Dst-start else  Dst-end then    
+   then 
+;
+  
+: find-utc-offset ( tz-list-item -- )  ( f: -- utc-offset )  @time find-utc-offset-at-utc s>f ;
 
 : convert-to-tz ( tz-source tz-destination --  ) ( f: utc-local-time-source  -- utc-destination )
-   swap fdup find-utc-offset-at-utc  f- \ UTC
-   fdup  find-utc-offset f+ ;
+   swap fdup find-utc-offset-at-utc s>f f- \ UTC
+   fdup find-utc-offset-at-utc s>f f+ ;
+
 
 : LocalTics-from-UtcTics ( f: UtcTics   -- LocalTics ) tz-local find-utc-offset f+ ;
 : UtcTics-from-LocalTics ( f: LocalTics -- UtcTics )   tz-local find-utc-offset f- ;
@@ -226,7 +208,7 @@ end-structure
 : .mmhh    ( mmhh -- ) s>d <# # # [char] : hold  # # #> type ;
 
 : .signed ( n -- )
-   dup 0=   if
+   dup 0= if
       space
    else
       dup 0>   if   [char] + emit   then
@@ -246,10 +228,11 @@ end-structure
     dup >tz-utc  w@ dup seconds-from-w-minutes #3600 / dup abs #10 <
          if   space   then
    .signed #39 to-column
-    utc-only?   if
+    utc-only? if
       r> 2drop
    else
       dup >tz-Shift  w@ 16bneg - .signed #44 to-column 2 spaces
+
       dup >tz-index-weekday-start c@ .  space
       dup >tz-weekdays-subtract-start c@ .
       dup >tz-weekday-date-start r@  .time-date-dst 2 spaces
@@ -259,13 +242,14 @@ end-structure
     then ;
 
 : .list-summer-times { year -- }
-   cr year .   cr .tz-header tz-Endlist #tz @ 0   do
+   base @ #16 = abort" Set the radix to decimal"
+   cr year .   cr .tz-header tz-Endlist #tz @ 0 do
       cr >link link@ dup >body year .summer-time
    loop
    drop cr ;
 
 : shorten-tz-name ( addr-tz/city cnt -- short-tz-name cnt )
-   2dup [char] / scan dup   if
+   2dup [char] / scan dup if
       1 /string 2swap  3 min pad lplace
       s" /" pad +lplace pad +lplace
    else
@@ -285,27 +269,27 @@ f# 86400e0 fconstant #SecondsToDay
 : UtcTics-from-hm ( hhmmTodayUTC -- ) ( f: -- UtcTics )
    #100 /mod 0 -rot date-now  UtcTics-from-Time&Date ;
 
-: hhmmUntill  ( hhmmTargetLocal -- ) ( F: -- #seconds )
+: hhmmUntil  ( hhmmTargetLocal -- ) ( F: -- #seconds )
    UtcTics-from-hm  UtcTics-from-LocalTics @time f- ;
 
 : UtcTill  ( hhmmTargetLocal -- ) ( F: -- #seconds )
-   UtcTics-from-hm  UtcTics-from-LocalTics @time f2dup f<   if
+   UtcTics-from-hm  UtcTics-from-LocalTics @time f2dup f< if
       fswap #SecondsToDay f+ fswap \ Next day when the time has past today
    then   f- ;
 
 : time>mmhh ( -- mmhh )  local-time-now time-from-utctics #100 * + nip ;
 
 : .Html-Time-from-UtcTics ( f: UtcTics -- )
-    base @ decimal
-    Time-from-UtcTics
-    bl swap ##$ +html  2 0
-    do   [char] : swap ##$ +html   loop   base ! ;
+    base @ decimal Time-from-UtcTics bl swap ##$ +html 2 0 do
+       [char] : swap ##$ +html
+    loop
+    base ! ;
 
 : .Time-from-UtcTics ( f: UtcTics -- )
-    base @ decimal
-    Time-from-UtcTics
-    bl swap ##$ type  2 0
-    do  [char] : swap ##$ type  loop   base ! ;
+    base @ decimal Time-from-UtcTics bl swap ##$ type 2 0 do
+       [char] : swap ##$ type
+    loop
+    base ! ;
 
 : .time   ( -- )  local-time-now .Time-from-UtcTics ;
 : .date   ( -- )  date-now  .(date) ;
@@ -325,15 +309,15 @@ f# 86400e0 fconstant #SecondsToDay
    HtmlPage$ off
    ip4Host HtmlPage$ lplace
    s"  Ask_time" HtmlPage$ +lplace
-   HtmlPage$ lcount time-server$ TcpWrite  ;
+   HtmlPage$ lcount time-server$ TcpWrite ;
 
 : SetLocalTime (  UTC-Tics UtcOffset sunrise sunset -- )
    s>f LocalTics-from-UtcTics to UtcSunSet         \ In local time
    s>f LocalTics-from-UtcTics to UtcSunRise  drop  \ In local time
-   set-system-time  ; \ Needs time in UTC!
+   set-system-time ; \ Needs time in UTC!
 
 : AskTime ( -- )                       \ Adapt if needed!
-   time-server$ 0<>  if
+   time-server$ 0<> if
         gettcptime                     \ To get the UTC-time from an RPI
      then ;
 
@@ -352,12 +336,15 @@ f# 86400e0 fconstant #SecondsToDay
 
 \ Manual input:
 
-: single?      ( n$ cnt -- n ) (number?) 0=   if ." Bad number" quit   then   d>s  ;
+: single?      ( n$ cnt -- n ) (number?) 0=   if ." Bad number" quit   then   d>s ;
 : enter-input  ( length -- string cnt )  pad dup rot accept ;
 
 : extract-time ( hhmm[ss]$ cnt -- seconds minutes hours )
-   dup 6 = -rot 2>r
-     if    2r@ 4 /string drop 2 single?   else  0   then
+   dup 6 = -rot 2>r if
+      2r@ 4 /string drop 2 single?
+   else
+      0
+   then
    2r@ 2 /string drop 2 single?
    2r> drop 2 single? ;
 
@@ -375,34 +362,29 @@ f# 86400e0 fconstant #SecondsToDay
       body> >name$  ." tz-local is deferred to: "  type f>s
    then ;
 
-\ defer tz-local to the right timezone in your app.
-
 : enter-date-time ( -- ss mm uu dd mm yearLocal utc-offset flag )
    ."   Enter 't' for time zone or the UTC time offset: "
    enter-timezone/UTC-time-offset >r
    cr ."   Date ddmmyyyy: " #8 dup >r enter-input
-   dup r> <>  dup 0= s>f   if
+   dup r> <>  dup 0= s>f if
       cr ." Date needs 8 positions. Like 21092023. "
    then
-   extract-date dup #1970 <   if
+   extract-date dup #1970 < if
       fdrop false s>f cr ." Year must bigger than 1969. "
    then
    >r 2>r   ."   Time hhmm[ss]: " 6 enter-input
-   dup #4 < dup 0= s>f   if
+   dup #4 < dup 0= s>f if
       cr ." Time needs at least 4 positions. Like 1245. "
    then
-   extract-time  2r> r> f>s f>s and r> swap  ;
+   extract-time  2r> r> f>s f>s and r> swap ;
 
 : set-time     ( -- )        \ Manual input for time
    base @ decimal
-   enter-date-time   if      \ Enter the time in LOCAL time
-      >r UtcTics-from-Time&Date UtcTics-from-LocalTics f>s \ The clock should run in UTC-time
+   enter-date-time if      \ Enter the time in LOCAL time
+      >r UtcTics-from-Time&Date UtcTics-from-LocalTics f>s \ The clock must run in UTC-time!
       r> 0 0 SetLocalTime    \ sunrise and sunset are ignored here.
       space .date .time
    else
       3drop 3drop drop cr ." Bad Time/date."
    then   space base ! ;
-
-: SetLocalTime-from-network ( UtcTics UtcOffset sunrise  sunset -- ) \ For TcpTime
-   2swap tuck + swap 2swap SetLocalTime ;
 \ \s

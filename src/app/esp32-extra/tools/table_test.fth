@@ -1,7 +1,7 @@
 marker -table_test.fth  \ 07-05-2025 by J.v.d.Ven
 
 s" cforth" ENVIRONMENT? [IF] drop \ For the extended version on an ESP32
-DECIMAL                           \ table_test.f must loaded in RAM on an ESP32
+DECIMAL                           \ table_test.f must be loaded in RAM on an ESP32
 
 needs table-sort table_sort.fth
 2000 value #test-records          \ Only small tables are possible
@@ -16,8 +16,8 @@ variable seed
     seed @ dup 0= or   dup 13 lshift xor   dup 17 rshift xor
     dup 5 lshift xor dup seed ! ;
 
-: init-seed  ( - )   Rnd  seed ! ;
-: RandomLim  ( limit - random )   Rnd swap /mod drop ;
+: init-seed  ( -- )   Rnd  seed ! ;
+: RandomLim  ( limit -- random )   Rnd swap /mod drop ;
 
 200000 value #test-records
 
@@ -37,7 +37,7 @@ needs MultiTaskingClass.f
 
 wTasks myTasks    Start: myTasks
 
-:  execute-task ( xt - IdThread )  submit: myTasks  FindThread: myTasks  ;
+:  execute-task ( xt -- IdThread )  submit: myTasks  FindThread: myTasks  ;
 
 
 [THEN]
@@ -45,13 +45,13 @@ wTasks myTasks    Start: myTasks
 
 0 value &table1
 
-: >sort-time        ( &table - &sort-time )   4 cells+ ;
+: >sort-time        ( &table -- &sort-time )   4 cells+ ;
 
-8 constant #chars 3 constant GrouplLimit
+8 constant #chars 3 constant GroupLimit
 
 \ 2 fields in the records of each table:
-: >test.chars       ( &record - &test.chars )  ; immediate
-: >test.group       ( &record - &Option# )  s" #chars + " evaluate ; immediate
+: >test.chars       ( &record -- &test.chars )  ; immediate
+: >test.group       ( &record -- &Option# )  s" #chars + " evaluate ; immediate
 
 
 : chars!            ( &test.chars -- )
@@ -60,7 +60,7 @@ wTasks myTasks    Start: myTasks
 : randomize-records ( &table -- )   \ fills the records randomly
     get-sizes -rot       2dup  BL FILL  bounds
        do   i dup >test.chars chars!
-                  >test.group GrouplLimit RandomLim swap !   dup
+                  >test.group GroupLimit RandomLim swap !   dup
        +loop drop ;
 
 : .record           ( &record -- )
@@ -81,27 +81,29 @@ wTasks myTasks    Start: myTasks
 : sort-test         ( &table -- )
    >r by[ test-chars test-group ]by r> table-sort ;
 
-: nt>test.group ( n &table - &sorted-test.group ) nt>record >test.group ;
-: nt>test.chars ( n &table - &sorted-test.chars ) nt>record >test.chars ;
+: nt>test.group ( n &table -- &sorted-test.group ) nt>record >test.group ;
+: nt>test.chars ( n &table -- &sorted-test.chars ) nt>record >test.chars ;
 
 : check-keys  { &tbl -- }
    &tbl >#records @ 1- 0  do
-      i  &tbl nt>test.group @
-      i 1+ &tbl nt>test.group @  2dup =  if
+      i &tbl nt>test.group @ i 1+ &tbl nt>test.group @  2dup = if
          2drop  i &tbl nt>test.chars \ The same group
-         i 1+  &tbl nt>test.chars  #chars tuck compare 0>  if
+         i 1+  &tbl nt>test.chars  #chars tuck compare 0> if
             i 1+ . ." #chars UN" leave
          then
-      else  >  if i 1+ . ." group UN"  leave  then
+      else
+         > if
+            i 1+ . ." group UN"  leave
+         then
       then
    loop ." sorted "  ;
 
-: init-test-table   ( &table #records  - )
+: init-test-table   ( &table #records  -- )
    >r #chars 1 cells + over >record-size !
-   r> over >#records ! >r r@ table-size allocate  if   \ allocates the records
+   r> over >#records ! >r r@ table-size allocate if   \ allocates the records
       cr ." The allocation of records failed. " quit
    then  r@ !
-   r@ >#records @  allocate-ptrs       \ allocates the the address pointers
+   r@ >#records @  allocate-ptrs       \ allocates the address pointers
    dup r@ >table-aptrs !
    r@ >record-size @ r> >#records @  build-ptrs ;
 
@@ -112,7 +114,7 @@ cr cr &table1 .table-props
 
 s" cforth" ENVIRONMENT? [IF] drop
 
-: sort1  ( - )
+: sort1  ( -- )
   cr ." Sorting the table takes "
   &table1 ms@ over  sort-test ms@  swap - . ." ms. " check-keys ;
 
@@ -135,7 +137,7 @@ cr sort1 cr quit
 0 value ms-done
 variable #all-done
 
-: .all-done ( - )
+: .all-done ( -- )
      cr ." Needed sort time for each table with " #test-records .
           ." records in each table"
      cr &table1  >sort-time ?
@@ -143,30 +145,27 @@ variable #all-done
         &table3  >sort-time ?
         &table4  >sort-time ? ." ms READY!" ;
 
-: check-4tables  ( - )
+: check-4tables  ( -- )
    cr &table1 ." 1:" check-keys   &table2 ." 2:" check-keys
       &table3 ." 3:" check-keys   &table4 ." 4:" check-keys  ;
 
-: sort-done ( &table time - )
-   swap - swap >sort-time !
-   1 #all-done +!
-   #all-done @ all-done >=
-     if  .all-done  ms@ ms-done - dup to ms-done
-         cr ." Total needed time: " . ." ms " cr
-         check-4tables
-     then ;
+: sort-done ( &table time -- )
+   swap - swap >sort-time ! 1 #all-done +! #all-done @ all-done >= if
+      .all-done  ms@ ms-done - dup to ms-done
+      cr ." Total needed time: " . ." ms " cr check-4tables
+   then ;
 
-: sort1  ( - ) &table1  ms@  over sort-test ms@ sort-done ;
-: sort2  ( - ) &table2  ms@  over sort-test ms@ sort-done ;
-: sort3  ( - ) &table3  ms@  over sort-test ms@ sort-done ;
-: sort4  ( - ) &table4  ms@  over sort-test ms@ sort-done ;
+: sort1  ( -- ) &table1  ms@  over sort-test ms@ sort-done ;
+: sort2  ( -- ) &table2  ms@  over sort-test ms@ sort-done ;
+: sort3  ( -- ) &table3  ms@  over sort-test ms@ sort-done ;
+: sort4  ( -- ) &table4  ms@  over sort-test ms@ sort-done ;
 
-: random-4tables ( - )
+: random-4tables ( -- )
    &table1 randomize-records &table2 randomize-records
    &table3 randomize-records &table4 randomize-records ;
 
 
-: sort-all ( - )
+: sort-all ( -- )
    -100 #all-done !
    cr random-4tables
    cr ." Sorting 4 tables one at the time " ms@ >r

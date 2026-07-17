@@ -1,12 +1,18 @@
+marker -server.fth lastacf .name #20 to-column .( 27-04-2026 )
+\ wifi-sta-on has been replaced bij logon 
+
 : tcp-send  ( adr len handle -- )  lwip-write drop  ;
 
 fl ../../lib/httpserver.fth
 
--1 value listener-socket
+[ifndef] listener-socket 
+   -1 value listener-socket 
+[then]
+
 : http-listen  ( -- )
    #80 start-server to listener-socket
    listener-socket 0< abort" http-listen failed"
-   ." Listening on " ipaddr@ .ipaddr ." :80" cr
+   cr ." Listening on http://" ipaddr@ .ipaddr
 ;
 
 \needs d!  : d!  ( d addr -- )  tuck na1+ ! ! ;
@@ -21,6 +27,32 @@ fl ../../lib/httpserver.fth
    #16 sp@  here listener-socket lwip-accept nip false  ( socket false )
 ;
 
+create-timer: timer-reconnect
+#7 ( mimutes ) #60 * s>f f# 1000000 f* fvalue us-reconnect-after
+
+: reconnect ( -- )
+   timer-reconnect @ 0= if
+      cr ." No connection." listener-socket if
+         lsock lwip-close listener-socket lwip-close 0 to listener-socket 
+      then
+      timer-reconnect start-timer  \ no connection
+   else
+       us-reconnect-after timer-reconnect tElapsed? if
+         try-logon if
+            timer-reconnect off http-listen space
+         else
+            timer-reconnect start-timer
+         then
+      then
+   then
+;
+: accept-reconnect  ( millseconds -- true | socket false )
+   wifi-connected@ 0= if    
+      vtaskdelay reconnect true
+   else  
+      timed-accept
+   then
+;
 \ Hook for stuff that needs to happen periodically
 defer handle-timeout  ' noop to handle-timeout
 
@@ -31,21 +63,21 @@ defer handle-timeout  ' noop to handle-timeout
 \ not starve periodic activity.
 #1000 value poll-interval
 
-create &linger 1 , 5 ,  \ on , 5 seconds
+2variable &linger 1 &linger !
+: set-linger ( seconds - ) &linger cell+ ! ;
+#1 set-linger
 
-#1024 constant /req-buf
+$1400 constant /req-buf
 /req-buf buffer: req-buf
 
 : http-respond  ( timeout -- )
    timed-accept if  exit  then  >r
-
-   \ Set SO_LINGER so lwip-close does not discard any pending data
-\   8 &linger $80 $fff r@  setsockopt drop
-
-   req-buf /req-buf r@ lwip-read  ( len )
-   req-buf swap r@ handle-rcv     ( )
-   #500 ms
-
+ \ Set SO_LINGER so lwip-close does not discard any pending data
+ \ 8 &linger $80 $fff r@  setsockopt drop
+   #200 ms req-buf /req-buf r@  try-receive ( len ) dup if
+      req-buf swap r@ handle-rcv     ( )
+   then
+      #500 ms
    r> lwip-close
 ;
 

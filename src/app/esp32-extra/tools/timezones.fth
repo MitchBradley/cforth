@@ -1,4 +1,4 @@
-marker -timezones.fth cr cr lastacf .name #19 to-column .( 07-05-2025 )
+marker -timezones.fth lastacf .name #20 to-column .( 04-07-2026 )
 
 0 [if]
 Ref: https://en.wikipedia.org/wiki/Daylight_saving_time_by_country
@@ -67,6 +67,8 @@ create Japan incr-tz 9 utc-only,
 create Israel incr-tz
  #32947 w, #32827 w, #32887 w, #32766 w, #0 c, #3 c, #2 c, #32887 w, #32766 w, #0 c, #10 c, #0 c,
 
+create Greenwich-Mean-Time incr-tz  0 utc-only,
+
 create Europe/Moscow 3 utc-only,
 
 create Europe/London  incr-tz
@@ -76,18 +78,18 @@ create Europe/Amsterdam incr-tz
  #32887 w, #32827 w, #32887 w, #32766 w, #0 c, #3 c, #0 c, #32947 w, #32766 w, #0 c, #10 c, #0 c,
 
 create Egypt incr-tz
- #32887 w, #32827 w, #32767 w, #32766 w, #5 c, #3 c, #0 c, #34207 w, #32766 w, #4 c, #10 c, #0 c,
+ #32887 w, #32827 w, #32767 w, #32766 w, #6 c, #4 c, #0 c, #34207 w, #32766 w, #6 c, #10 c, #0 c,
 
 create cuba incr-tz
- #32467 w, #32827 w, #32767 w, #32769 w, #0 c, #3 c, #0 c, #32827 w, #32768 w, #0 c, #11 c, #0 c,
+ #32527  w, #32827 w, #32767 w, #32769 w, #0 c, #3 c, #0 c, #32827 w, #32768 w, #0 c, #11 c, #0 c,
 
 create China incr-tz 8 utc-only,
 
 create Chile incr-tz
- #32527 w, #32827 w, #34207 w, #32768 w, #6 c, #9 c, #0 c, #34207 w, #32768 w, #6 c, #4 c, #0 c,
+ #32527 w, #32827 w, #34207 w, #32768 w, #0 c, #4 c, #0 c, #34207 w, #32768 w, #0 c, #9 c, #0 c,     
 
 create Australia/Melbourne incr-tz
- #33367 w, #32827 w, #32887 w, #32768 w, #0 c, #10 c, #0 c, #32947 w, #32768 w, #0 c, #4 c, #0 c,
+ #33427 w, #32827 w, #32887 w, #32768 w, #0 c, #10 c, #0 c, #32947 w, #32768 w, #0 c, #4 c, #0 c,
 
 create Australia/Lord-Howe-Island incr-tz
  #33427 w, #32797 w, #32887 w, #32768 w, #0 c, #10 c, #0 c, #32887 w, #32768 w, #0 c, #4 c, #0 c,
@@ -95,19 +97,19 @@ create Australia/Lord-Howe-Island incr-tz
 create America/Sao_Paulo incr-tz  -3 utc-only,
 
 create America/New_York incr-tz
- #32467 w, #32827 w, #32887 w, #32769 w, #0 c, #3 c, #0 c, #32887 w, #32768 w, #0 c, #11 c, #0 c,
+ #32527 w, #32827 w, #32887 w, #32769 w, #0 c, #3 c, #0 c, #32887 w, #32768 w, #0 c, #11 c, #0 c,
 
 create America/Arizona incr-tz -7 utc-only,
 
-create America/Chicago  (  -  ) \ Input by hand:
+create America/Chicago  (  -  ) \ Manual input:
     incr-tz                     \ Increase #tz for a list in .list-summer-times
-       #-6 #60  * 16bneg + w,   \ Utc-offset for utc+N in minutes with an extra offset
-       #1  #60  * 16bneg + w,   \ Shift dst start
+       #-5 #60  * 16bneg + w,   \ Utc-offset for utc+N in minutes in the summer
+       #1  #60  * 16bneg + w,   \ Shift dst correction to get the winter time through subtraction
        #2  #60  * 16bneg + w,   \ Starts at: 02:00 UTC
-       #2 16bneg + w,   #0  c,    #3  c, \ Date dst starts: Second sunday in march
+       #2 16bneg + w,   #0  c,    #3  c, \ Date dst starts: Second Sunday in March
        0 c,                              \ Subtract #weekdays
        #2  #60  * 16bneg + w,            \ Ends at: 02:00 UTC
-       #1 16bneg + w,   #0  c,    #11 c, \ Date dst ends: First sunday in november
+       #1 16bneg + w,   #0  c,    #11 c, \ Date dst ends: First Sunday in November
        0 c,                              \ Subtract #weekdays
 
 \ Add new time zones BEFORE this line in reversed alphabetical order.
@@ -116,6 +118,6 @@ marker (tz-Endlist)
 : tz-Endlist  ( -  tz-Endlist ) ['] (tz-Endlist)  ;
 
 \ tz-Endlist >link link@ >name$ type  \ Types the last added time zone.
-defer tz-local  ' Europe/Amsterdam is tz-local \ Change it in your app.
+defer tz-local  ' utc is tz-local \ Change it in your app.
 \ 2023 .list-summer-times \ lists them
 \ \s

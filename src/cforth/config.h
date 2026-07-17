@@ -148,6 +148,15 @@ typedef token_t *xt_t;
 #define MAXVARS 0x300
 #define MAXUSER (MAXVARS * sizeof(cell))
 
+#ifndef MAXDICT
+  #ifndef __has_include
+    #define __has_include(x) 0
+  #endif
+  #if __has_include("../../build/esp32-extra/sdk_build/local_config.h")
+    #include "../../build/esp32-extra/sdk_build/local_config.h"
+  #endif
+#endif
+
 #if !defined(MAXDICT) && defined(T16)
   #define MAXDICT (0x1fffcL) /* The extent of token-space reach */
 #endif

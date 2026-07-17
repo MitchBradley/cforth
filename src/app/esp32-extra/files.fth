@@ -1,34 +1,33 @@
 \ File tools for ESP32 CForth
-
 \needs $=  : $=  ( $1 $2 -- )  compare 0=  ;
 
-char , value seperator
+char , value separator
 
-: (xud,.)       ( ud seperator -- a1 n1 )
+: (xud,.)       ( ud separator -- a1 n1 )
    >r
-   <#                         \ every 'seperator' digits from right
+   <#                         \ every 'separator' digits from right
    r@ 0 do # 2dup d0= ?leave loop
         begin   2dup d0= 0=   \ while not a double zero
-        while   seperator hold
+        while   separator hold
             r@ 0  do # 2dup d0= ?leave  loop
         repeat  #> r> drop
 ;
 
 : (ud,.)        ( ud -- a1 n1 )
    base @                     \ get the base
-   dup  #10 =                 \ if decimal use seperator every 3 digits
-   swap #8 = or               \ or octal   use seperator every 3 digits
-   #4 + (xud,.)               \ display seperators every 3 or 4 digits
+   dup  #10 =                 \ if decimal use separator every 3 digits
+   swap #8 = or               \ or octal   use separator every 3 digits
+   #4 + (xud,.)               \ display separators every 3 or 4 digits
 ;
 
-: ud,.r  ( ud l -- )              \ display double right justified, with seperator
+: ud,.r  ( ud l -- )              \ display double right justified, with separator
     >r (ud,.) r> over - spaces type ;
 
-: ud,.  ( ud -- ) 0 ud,.r ;       \ display double unsigned, with seperator
-: u,.r  ( u l -- ) 0 swap ud,.r ; \ display number unsigned, justified in field, with seperator
-: +place  ( adr len adr )  2dup c@ dup >r  + over c!  r> char+ +  swap move ;
+: ud,.  ( ud -- ) 0 ud,.r ;       \ display double unsigned, with separator
+: u,.r  ( u l -- ) 0 swap ud,.r ; \ display number unsigned, justified in field, with separator
+: +place  ( addr len addr -- )  2dup c@ dup >r  + over c!  r> char+ +  swap move ;
 
-create &valid-paths ," /spiffs/" ," /sdcard/"
+create &valid-paths ," /esp-32/" ," /sdcard/"
 
 : valid-path?  ( path& - flag )
    &valid-paths      count 2over $= >r
@@ -76,7 +75,7 @@ create &valid-paths ," /spiffs/" ," /sdcard/"
    r> base ! cr
 ;
 
-: dir  ( "optinal-path"  -- )
+: dir  ( "optional-path"  -- )
    parse-word dup 0=
     if  2drop get-path  then
    cr ." Directory of: " 2dup type cr list-files
@@ -87,10 +86,10 @@ alias ls dir
 0 value fid
 : close-fid  ( -- )  fid close-file drop  ;
 : create-fid ( filename$ -- )  w/o create-file abort" Can't create file"  to fid  ;
-: write-fid  ( adr len -- )  fid write-file abort" File write error"  ;
+: write-fid  ( addr len -- )  fid write-file abort" File write error"  ;
 : open-fid   ( filename$ -- )  r/o open-file abort" Can't open file" to fid  ;
-: read-fid   ( adr len -- actual )  fid read-file abort" File read error"  ;
-: read-line-fid  ( adr len -- len more? )  fid read-line abort" File read error"  ;
+: read-fid   ( addr len -- actual )  fid read-file abort" File read error"  ;
+: read-line-fid  ( addr len -- len more? )  fid read-line abort" File read error"  ;
 
 warning @ warning off
 
@@ -104,11 +103,13 @@ warning @ warning off
 
 warning !
 
+[ifdef] rx
 : xmodem-to-file:  ( "filename" -- )
-   rx   ( adr len )
+   rx   ( addr len )
    safe-parse-word create-fid  write-fid  close-fid
 ;
 alias rf xmodem-to-file:
+[then]
 
 : $print-file  ( filename$ -- )
    open-fid
@@ -145,8 +146,8 @@ alias rf xmodem-to-file:
    begin
       ." > "
       pad #100 accept     ( len )
-      pad swap            ( adr len )
-      2dup " ." compare   ( adr len more? )
+      pad swap            ( addr len )
+      2dup " ." compare   ( addr len more? )
    while
       write-fid  " "n" write-fid
    repeat

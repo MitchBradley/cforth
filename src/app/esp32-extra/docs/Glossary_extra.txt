@@ -1,0 +1,2220 @@
+================================================================================
+CFORTH ESP32 EXTRA GLOSSARY
+================================================================================
+
+For applications and further extensions, see the files and directories in:
+  ~/cf_551/cforth/src/app/esp32-extra/
+
+
+================================================================================
+1. FILES.FTH - File System Utilities
+================================================================================
+
+  $=                    ( $1 $2 -- flag )
+    Compare two strings for equality.
+
+  separator             ( -- char )
+    Character used as thousands separator (default: ',').
+
+  (xud,.)               ( ud separator -- addr len )
+    Format unsigned double with custom separator.
+
+  (ud,.)                ( ud -- addr len )
+    Format unsigned double with auto separator (3 or 4 digits).
+
+  ud,.                  ( ud -- )
+    Display unsigned double with thousands separators.
+
+  ud,.r                 ( ud length -- )
+    Display unsigned double right-justified with separators.
+
+  u,.r                  ( u length -- )
+    Display unsigned number right-justified with separators.
+
+  +place                ( addr len dest -- )
+    Append string to counted string.
+
+  valid-path?            ( path$ -- flag )
+    Check if path is valid (/esp-32/ or /sdcard/).
+
+  get-path              ( -- path$ )
+    Get current path.
+
+  .path                 ( -- )
+    Display current path.
+
+  expand-name           ( name$ -- fullname$ )
+    Expand path name to full path.
+
+  set-path              ( path$ -- )
+    Set current path.
+
+  open-dir?             ( path$ -- dirp|0 )
+    Open directory, return handle or 0 on error.
+
+  list-files            ( path$ -- )
+    List files in directory with sizes.
+
+  dir                   ( "optional-path" -- )
+    List directory contents.
+
+  ls                    ( "optional-path" -- )
+    Alias for dir.
+
+  create-fid            ( filename$ -- )
+    Create file and set fid.
+
+  open-fid              ( filename$ -- )
+    Open file for reading and set fid.
+
+  close-fid             ( -- )
+    Close current file.
+
+  write-fid             ( addr len -- )
+    Write to current file.
+
+  read-fid              ( addr len -- actual )
+    Read from current file.
+
+  read-line-fid         ( addr len -- len more? )
+    Read a line from current file.
+
+  delete-file           ( filename$ -- ior )
+    Delete file.
+
+  rename-file           ( old$ new$ -- ior )
+    Rename file.
+
+  $print-file           ( filename$ -- )
+    Print file contents to console.
+
+  cat                   ( "filename" -- )
+    Display file contents.
+
+  rm                    ( "filename" -- )
+    Remove file(s).
+
+  rm*                   ( -- )
+    Remove all files in current directory.
+
+  new-file:             ( "filename" -- )
+    Create new file from terminal input (finish with '.').
+
+
+================================================================================
+2. MCPWM.FTH - Motor Control PWM
+================================================================================
+
+  /mcpwm-channel        ( -- size )
+    Size of one MCPWM channel structure.
+
+  >mcpwm-&channel       ( channel# -- &channel )
+    Get channel structure address.
+
+  mcpwm-get-timer       ( &channel -- timer )
+    Get timer handle from channel.
+
+  mcpwm-get-oper        ( &channel -- oper )
+    Get operator handle from channel.
+
+  mcpwm-get-gen         ( &channel -- gen )
+    Get generator handle from channel.
+
+  mcpwm-get-cmpr        ( &channel -- cmpr )
+    Get comparator handle from channel.
+
+  mcpwm-get-period      ( &channel -- period )
+    Get period from channel.
+
+  >mcpwm-gpio-pin       ( &channel -- addr )
+    Get GPIO pin address from channel.
+
+  >mcpwm-resolution-hz  ( &channel -- addr )
+    Get resolution address from channel.
+
+  >mcpwm-freq           ( &channel -- addr )
+    Get frequency address from channel.
+
+  >mcpwm-timer-id       ( &channel -- addr )
+    Get timer ID address from channel.
+
+  >mcpwm-unit           ( &channel -- addr )
+    Get unit address from channel.
+
+  >mcpwm-in-use         ( &channel -- addr )
+    Get in-use flag address from channel.
+
+  .mcpwm-header         ( -- )
+    Display MCPWM header.
+
+  .mcpwm-channel        ( channel -- )
+    Display MCPWM channel configuration.
+
+  .mcpwm-channels       ( -- )
+    Display all MCPWM channel configurations.
+
+  mcpwm-validation      ( channel -- )
+    Validate MCPWM configuration parameters.
+
+  mcpwm-set-config      ( gpio res freq tid unit channel -- )
+    Configure MCPWM channel with validation.
+
+  mcpwm-init-memory     ( #channels -- )
+    Initialize MCPWM channel memory.
+
+  mcpwm-get-period-ticks ( channel -- period_ticks )
+    Get PWM period in ticks.
+
+  mcpwm-ratio           ( relative_value channel multiplier -- ticks )
+    Calculate PWM ticks from duty ratio.
+    ticks = (resolution * relative_value) / (freq * multiplier)
+
+  mcpwm-start           ( channel -- )
+    Start PWM output.
+
+  mcpwm-stop            ( channel -- )
+    Stop PWM output.
+
+  mcpwm-set-signal-low  ( channel -- error )
+    Set PWM output low.
+
+  mcpwm-set-signal-high ( channel -- error )
+    Set PWM output high.
+
+  mcpwm-set-duty-in-us  ( us channel -- error )
+    Set PWM duty cycle in microseconds.
+
+
+================================================================================
+3. ESPNOW.FTH - ESP-NOW Wireless Communication
+================================================================================
+
+  init-esp-receiver     ( channel buffer-size -- )
+    Initialize ESP-NOW receiver.
+
+  esp-now-read          ( -- data|0 )
+    Read ESP-NOW message (returns 0 if none).
+
+  .macadress            ( addr -- )
+    Display MAC address.
+
+  to_all_mac            ( -- addr )
+    Broadcast MAC address constant.
+
+  espnow-overhead       ( -- n )
+    ESP-NOW overhead bytes (MAC address + length).
+
+  max-payload           ( -- n )
+    Maximum ESP-NOW payload size (1470 bytes).
+
+  >&CountPayload        ( &buffer -- addr )
+    Get count/payload address from receive buffer.
+
+
+================================================================================
+4. ADC_ESP32.FTH - Analog-to-Digital Converter
+================================================================================
+
+  ADC_UNIT_1            ( -- constant )
+    ADC unit 1 constant.
+
+  ADC_RTC_CLK_SRC_DEFAULT ( -- constant )
+    Default ADC clock source.
+
+  ADC-ATTEN-DB-12       ( -- constant )
+    12dB attenuation for ADC.
+
+  ADC-BITWIDTH-12       ( -- constant )
+    12-bit resolution for ADC.
+
+  init-adc              ( -- handle|0 )
+    Initialize ADC unit.
+
+  read-adc-channel      ( channel -- mV )
+    Read ADC channel value in millivolts.
+
+
+================================================================================
+5. EXTRA.FTH - General Utilities
+================================================================================
+
+  b                     ( -- )
+    Stop WiFi and exit.
+
+  cls                   ( -- )
+    Clear terminal (alias for reset-terminal).
+
+  h.                    ( -- )
+    Display hex (alias for .h).
+
+  word-join             ( -- )
+    Join words (alias for wljoin).
+
+  word-split            ( -- )
+    Split words (alias for lwsplit).
+
+  [defined]             ( "word" -- flag )
+    Check if word is defined.
+
+  lower-char            ( char -- lower )
+    Convert character to lowercase.
+
+  escape?               ( -- flag )
+    Check for ESC key press.
+
+  si                    ( "word" -- )
+    Case-insensitive word search.
+
+  s>f                   ( n -- ) ( F: -- n )
+    Convert integer to float.
+
+  f>s                   ( -- n ) ( F: n -- )
+    Convert float to integer.
+
+  f2dup                 ( F: r1 r2 -- r1 r2 r1 r2 )
+    Duplicate two floats.
+
+  esp8266?              ( -- flag )
+    True if running on ESP8266.
+
+  deep-sleep            ( seconds -- )
+    Enter deep sleep (alias).
+
+  cpu_freq@             ( -- freq )
+    Get CPU frequency (alias for esp-clk-cpu-freq).
+
+  ms@                   ( -- ms )
+    Get milliseconds since boot.
+
+  set-priority          ( priority -- )
+    Set current task priority.
+
+  allocate-fast-mem     ( bytes -- addr ior )
+    Allocate from RTC fast memory.
+
+  create-timer:         ( "name" -- )
+    Create a timer structure.
+
+  start-timer           ( timer -- )
+    Start timer.
+
+  .tElapsed             ( timer -- )
+    Display elapsed time in milliseconds.
+
+  tElapsed?             ( timer -- flag ) ( F: us-elapsed -- )
+    Check if timer has elapsed.
+
+  min>fus               ( minutes -- ) ( F: -- us )
+    Convert minutes to microseconds.
+
+  hrs>fus               ( hours -- ) ( F: -- us )
+    Convert hours to microseconds.
+
+  fus>fsec              ( F: us -- sec )
+    Convert microseconds to seconds.
+
+  fus>fms               ( F: us -- ms )
+    Convert microseconds to milliseconds.
+
+  fsec>fus              ( F: sec -- us )
+    Convert seconds to microseconds.
+
+  time-reset            ( -- )
+    Reset time measurement.
+
+  us-elapsed            ( us-start seconds-start -- ) ( F: -- us-elapsed )
+    Calculate elapsed microseconds.
+
+  .elapsed              ( -- )
+    Display elapsed time.
+
+  SetStage              ( xt -- )
+    Set stage for timing measurements.
+
+  .tcycle               ( -- )
+    Display cycle time.
+
+  us-to-deadline        ( F: us-base us-incr -- us-wait )
+    Calculate wait time to deadline.
+
+  find-deadline         ( addr-fus-base addr-fus-timeout -- ) ( F: -- us )
+    Find deadline from time base.
+
+  sysledOn              ( -- )
+    Turn system LED on.
+
+  sysledOff             ( -- )
+    Turn system LED off.
+
+  init-sysled           ( -- )
+    Initialize system LED.
+
+  send-tx               ( addr len -- )
+    Send data via UART.
+
+  read-rx               ( -- #read )
+    Read data from UART.
+
+  execute-until-escape  ( xt -- ) ( F: timeout -- )
+    Execute word until ESC key pressed.
+
+  bold                  ( -- )
+    Enable bold text (VT100).
+
+  norm                  ( -- )
+    Disable bold text (VT100).
+
+  hide-cursor           ( -- )
+    Hide cursor (VT100).
+
+  show-cursor           ( -- )
+    Show cursor (VT100).
+
+  lcount                ( addr -- addr' count )
+    Get counted string length.
+
+  +lplace               ( addr len dest -- )
+    Append to counted string.
+
+  lplace                ( addr len dest -- )
+    Set counted string.
+
+  es                    ( -- )
+    Clear stacks (emergency reset).
+
+  16bit>32bit           ( n -- n' )
+    Sign-extend 16-bit to 32-bit.
+
+  4drop                 ( n4 n3 n2 n1 -- )
+    Drop four stack items.
+
+  (number?)             ( addr len -- d flag )
+    Convert string to number.
+
+  -ftrunc               ( F: n -- -ftrunc )
+    Negative fractional part.
+
+  fint                  ( F: r.x -- r )
+    Float to integer rounding.
+
+  f2drop                ( F: r1 r2 -- )
+    Drop two floats.
+
+  dup>r                 ( n -- n ) ( R: -- n )
+    Duplicate and push to return stack.
+
+  parse-single          ( "number" -- n flag )
+    Parse a single number from input.
+
+  init-seed             ( -- )
+    Initialize random seed.
+
+  Rnd                   ( -- random )
+    Generate random number.
+
+  RandomLim             ( limit -- random )
+    Generate random number in range.
+
+  cells+                ( addr n -- addr+n*cell )
+    Add n cells to address.
+
+  +cells                ( n addr -- addr+n*cell )
+    Add n cells to address (reversed).
+
+  check-conditional     ( mark -- mark here )
+    Check conditional branching.
+
+  begin-structure       ( "name" -- addr 0 )
+    Begin structure definition.
+
+  end-structure         ( addr n -- )
+    End structure definition.
+
+  +field                ( offset size -- offset' )
+    Define a field in a structure.
+
+  field:                ( n "name" -- n2 )
+    Define a cell field.
+
+  cfield:               ( n "name" -- n2 )
+    Define a character field.
+
+  bfield:               ( n "name" -- n2 )
+    Define a byte field.
+
+  wfield:               ( n "name" -- n2 )
+    Define a word field (2 bytes).
+
+  lfield:               ( n "name" -- n2 )
+    Define a long field (4 bytes).
+
+  xfield:               ( n "name" -- n2 )
+    Define a double field (8 bytes).
+
+  perform               ( addr -- )
+    Execute word at address.
+
+  /circular             ( -- size )
+    Size of circular buffer structure.
+
+  >(cbuf-count)         ( &cbuffer -- addr )
+    Get circular buffer count address.
+
+  incr-cbuf-count       ( &cbuffer -- )
+    Increment circular buffer count.
+
+  >record-cbuf          ( index &cbuffer -- addr )
+    Get record address from circular buffer.
+
+  >circular-index       ( index &cbuffer -- index' )
+    Normalize circular buffer index.
+
+  circular-range        ( &cbuffer -- end start )
+    Get circular buffer range.
+
+  >circular             ( index &cbuffer -- addr )
+    Get address of circular buffer entry.
+
+  >circular-head        ( &cbuffer -- addr )
+    Get address of next circular buffer entry.
+
+  allocate-cbuffer      ( rec-size #records -- &cbuf )
+    Allocate a circular buffer.
+
+  b.                    ( n -- )
+    Display in binary.
+
+  start-length          ( bStart bEnd -- bStart length )
+    Calculate bit range length.
+
+  #mask                 ( bStart length -- mask )
+    Create bit mask.
+
+  #bits@                ( n bStart #bits -- bits )
+    Extract bits from a number.
+
+  bits@                 ( n bStart bend -- bits )
+    Extract bits from a number.
+
+  #bits!                ( value n bStart length -- n' )
+    Store bits in a number.
+
+  bits!                 ( value n bStart bend -- n' )
+    Store bits in a number.
+
+  scan                  ( addr len char -- addr2 len2 )
+    Scan for character in string.
+
+  BlankString           ( src$ search$ -- result )
+    Replace search string with spaces.
+
+  BlankStrings          ( src$ search$ -- )
+    Replace all occurrences with spaces.
+
+  NextString            ( str len delimiter -- rest )
+    Get next delimited string.
+
+  GetValue              ( str len delimiter -- n flag )
+    Parse value from delimited string.
+
+  lsock                 ( -- addr )
+    Current socket variable.
+
+  HtmlPage$             ( -- addr )
+    HTML page buffer.
+
+  /HtmlPage             ( -- size )
+    HTML page buffer size.
+
+  listener-socket       ( -- addr )
+    Listener socket variable.
+
+  DeepSleep             ( seconds -- )
+    Enter deep sleep.
+
+  Reboot                ( -- )
+    Reboot the system.
+
+  ##$                   ( separator n -- addr len )
+    Format number with separator.
+
+  f>dint                ( F: n magn -- ) ( D: -- n )
+    Convert float to integer with multiplier.
+
+  .#->                  ( -- )
+    Decimal point for formatting.
+
+  (f.2)                 ( F: n -- addr len )
+    Format float with 2 decimals.
+
+  (f.1)                 ( F: n -- addr len )
+    Format float with 1 decimal.
+
+  SendHtmlPage          ( -- )
+    Send HTML page to client.
+
+  +html                 ( addr len -- )
+    Append string to HTML page buffer.
+    If the buffer would overflow, it is automatically flushed:
+      - Existing buffer content is sent to the client
+      - The new string is sent immediately (not buffered)
+    This prevents buffer overflow while maintaining efficient transmission.
+
+  init-HtmlPage         ( -- )
+    Initialize HTML page buffer tmp$ and LogLine$.
+
+  tmp$                  ( -- addr )
+    Temporary string buffer.
+
+  LogLine$              ( -- addr )
+    Log line buffer.
+
+  rjust                 ( addr len width char -- addr len )
+    Right-justify string.
+
+  file-exist?           ( filename$ -- flag )
+    Check if file exists.
+
+  +file                 ( filename$ buffer$ -- )
+    Append file to counted buffer.
+
+  @file                 ( buffer$ filename$ -- bytes )
+    Read file into buffer.
+
+  load-bin              ( addr len -- )
+    Load binary file into flash during build.
+
+  hold"                 ( -- )
+    Hold quote character.
+
+  hold"bl               ( -- )
+    Hold space and quote.
+
+  .free                 ( -- )
+    Display free memory statistics.
+
+  file-it               ( buffer len filename$ -- )
+    Write buffer to file.
+
+  open-file-append      ( filename$ -- handle )
+    Open file for appending.
+
+  WriteFile             ( txt cnt handle -- )
+    Write to file.
+
+  writeHTML             ( filename$ -- )
+    Write HTML page to file.
+
+  seal                  ( -- )
+    Seal Forth vocabulary.
+
+  UdpPort$              ( -- addr )
+    UDP port string.
+
+  UdpWrite              ( data len ip$ -- )
+    Send UDP data.
+
+  SelectTcpPort         ( ip$ -- port )
+    Select TCP port based on IP range.
+
+  TcpWrite              ( data len ip$ -- )
+    Send TCP data.
+
+  crlf$                 ( -- addr len )
+    CRLF string.
+
+  +html_line            ( addr len -- )
+    Add HTML line with CRLF.
+
+  html|                 ( -- )
+    Parse inline HTML string.
+
+  +html|                ( -- )
+    Inline HTML string.
+
+  decimal(.)            ( n -- addr len )
+    Convert number to decimal string.
+
+  _IOFBF                ( -- constant )
+    Fully buffered (setvbuf).
+
+  _IOLBF                ( -- constant )
+    Line buffered (setvbuf).
+
+  _IONBF                ( -- constant )
+    Unbuffered (setvbuf).
+
+  s                     ( -- )
+    Deferred word to start application.
+
+
+================================================================================
+6. WIFI.FTH - WiFi Connection
+================================================================================
+
+  .wifi-connect-error   ( error -- )
+    Display WiFi connection error reason.
+
+  (.d)                  ( n -- )
+    Display number in decimal.
+
+  ipaddr$               ( ip-addr -- string )
+    Convert IP address to string.
+
+  ipaddr@               ( -- ip-addr )
+    Get current IP address.
+
+  .ipaddr               ( ip-addr -- )
+    Display IP address.
+
+  .ip                   ( -- )
+    Display current IP address.
+
+  ip4Host               ( -- ip )
+    Get IP as host address.
+
+  enter-wifi-settings   ( passwordBuf ssidBuf -- )
+    Enter WiFi SSID and password.
+
+  wifi-timeout          ( -- timeout )
+    WiFi connection timeout (ms).
+
+  set-wifi-loglevel     ( -- )
+    Set WiFi log level.
+
+  wifi_auth             ( -- auth )
+    WiFi authentication mode.
+
+  wifi-station-on       ( ssid$ password$ -- )
+    Connect to WiFi network.
+
+  set-wifi-cred         ( -- )
+    Save WiFi credentials to file.
+
+  get-wifi-cred         ( -- ssid$ password$ )
+    Get WiFi credentials from file.
+
+  logon                 ( -- )
+    Connect to WiFi using saved credentials.
+
+  wifi-sta-on           ( -- )
+    Alias for logon.
+
+  check-ssid            ( -- flag )
+    Check if SSID is available.
+
+  try-logon             ( -- flag )
+    Attempt WiFi connection.
+
+  SleepIfNotConnected   ( seconds -- )
+    Enter deep sleep if not connected.
+
+  WIFI_AUTH_OPEN        ( -- constant )
+    Open authentication.
+
+  WIFI_AUTH_WEP         ( -- constant )
+    WEP authentication.
+
+  WIFI_AUTH_WPA_PSK     ( -- constant )
+    WPA-PSK authentication.
+
+  WIFI_AUTH_WPA2_PSK    ( -- constant )
+    WPA2-PSK authentication.
+
+  WIFI_AUTH_WPA_WPA2_PSK ( -- constant )
+    WPA/WPA2 mixed authentication.
+
+  WIFI_AUTH_WPA2_ENTERPRISE ( -- constant )
+    WPA2 Enterprise authentication.
+
+  WIFI_AUTH_WPA3_PSK    ( -- constant )
+    WPA3-PSK authentication.
+
+  WIFI_AUTH_WPA2_WPA3_PSK ( -- constant )
+    WPA2/WPA3 mixed authentication.
+
+
+================================================================================
+7. I2C.FTH - I2C Bus Communication
+================================================================================
+
+  #i2c-max-devices      ( -- n )
+    Maximum number of I2C devices.
+
+  i2c-pullup            ( -- addr )
+    I2C pullup flag variable.
+
+  i2c-glitch            ( -- addr )
+    I2C glitch filter variable.
+
+  i2c-speed             ( -- addr )
+    I2C speed variable.
+
+  i2c-tenbit            ( -- addr )
+    I2C 10-bit address flag variable.
+
+  i2c-wait              ( -- addr )
+    I2C wait time variable.
+
+  i-new-data            ( -- addr )
+    I2C new device counter.
+
+  i2c-bus-handle        ( -- addr )
+    I2C bus handle variable.
+
+  /i2c-device           ( -- size )
+    I2C device structure size.
+
+  >i2c-device           ( c-index -- &i2c-dev )
+    Get I2C device structure.
+
+  >i2c-index            ( slave -- &c-index )
+    Get I2C index.
+
+  >&i2c-dev-handle      ( &i2c-dev -- addr )
+    Get device handle address.
+
+  >i2c-bus-handle       ( &i2c-dev -- addr )
+    Get bus handle address.
+
+  >sda-byte             ( &i2c-dev -- addr )
+    Get SDA pin address.
+
+  >scl-byte             ( &i2c-dev -- addr )
+    Get SCL pin address.
+
+  i2c-default-parms-device ( slave bus-handle -- params )
+    Get default I2C parameters.
+
+  .i2c-dump-header      ( -- )
+    Display I2C header.
+
+  .i2c-dev              ( c-index -- )
+    Display I2C device.
+
+  .i2c-dump             ( -- )
+    Display all I2C devices.
+
+  get-latest-bushandle  ( scl sda -- bus-handle )
+    Get or create I2C bus handle.
+
+  get-device-handle     ( slave -- device-handle )
+    Get device handle from slave address.
+
+  i2c-open              ( Scl Sda -- )
+    Deprecated - use i2c-open-device.
+
+  i2c-open-device       ( scl sda slave -- device-handle )
+    Open I2C device.
+
+  i2c-close             ( slave -- )
+    Close I2C device.
+
+  i2c-bus-close         ( slave -- )
+    Close I2C bus.
+
+  be->le                ( n -- n' )
+    Convert big-endian to little-endian.
+
+  i2c-b!                ( value reg slave -- error )
+    Write byte to I2C register.
+
+  i2c-b@                ( reg slave -- byte )
+    Read byte from I2C register.
+
+  i2c-be-w@             ( reg slave -- word )
+    Read big-endian word from I2C.
+
+  i2c-le-w@             ( reg slave -- word )
+    Read little-endian word from I2C.
+
+  i2c-be-w!             ( value reg slave -- error )
+    Write big-endian word to I2C.
+
+  i2c-le-w!             ( value reg slave -- error )
+    Write little-endian word to I2C.
+
+  i2c-write-read        ( wbuf wsize rbuf rsize slave -- error )
+    Combined I2C write-read transaction.
+
+
+================================================================================
+8. SERVER.FTH - TCP/HTTP Server
+================================================================================
+
+  tcp-send              ( addr len handle -- )
+    Send TCP data.
+
+  http-listen           ( -- )
+    Start HTTP server on port 80.
+
+  timer-reconnect       ( -- timer )
+    Reconnect timer.
+
+  timed-accept         ( millseconds -- true | socket false )
+    Accept connection with timeout.
+
+  reconnect             ( -- )
+    Attempt to reconnect WiFi.
+
+  accept-reconnect     ( millseconds -- true | socket false ) 
+    Accept connection with timeout and automatic WiFi reconnect.
+    If WiFi is disconnected, it attempts to reconnect before accepting.
+    Returns: true (timeout) or socket + false (connection accepted).
+
+  us-reconnect-after    ( -- F: us )
+    Reconnect delay in microseconds.
+
+  handle-timeout        ( -- )
+    Deferred word for periodic tasks.
+
+  poll-interval         ( -- ms )
+    Polling interval (ms).
+
+  set-linger            ( seconds -- )
+    Set socket linger time.
+
+  /req-buf              ( -- size )
+    HTTP request buffer size.
+
+  req-buf               ( -- addr )
+    HTTP request buffer.
+
+  http-respond          ( timeout -- )
+    HTTP response handler.
+
+  responder             ( -- )
+    Deferred HTTP responder.
+
+  serve-http            ( -- )
+    Main HTTP server loop.
+
+xxxx 
+================================================================================
+9. TIMEZONES.FTH - Time Zone Definitions
+================================================================================
+
+  Time zone data is stored as compact records in flash memory.
+  Each time zone record contains:
+    - UTC offset (with DST shift)
+    - DST start and end rules (date, time, weekday)
+    - Northern/Southern hemisphere flag
+
+  Defining a time zone:
+  ---------------------
+    incr-tz               ( -- )
+      Increment time zone counter (call before each new time zone).
+
+    utc-only,             ( utc-offset -- )
+      Define a time zone without DST (e.g., UTC, Japan, China).
+      Example: create Japan 9 utc-only,
+
+    16bneg                ( -- constant )
+      Constant for negative 16-bit values in time zone data.
+
+  Time zone variables:
+  --------------------
+    #tz                   ( -- addr )
+      Time zone counter variable.
+
+    tz-local              ( -- )
+      Deferred word for the active local time zone.
+      Example: ' Europe/Amsterdam is tz-local
+
+  Displaying time zones:
+  ----------------------
+    tz-Endlist            ( -- addr )
+      Get end of time zone list.
+
+    .tz-header            ( -- )
+      Display time zone table header.
+
+    .time-date-dst        ( &tz-weekday-date year -- )
+      Display DST date and time for a time zone.
+
+    .summer-time          ( tz-list-item year -- )
+      Display summer time (DST) transition details.
+
+    .list-summer-times    ( year -- )
+      List all DST transitions for all defined time zones.
+
+    shorten-tz-name       ( addr len -- short )
+      Shorten time zone name (e.g., "America/New_York" → "New_York").
+
+    date>jjjjmmdd         ( d m y -- jjjjmmdd )
+      Format date as YYYYMMDD number.
+
+  Predefined time zones:
+  ----------------------
+    UTC                   ( -- tz )
+      Coordinated Universal Time (no DST).
+
+    South-Africa          ( -- tz )
+      UTC+2, no DST.
+
+    Japan                 ( -- tz )
+      UTC+9, no DST.
+
+    China                 ( -- tz )
+      UTC+8, no DST.
+
+    Europe/London         ( -- tz )
+      UTC+0 with DST (GMT/BST).
+
+    Europe/Amsterdam      ( -- tz )
+      UTC+1 with DST (CET/CEST).
+
+    Europe/Moscow         ( -- tz )
+      UTC+3, no DST.
+
+    America/New_York      ( -- tz )
+      UTC-5 with DST (EST/EDT).
+
+    America/Chicago       ( -- tz )
+      UTC-6 with DST (CST/CDT).
+
+    America/Arizona       ( -- tz )
+      UTC-7, no DST (MST).
+
+    America/Sao_Paulo     ( -- tz )
+      UTC-3, no DST.
+
+    Australia/Melbourne   ( -- tz )
+      UTC+10 with DST.
+
+    New_Zealand           ( -- tz )
+      UTC+12 with DST.
+
+    Israel                ( -- tz )
+      UTC+2 with DST.
+
+    Egypt                 ( -- tz )
+      UTC+2 with DST.
+
+    Chile                 ( -- tz )
+      UTC-3 with DST (southern hemisphere).
+
+    Paraguay              ( -- tz )
+      UTC-3, no DST.
+
+    cuba                  ( -- tz )
+      UTC-4 with DST.
+
+    palestine             ( -- tz )
+      UTC+2 with DST.
+
+    Lebanon               ( -- tz )
+      UTC+2 with DST.
+
+    moldova               ( -- tz )
+      UTC+2 with DST.
+
+    Greenwich-Mean-Time   ( -- tz )
+      UTC+0, no DST.
+
+    (add new time zones before tz-Endlist)
+
+
+================================================================================
+10. TIMEDIFF.FTH - Time Calculations
+================================================================================
+
+  This file provides date/time conversion and calculation functions.
+  It uses the Julian Day Number (JDN) system for date arithmetic.
+
+  Constants:
+  ----------
+    #SecondsOneDay        ( -- F: seconds )
+      Seconds in one day (86400.0).
+
+    #SecondsOneHour       ( -- n )
+      Seconds in one hour (3600).
+
+  Date/Time conversion:
+  ---------------------
+    jd                    ( dd mm yyyy -- julian-day )
+      Convert Gregorian date to Julian Day Number.
+
+    gregorian-leap-year?  ( year -- flag )
+      Check if year is a leap year.
+
+    fixed-from-gregorian  ( day month year -- fixed-date )
+      Convert Gregorian date to fixed date (days since epoch).
+
+    gregorian-from-fixed  ( fixed-date -- day month year )
+      Convert fixed date to Gregorian date.
+
+  UTC time functions:
+  -------------------
+    @time                 ( -- F: UtcTics )
+      Get current UTC time as float (seconds since 1970-01-01).
+
+    get-secs              ( -- UtcTics )
+      Get current UTC time as integer (seconds since 1970-01-01).
+
+    Time-from-UtcTics     ( F: UtcTics -- ss mm uu )
+      Extract time (hours, minutes, seconds) from UTC ticks.
+
+    Date-from-UtcTics     ( F: UtcTics -- dd mm year )
+      Extract date (day, month, year) from UTC ticks.
+
+    Date-from-jd          ( F: JulianDay -- dd mm year )
+      Convert Julian Day to date.
+
+    Jd-from-UtcTics       ( F: UtcTics -- F: JulianDay )
+      Convert UTC ticks to Julian Day.
+
+    UtcTics-from-Jd&Time  ( ss mm uu JD -- ) ( F: -- UtcTics )
+      Convert Julian Day and time to UTC ticks.
+
+    UtcTics-from-Time&Date ( ss mm uu dd mm year -- ) ( F: -- UtcTics )
+      Convert time/date to UTC ticks.
+
+    Date-from-utc-time    ( F: UtcTics -- dd mm yearLocal )
+      Get local date from UTC time.
+
+    .Date-from-utctics    ( F: UtcTics -- )
+      Display date from UTC ticks.
+
+    .Time-from-UtcTics    ( F: UtcTics -- )
+      Display time from UTC ticks.
+
+    .Html-Time-from-UtcTics ( F: UtcTics -- )
+      Display time in HTML format.
+
+    Time&Date-from-UtcTics ( F: UtcTics -- ss mm uu dd mm year )
+      Get full time and date from UTC ticks.
+
+  Local time functions:
+  ---------------------
+    LocalTics-from-UtcTics ( F: UtcTics -- LocalTics )
+      Convert UTC to local time (uses tz-local).
+
+    UtcTics-from-LocalTics ( F: LocalTics -- UtcTics )
+      Convert local to UTC time (uses tz-local).
+
+    Time&DateLocal-from-UtcTics ( F: UtcTics -- ss mm uu dd mm year )
+      Get local time and date from UTC ticks.
+
+    local-time-now        ( -- F: seconds )
+      Get current local time in seconds.
+
+    Time&Date             ( -- ss mm uu dd mm year )
+      Get current local time and date.
+
+    date-now              ( -- dd mm yearLocal )
+      Get current local date.
+
+    .time                 ( -- )
+      Display current local time.
+
+    .date                 ( -- )
+      Display current local date.
+
+    time>mmhh             ( -- mmhh )
+      Get current time as HHMM integer.
+
+    .mmhh                 ( mmhh -- )
+      Display time as HH:MM.
+
+  Weekday calculations:
+  ---------------------
+    week-day              ( julian-day -- day )
+      Get day of week (0=Sunday, 6=Saturday).
+
+    Day-of-Week-from-Fixed ( fixed-date -- day )
+      Get day of week from fixed date.
+
+    Weekday-on-or-Before  ( date k -- date' )
+      Get date of weekday on or before given date.
+
+    Weekday-After         ( date k -- date' )
+      Get date of weekday after given date.
+
+    Weekday-Before        ( date k -- date' )
+      Get date of weekday before given date.
+
+    'th-Weekday           ( n k month day year -- date )
+      Get nth weekday in month (n=1-5, k=0-6 for Sun-Sat).
+
+    'th-Weekday-in-month  ( n weekday month year -- fixed-date )
+      Get nth weekday in month (n positive = forward, negative = from end).
+
+    last-day-month        ( month year -- day )
+      Get last day of month.
+
+    utc-from-fixed        ( fixed -- utctics-at-00:00 )
+      Get UTC ticks at midnight for given fixed date.
+
+  Time zone offset functions:
+  ---------------------------
+    find-utc-offset       ( tz -- ) ( F: -- offset )
+      Get current UTC offset for time zone (in seconds).
+
+    find-utc-offset-at-utc ( tz -- offset ) ( F: UtcTics -- )
+      Get UTC offset at specific UTC time.
+
+    convert-to-tz         ( tz-source tz-destination -- ) ( F: utc-time -- dest-time )
+      Convert time from source time zone to destination time zone at utc-time.
+
+    Dst-start             ( &tz -- shiftOffsetStart )
+      Get DST start offset.
+
+    Dst-end               ( &tz -- shiftOffsetEnd )
+      Get DST end offset.
+
+    dst?                  ( tz -- flag ) ( F: -- )
+      Check if DST is active for time zone at given time.
+
+    utc-only?             ( coded-minutes -- flag )
+      Check if time zone has no DST.
+
+  Time zone structure fields:
+  ---------------------------
+    /tz                   ( -- size )
+      Size of time zone structure.
+
+    >tz-utc               ( &tz -- addr )
+      UTC offset field.
+
+    >tz-Shift             ( &tz -- addr )
+      DST shift field.
+
+    >tz-time-start        ( &tz -- addr )
+      DST start time field.
+
+    >tz-weekday-date-start ( &tz -- addr )
+      DST start date field.
+
+    >tz-index-weekday-start ( &tz -- addr )
+      DST start weekday field.
+
+    >tz-month-start       ( &tz -- addr )
+      DST start month field.
+
+    >tz-weekdays-subtract-start ( &tz -- addr )
+      DST start subtract field.
+
+    >tz-time-end          ( &tz -- addr )
+      DST end time field.
+
+    >tz-weekday-date-end  ( &tz -- addr )
+      DST end date field.
+
+    >tz-index-weekday-end ( &tz -- addr )
+      DST end weekday field.
+
+    >tz-month-end         ( &tz -- addr )
+      DST end month field.
+
+    >tz-weekdays-subtract-end ( &tz -- addr )
+      DST end subtract field.
+
+    @tz-Shift             ( tz-list-item -- shift )
+      Get DST shift value.
+
+    @utc_offset           ( &tz -- utc-offset )
+      Get UTC offset value.
+
+    @dst-date             ( &tz-weekday-date year -- fixed-date )
+      Get DST date for given year.
+
+    utc-offset-from-tzdata ( &tz-weekday-date year -- ) ( F: -- )
+      Get UTC offset from time zone data.
+
+    @seconds-to-dst-change ( &tz-weekday-date -- ) ( F: -- )
+      Get seconds before DST change.
+
+  Time server functions:
+  ----------------------
+    time-server$          ( -- addr )
+      Time server IP address variable.
+
+    GetTcpTime            ( -- )
+      Request time from TCP time server.
+
+    SetLocalTime          ( UtcTics sunrise sunset -- )
+      Set local time (system time).
+
+    AskTime               ( -- )
+      Request time from time server (if configured).
+
+    GotTime?              ( -- flag )
+      Check if time is set correctly (year > 2022).
+
+    check-time            ( -- )
+      Check time, request if not set.
+
+    TcpTime               ( UtcTics UtcOffset sunrise sunset -- )
+      Process TCP time server response.
+
+  Manual time entry:
+  ------------------
+    set-time              ( -- )
+      Manually set time and date.
+
+    single?               ( str -- n )
+      Parse a single number.
+
+    enter-input           ( length -- string )
+      Enter input from terminal.
+
+    extract-time          ( str -- seconds minutes hours )
+      Extract time from HHMM[SS] string.
+
+    extract-date          ( str -- day month year )
+      Extract date from DDMMYYYY string.
+
+    enter-timezone/UTC-time-offset ( -- offset )
+      Enter time zone name or UTC offset.
+
+    enter-date-time       ( -- flag )
+      Enter date and time manually.
+
+  Formatting helpers:
+  -------------------
+    .##                   ( n -- )
+      Display two-digit number.
+
+    .-                    ( n -- )
+      Display number with dash.
+
+    .(date)               ( d m y -- )
+      Display date as DD-MM-YYYY.
+
+    .signed               ( n -- )
+      Display signed number with sign.
+
+    unsigned>f            ( unsigned -- ) ( F: -- n )
+      Convert unsigned to float.
+
+    date>jjjjmmdd         ( d m y -- jjjjmmdd )
+      Format date as YYYYMMDD.
+
+  Utility functions:
+  ------------------
+    /_mod                 ( dividend divisor -- rem quot )
+      Divide with remainder.
+
+    /_                    ( dividend divisor -- quotient )
+      Integer division.
+
+    _mod                  ( dividend divisor -- remainder )
+      Integer remainder.
+
+    gregorian-year-from-fixed ( fixed-date -- year )
+      Get Gregorian year from fixed date.
+
+    day-number            ( month day year -- day-of-year )
+      Get day of year.
+
+    Moment-from-JD        ( F: JulianDay -- moment )
+      Convert Julian day to moment.
+
+    UtcTics-from-Time-today ( ss mm uu -- F: UtcTics )
+      Convert time to UTC ticks for today.
+
+    UtcTics-from-hm       ( hhmm -- ) ( F: -- UtcTics )
+      Convert HHMM to UTC ticks.
+
+    hhmmUntil             ( hhmm -- ) ( F: -- seconds )
+      Seconds until HHMM today.
+
+    UtcTill               ( hhmm -- ) ( F: -- seconds )
+      Seconds until HHMM (handles next day if passed).
+
+================================================================================
+11. WEBCONTROLS.FTH - HTML Web Controls
+================================================================================
+
+  +a                    ( -- )
+    Activate HTML and TCP/IP vocabularies (FORTH + HTML + TCP/IP).
+
+  SendStk               ( server# -- )
+    Send stack contents to server for debugging.
+    Usage: 201 SendStk  (sends to 192.168.0.201)
+
+  replace-all-by        ( addr len oldchar newchar -- )
+    Replace all occurrences of a character in a string.
+
+  /recv                 ( -- addr )
+    Received request length variable.
+
+  .get                  ( -- )
+    Display received GET request.
+
+  set-page              ( xt -- )
+    Set word that builds the web page.
+
+  +1html                ( char -- )
+    Append one character to HTML page.
+
+  +crlf                 ( -- )
+    Append CRLF to HTML page.
+
+  .html                 ( n -- )
+    Append number to HTML page.
+
+  <html5>               ( -- )
+    Append HTML5 DOCTYPE.
+
+  .HtmlBl               ( -- )
+    Append space to HTML page.
+
+  >|                    ( -- )
+    Append '>' to HTML page.
+
+  <body>                ( -- )
+    Append <body> tag.
+
+  </body>               ( -- )
+    Append </body> tag.
+
+  <br>                  ( -- )
+    Append <br> tag.
+
+  <center>              ( -- )
+    Append <center> tag.
+
+  </center>             ( -- )
+    Append </center> tag.
+
+  <div                  ( attr$ -- )
+    Append <div> tag with attributes.
+
+  </div>                ( -- )
+    Append </div> tag.
+
+  <fieldset>            ( -- )
+    Append <fieldset> tag.
+
+  </fieldset>           ( -- )
+    Append </fieldset> tag.
+
+  </font>               ( -- )
+    Append </font> tag.
+
+  <form>                ( -- )
+    Append <form> tag.
+
+  </form>               ( -- )
+    Append </form> tag.
+
+  <FormAction>          ( action$ -- )
+    Append <form action="..."> tag.
+
+  <h2>                  ( -- )
+    Append <h2> tag.
+
+  </h2>                 ( -- )
+    Append </h2> tag.
+
+  <h3>                  ( -- )
+    Append <h3> tag.
+
+  </h3>                 ( -- )
+    Append </h3> tag.
+
+  <h4>                  ( -- )
+    Append <h4> tag.
+
+  </h4>                 ( -- )
+    Append </h4> tag.
+
+  <head>                ( -- )
+    Append <head> tag.
+
+  </head>               ( -- )
+    Append </head> tag.
+
+  <html>                ( -- )
+    Append <html> tag.
+
+  </html>               ( -- )
+    Append </html> tag.
+
+  <legend>              ( -- )
+    Append <legend> tag.
+
+  </legend>             ( -- )
+    Append </legend> tag.
+
+  <p>                   ( -- )
+    Append <p> tag.
+
+  </p>                  ( -- )
+    Append </p> tag.
+
+  <strong>              ( -- )
+    Append <strong> tag.
+
+  </strong>             ( -- )
+    Append </strong> tag.
+
+  <svg>                 ( -- )
+    Append <svg> tag.
+
+  </svg>                ( -- )
+    Append </svg> tag.
+
+  <td>                  ( -- )
+    Append <td> tag.
+
+  <tdL>                 ( -- )
+    Append <td> with left alignment.
+
+  <tdR>                 ( -- )
+    Append <td> with right alignment.
+
+  </td>                 ( -- )
+    Append </td> tag.
+
+  <tr>                  ( -- )
+    Append <tr> tag.
+
+  </tr>                 ( -- )
+    Append </tr> tag.
+
+  </table>              ( -- )
+    Append </table> tag.
+
+  &deg                  ( -- )
+    Append degree symbol (&deg;).
+
+  .HtmlSpace            ( -- )
+    Append non-breaking space (&nbsp;).
+
+  .forth-driven         ( -- )
+    Append "Cforth driven" with emphasis.
+
+  .HtmlSpaces           ( n -- )
+    Append n non-breaking spaces.
+
+  ms>Html               ( ms -- )
+    Display milliseconds as HH:MM:SS in HTML.
+
+  +Hfile                ( filename$ -- )
+    Append file contents to HTML page.
+
+  SignedDouble          ( n -- sign dabs )
+    Get signed double with sign.
+
+  h6#                   ( sign d -- )
+    Format 6-digit hex.
+
+  (H6.)                 ( n -- hex6$ )
+    Format as 6-digit hex.
+
+  .HtmlZeros            ( n -- )
+    Append n zeros to HTML.
+
+  "."                   ( n -- "n" )
+    Format number with quotes.
+
+  ".%"                  ( n -- "n%" )
+    Format number as percentage.
+
+  ".px"                 ( n -- "npx" )
+    Format number as pixels.
+
+  (u.r)Html             ( u width -- addr len )
+    Right-justify unsigned number with leading zeros.
+
+  4w.intHtml            ( n -- )
+    Append 4-digit hex number.
+
+  "#h."                 ( n -- "#hex" )
+    Format as HTML color (#RRGGBB).
+
+  (h.)                  ( n -- hex$ )
+    Format as hex string.
+
+  <hr>                  ( color size -- )
+    Horizontal rule with color and size.
+
+  <hrWH>                ( color width height -- )
+    Horizontal rule with custom dimensions.
+
+  <FontSizeColor>       ( pxSize color -- )
+    Start font tag with size and color.
+
+  <<FontSizeColor>>     ( pxSize color text$ -- )
+    Font with size and color (with content).
+
+  <#td                  ( n -- )
+    Table cell with colspan.
+
+  <#tdC>                ( n -- )
+    Table cell with centered alignment.
+
+  <#tdL>                ( n -- )
+    Table cell with left alignment.
+
+  <#tdR>                ( n -- )
+    Table cell with right alignment.
+
+  NoName>               ( -- )
+    HTML input with no name attribute.
+
+  <Btn                  ( cmd$ -- )
+    Start button with command value.
+
+  Btn>                  ( text$ -- )
+    End button with text.
+
+  <CssButton>           ( text$ cmd$ -- )
+    CSS button with default style.
+
+  <CssBlueButton>       ( text$ cmd$ -- )
+    CSS button with blue style.
+
+  <CssBlue|GrayButton>  ( text$ cmd$ colorflag -- )
+    CSS button with conditional color (blue if flag true).
+
+  <SmallButton>         ( text$ cmd$ -- )
+    CSS button with small size.
+
+  <empty-cell>          ( -- )
+    Empty table cell.
+
+  <empty-table-line>    ( -- )
+    Empty table row.
+
+  <select               ( name$ size -- )
+    Start SELECT dropdown.
+
+  </select>             ( -- )
+    End SELECT dropdown.
+
+  Upc-BlankDashes       ( addr len -- )
+    Uppercase first char, remove dashes.
+
+  <option>              ( text$ index selected -- )
+    OPTION element.
+
+  <<option-cap>>        ( text$ index selected -- )
+    OPTION with capitalized text.
+
+  <<TopLink>>           ( link$ text$ -- )
+    Top-level link.
+
+  #DataValues           ( n scale -- )
+    HTML datalist with values.
+
+  start-html-header     ( -- )
+    Start HTML header with HTTP status.
+
+  Html-title-header     ( title$ -- )
+    Set HTML title.
+
+  header-options        ( -- )
+    Add meta tags to header.
+
+  header-styles         ( -- )
+    Add CSS styles to header.
+
+  end-header            ( -- )
+    End HTML header.
+
+  html-header           ( title$ -- )
+    Generate complete HTML header.
+
+  MsgPage               ( msg$ -- )
+    Display message page.
+
+  MsgPageReboot         ( -- )
+    Display reboot message and reboot.
+
+  TCP/IP vocabulary words:
+  ------------------------
+  get                   ( -- )
+    No-op for GET method.
+
+  post                  ( -- )
+    No-op for POST method.
+
+  HTTP/1.1              ( -- )
+    No-op for HTTP version.
+
+  HTTP                  ( -- )
+    No-op for HTTP.
+
+  \                     ( -- )
+    No-op for backslash.
+
+  /home                 ( -- )
+    Deferred word for home page.
+
+  NoReply-HTTP          ( -- )
+    No-op for HTTP replies.
+
+  nn                    ( -- )
+    No-op for 'nn' name.
+
+  parse-word            ( -- )
+    Alias for standard parse-word.
+
+  order                 ( -- )
+    Alias for standard order.
+
+  words                 ( -- )
+    Alias for standard words.
+
+  reboot                ( -- )
+    Alias for standard reboot.
+
+  +a                    ( -- )
+    Alias for vocabulary activation.
+
+  /favicon.ico          ( -- )
+    Serve favicon.ico from flash.
+
+  \\                    ( -- )
+    Display request and comment.
+
+  TcpTime               ( UtcTics offset sunrise sunset -- )
+    Process TCP time server response.
+
+  trim-stack            ( -- )
+    Resets the parameter stack.
+
+  save-stack            ( -- )
+    Save current stack.
+
+  restore-stack         ( -- )
+    Restore saved stack.
+
+  cut-line              ( addr len -- addr len )
+    Extract line from buffer.
+
+  .catch-error          ( addr len -- )
+    Display error page.
+
+  evaluate_cleaned      ( addr len -- )
+    Evaluate cleaned request.
+
+  evaluating_tcp/ip     ( addr len -- )
+    Evaluate in TCP/IP context.
+
+  remove_separators     ( addr len -- )
+    Replace separators with spaces.
+
+  see-request           ( addr len -- )
+    Display and evaluate request.
+
+  (handle-request)      ( addr len -- )
+    Handle HTTP request.
+
+  see-command           ( addr len -- )
+    Display and evaluate command.
+
+  handle-request        ( -- )
+    Deferred HTTP request handler.
+
+  SOL_SOCKET            ( -- constant )
+    SOL_SOCKET constant.
+
+  SO_LINGER             ( -- constant )
+    SO_LINGER constant.
+
+  SO_RCVTIMEO           ( -- constant )
+    SO_RCVTIMEO constant.
+
+  SO_SNDTIMEO           ( -- constant )
+    SO_SNDTIMEO constant.
+
+  recv                  ( sock -- len )
+    Receive from socket.
+
+  set-linger            ( seconds -- )
+    Set socket linger time.
+
+  trim-stack            ( -- )
+    Resets the parameter stack with a warning.
+
+  save-stack            ( -- )
+    Save current stack.
+
+  restore-stack         ( -- )
+    Restore saved stack.
+
+  cut-line              ( addr len -- addr len )
+    Extract line from buffer.
+
+  .catch-error          ( addr len -- )
+    Display error page.
+
+  evaluate_cleaned      ( addr len -- )
+    Evaluate cleaned request.
+
+  evaluating_tcp/ip     ( addr len -- )
+    Evaluate in TCP/IP context.
+
+  remove_separators     ( addr len -- )
+    Replace separators with spaces.
+
+  see-request           ( addr len -- )
+    Display and evaluate request.
+
+  (handle-request)      ( addr len -- )
+    Handle HTTP request.
+
+  see-command           ( addr len -- )
+    Display and evaluate command.
+
+  handle-request        ( -- )
+    Deferred HTTP request handler.
+
+  SOL_SOCKET            ( -- constant )
+    SOL_SOCKET constant.
+
+  SO_LINGER             ( -- constant )
+    SO_LINGER constant.
+
+  SO_RCVTIMEO           ( -- constant )
+    SO_RCVTIMEO constant.
+
+  SO_SNDTIMEO           ( -- constant )
+    SO_SNDTIMEO constant.
+
+  recv                  ( sock -- len )
+    Receive from socket.
+
+  http-responder        ( sock -- )
+    Core HTTP request handler. It:
+    1. Reads HTTP request (non-blocking)
+    2. Parses and executes Forth words from the HTML page
+    3. Sends the HTML response back to the browser
+
+    The magic: HTML buttons with VALUE="word" execute Forth words directly:
+    <button type="submit" name="nn" value="SwitchOffBtn" class="btn">Off</button>
+    When clicked, the Forth word SwitchOffBtn is executed.
+
+    Example: ~/cforth/src/app/esp32-extra/tests/GpioSwitch_server.fth
+xxxxx
+================================================================================
+CFORTH ESP32 GLOSSARY - DIV2.TXT (SDCARD, SCHEDULE, TABLE SORT)
+================================================================================
+
+For applications and further extensions, see the files and directories in:
+  ~/cf_551/cforth/src/app/esp32-extra/
+
+
+================================================================================
+12. SDCARD.FTH - SD Card Interface
+================================================================================
+
+  Constants and settings:
+  -----------------------
+    sd_speed              ( -- n )
+      SD card SPI speed in kHz (default: 5000).
+
+    spi_host              ( -- n )
+      SPI host ID (1=SPI2_HOST, 2=SPI3_HOST).
+
+    spics-gpio            ( -- n )
+      GPIO pin for SD card chip select (CS).
+
+    sclk-gpio             ( -- n )
+      GPIO pin for SD card clock (SCLK).
+
+    mosi-gpio             ( -- n )
+      GPIO pin for SD card MOSI (Master Out Slave In).
+
+    miso-gpio             ( -- n )
+      GPIO pin for SD card MISO (Master In Slave Out).
+
+    spi-bus-init-done     ( -- flag )
+      Flag indicating if SPI bus is initialized.
+
+    format_if_mount_failed ( -- flag )
+      If true, format SD card if mount fails.
+
+  Settings display:
+  -----------------
+    .SDcard-settings      ( -- )
+      Display current SD card settings (pins, speed, etc.).
+
+  Initialization:
+  ----------------
+    init-spi-bus          ( mosi miso clk host max_transfer -- )
+      Initialize SPI bus for SD card communication.
+
+    sd-mount              ( -- handle )
+      Mount SD card. Returns card handle or 0 on failure.
+      Uses pins and settings from configuration variables.
+
+  Path utilities:
+  ---------------
+    esp-32                ( -- )
+      Set current path to LittleFS (/esp-32/).
+
+    sdcard                ( -- )
+      Set current path to SD card (/sdcard/).
+
+  Usage example:
+  --------------
+    .SDcard-settings
+    sd-mount to sd-hndl
+    s" /sdcard/" set-path
+    ls
+    sd-hndl sd-unmount drop
+
+
+================================================================================
+13. SCHEDULE-TOOL.FTH - Schedule Management
+================================================================================
+
+  This tool provides a scheduling system for time-based events.
+  It uses two tables: a schedule table and an options table.
+
+  Schedule table structure (per record):
+    - Time: HHMM format (4-digit integer)
+    - Option: Index into options table
+
+  Options table structure (per record):
+    - XT: Forth word to execute
+    - Description: Menu text for web interface
+
+  Constants and variables:
+  ------------------------
+    &schedule-file        ( -- addr )
+      Pointer to filename of schedule table.
+
+    &schedule-table       ( -- addr )
+      Pointer to schedule table.
+
+    &options-table        ( -- addr )
+      Pointer to options table.
+
+    #option-records       ( -- n )
+      Number of option records.
+
+    default-option        ( -- n )
+      Option number executed when no entries are scheduled.
+
+    NoTime                ( -- constant )
+      Constant for "no time" (538976288).
+
+    StopRunSchedule?      ( -- flag )
+      Flag to stop/start schedule execution.
+
+  Schedule table access:
+  ----------------------
+    >sched.time           ( &record -- addr )
+      Get time field address from schedule record.
+
+    >sched.option         ( &record -- addr )
+      Get option field address from schedule record.
+
+    n>sched.time@         ( n -- mmhh )
+      Get time from schedule record n.
+
+    n>sched.option@       ( n -- option# )
+      Get option from schedule record n.
+
+  Options table access:
+  ---------------------
+    /option-record        ( -- size )
+      Size of one option record (3 cells).
+
+    >opt.record           ( record# -- &record )
+      Get option record address.
+
+    >opt.xt               ( &record -- addr )
+      Get execution token from option record.
+
+    opt.menu"             ( &record -- addr len )
+      Get menu description from option record.
+
+    sched.record-->opt.record ( &schedule-record -- &option-record flag )
+      Link schedule record to option record.
+
+  Schedule operations:
+  --------------------
+    /schedule-file        ( -- #records )
+      Get number of records from schedule file.
+
+    load-schedule         ( -- )
+      Load schedule from file into memory.
+
+    extend-schedule       ( -- )
+      Extend schedule with new empty records.
+
+    schedule              ( -- )
+      Check and execute scheduled entries.
+
+    kill-schedule         ( -- )
+      Stop schedule execution.
+
+    find-schedule-record  ( mmhh-done -- record# )
+      Find record in sorted schedule table.
+
+    restart-schedule      ( -- )
+      Restart schedule from beginning.
+
+    restart-changed-schedule ( mmhh-done -- )
+      Restart schedule from given time.
+
+  Sorting:
+  --------
+    sort-schedule         ( -- )
+      Deferred word for sorting schedule table.
+
+    init-schedule         ( &schedule-file -- )
+      Initialize schedule system.
+
+  Sleep functions:
+  ----------------
+    WaitForSleeping-      ( -- flag )
+      Flag for sleep waiting state.
+
+    ttimer-WaitForsleeping ( -- timer )
+      Timer for sleep waiting.
+
+    Sleep-till-sunset-option ( -- n )
+      Option ID for sleep-at-boot.
+
+    .msgTimeout           ( -- )
+      Display timeout message.
+
+    .time-duration        ( seconds -- )
+      Display duration in HH:MM:SS format.
+
+    action-before-deep-sleep ( -- )
+      Deferred word executed before deep sleep.
+
+    #seconds-deep-sleeping ( seconds -- )
+      Enter deep sleep for given seconds.
+
+    sleep-seconds-before-sunset ( seconds -- )
+      Sleep until sunset.
+
+    ftime-till-next-second ( -- )
+      Get time until next second.
+
+    scheduled-wakeup      ( -- seconds )
+      Get wakeup time for next scheduled entry.
+
+    (sleeping-schedule)   ( -- )
+      Handle sleep based on schedule.
+
+    schedule|sunset       ( -- )
+      Determine sleep strategy (schedule or sunset).
+
+    (sleep-till-sunset)   ( -- )
+      Sleep until sunset or next schedule.
+
+    (sleep-at-boot)       ( -- )
+      Check and sleep at boot if needed.
+
+  Web interface words:
+  --------------------
+    schedule-html-header  ( -- )
+      Generate HTML header for schedule page.
+
+    <ScheduleButton>      ( text$ cmd$ -- )
+      CSS button for schedule controls.
+
+    add-schedule-lines    ( xt-option-list -- )
+      Add schedule table rows to HTML.
+
+    html-schedule-list    ( xt-option-list -- )
+      Generate complete schedule HTML list.
+
+    start-html-page       ( -- )
+      Start HTML page for schedule.
+
+    +TimeDate/legend      ( -- )
+      Add current time/date to legend.
+
+    .schedule-record      ( &schedule-record -- )
+      Display schedule record.
+
+    .schedule             ( -- )
+      Display all schedule records.
+
+    .schedule-sorted      ( -- )
+      Display sorted schedule records.
+
+    add-options-dropdown  ( option# -- )
+      Generate dropdown with options.
+
+  TCP/IP web actions:
+  -------------------
+    SetEntry-schedule     ( record# hh mm dropdown# -- )
+      Set schedule entry from web input.
+
+    set-initial-sched.Option ( &record -- )
+      Set initial option for schedule record.
+
+    freelist-full?        ( -- ior )
+      Check if schedule table is full.
+
+    AddEntry-schedule     ( -- )
+      Add new schedule entry from web.
+
+    StopRunSchedule       ( -- )
+      Toggle schedule execution.
+
+    Reboot.               ( -- )
+      Reboot system (from web).
+
+    clr-req-buf           ( -- )
+      Clear request buffer.
+
+  Usage example:
+  --------------
+    init-schedule
+    restart-schedule
+    schedule
+
+
+================================================================================
+14. TABLE_SORT.FTH - Flexible Shell Sort
+================================================================================
+
+  This file provides a flexible sorting system with multiple keys.
+
+  Table properties:
+  -----------------
+    /table                ( -- size )
+      Size of table header (5 cells).
+
+    init-table            ( /table -- &table )
+      Create and initialize a table.
+
+    >table-aptrs          ( &table -- addr )
+      Get address of pointer list.
+
+    >record-size          ( &table -- addr )
+      Get record size.
+
+    >#records             ( &table -- addr )
+      Get number of records.
+
+    table-size            ( &table -- bytes )
+      Get total table size.
+
+    get-sizes             ( &table -- list records record-size )
+      Get all table sizes.
+
+    .table-props          ( &table -- )
+      Display table properties.
+
+  Record access:
+  --------------
+    nt>aptr               ( n &table -- addr )
+      Get pointer address from record n.
+
+    rt>record             ( rel-addr &table -- &record )
+      Get record from relative address.
+
+    >table-record         ( #record &table -- &record )
+      Get record address from record number.
+
+    nt>record             ( n &table -- &record )
+      Get record from record n.
+
+  Key comparison:
+  ---------------
+    xchange               ( a1 a2 -- )
+      Exchange two values.
+
+    >key                  ( ra -- key-start )
+      Get key start address.
+
+    key-len               ( ra -- len )
+      Get key length.
+
+    <>=                   ( n1 n2 -- -1|0|1 )
+      Compare two integers.
+
+    f<>=                  ( f1 f2 -- -1|0|1 )
+      Compare two floats.
+
+    cmp-cells             ( cand1 cand2 by -- n )
+      Compare two cell values.
+
+    cmp-floats            ( cand1 cand2 by -- n )
+      Compare two float values.
+
+    cmp$                  ( cand1 cand2 by -- n )
+      Compare two strings.
+
+  Key definition:
+  ---------------
+    Ascending             ( key -- key )
+      Set key to ascending order.
+
+    Descending            ( key -- key )
+      Set key to descending order.
+
+    $sort                 ( key -- )
+      Set key for string sorting.
+
+    bin-sort              ( key -- )
+      Set key for integer sorting.
+
+    float-sort            ( key -- )
+      Set key for float sorting.
+
+    key:                  ( -- )
+      Define a sort key at compile time.
+
+    by[                   ( R: -- #stack )
+      Start key list (compile time).
+
+    ]by                   ( R: #stack -- )
+      End key list (compile time).
+
+  Sorting:
+  --------
+    CmpBy                 ( cand1 cand2 bystack #keys -- flag )
+      Compare two records using multiple keys.
+
+    xdrop                 ( nx..n1 #n -- )
+      Drop n items from stack.
+
+    gap*3                 ( #records -- #records gap )
+      Calculate shell sort gap.
+
+    table-sort            ( keyx..key1 #keys &table -- )
+      Sort table using shell sort algorithm.
+
+  File operations for sorted tables:
+  ----------------------------------
+    create-file-ptrs      ( name -- )
+      Create file for pointers.
+
+    open-file-ptrs        ( name -- handle )
+      Open file for pointers.
+
+    extend-file           ( size handle -- )
+      Extend file to given size.
+
+    add-ptrs              ( aptrs record-size #start #end -- )
+      Add pointers to table.
+
+    build-ptrs            ( aptrs record-size #records -- )
+      Build all pointers.
+
+    allocate-ptrs         ( #records -- &aptrs )
+      Allocate memory for pointers.
+
+  Usage example:
+  --------------
+    \ Define keys
+    0 1 cells key: key1
+    1 1 cells key: key2
+    
+    \ Sort table
+    key2 key1 2 &table table-sort
+
+    \ Display sorted table
+    .schedule-sorted
+
+================================================================================
+END OF GLOSSARY
+================================================================================
+July 2026  https://github.com/Jos-Ven/cforth

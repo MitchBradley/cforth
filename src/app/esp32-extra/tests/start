@@ -1,0 +1,6 @@
+\ To compile GpioSwitch_server.fth automatically, which will then start a webserver.
+\ Upload GpioSwitch_server.fth and this file to the filesystem of the ESP32.
+
+s" GpioSwitch_server.fth" ' included catch [if] reboot [then]
+
+

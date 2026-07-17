@@ -1,25 +1,28 @@
-marker -extra.fth  cr lastacf .name #19 to-column .( 09-05-2025 ) \ By J.v.d.Ven
+marker -extra.fth lastacf .name #20 to-column .( 27-04-2026 ) \ By J.v.d.Ven
 \ Additional words I often use.
 
-\ 14-02-2025: Replaced TcpPort by SelectTcpPort
+\ 14-02-2025: Replaced TcpPort with SelectTcpPort
+\ 20-06-2025: Deferred SendHtmlPage for other adapters
+\ 21-02-2026: Adapted the wifi part for IDF 5.5.1 and improved .free
 
-alias b   bye
+: b ( - )  esp-wifi-stop  bye ;
 alias cls reset-terminal
 alias h.  .h
 alias word-join  wljoin
 alias word-split lwsplit
 
 : [defined]  ( "aword" -- f1 )
-   $defined  if  drop true  else  2drop false  then
+   $defined if drop true else 2drop false then
 ;
 : lower-char ( C -- c )
-   dup [char] A [char] Z between  if  $20 or  then
+   dup [char] A [char] Z between if $20 or then
 ;
 
 #27 constant escape
+
 : escape? ( - flag )
    key? if
-      key escape =  if
+      key escape = if
             true
          else
             begin  key?  while  key drop  repeat
@@ -49,34 +52,6 @@ alias init-sysled noop
 : init-adc    ( -- )  8 0 adc-init abort" ADC init failed" ; \ in TOUT mode
 : cpu_freq!   ( 1=80Mhz|2=160Mhz -- )  0 2 max swap esp_set_cpu_freq ;
 
-char , value seperator
-
-: (xud,.)       ( ud seperator -- a1 n1 )
-   >r <# r@ 0  do        \ every 'seperator' digits from right
-      # 2dup d0= ?leave
-   loop
-   begin
-      2dup d0= 0=        \ while not a double zero
-   while
-      seperator hold r@ 0  do
-          # 2dup d0= ?leave
-      loop
-   repeat
-   #> r> drop
-;
-: (ud,.)        ( ud -- a1 n1 )
-   base @                     \ get the base
-   dup  #10 =                 \ if decimal use seperator every 3 digits
-   swap #8 = or               \ or octal   use seperator every 3 digits
-   #4 + (xud,.)               \ display seperators every 3 or 4 digits
-;
-: ud,.r  ( ud l -- )              \ display double right justified, with seperator
-   >r (ud,.) r> over - spaces type ;
-
-: ud,.  ( ud -- ) 0 ud,.r ;       \ display double unsigned, with seperator
-: u,.r  ( u l -- ) 0 swap ud,.r ; \ display number unsigned, justified in field, with seperator
-: +place  ( adr len adr )  2dup c@ dup >r  + over c!  r> char+ +  swap move ;
-
 #2100000000 constant #max-deep-sleep \ 35 minutes
 
 : deep-sleep      ( us - )  s>d swap  esp_deep_sleep  ;
@@ -86,8 +61,9 @@ alias ms@ get-msecs
 
 [else]  \ esp32
 
-: cpu_freq!        ( 1=80Mhz|2=160Mhz|3=240Mhz -- ) 10 ms  rtc-clk-cpu-freq-set ;
 alias cpu_freq@   esp-clk-cpu-freq
+
+: set-priority ( prio -- ) xTaskGetCurrentTaskHandle vTaskPrioritySet ;
 
 [ifdef] rtc-fast  \ For esp-idf-v3.3.6 and better
 
@@ -95,7 +71,7 @@ alias cpu_freq@   esp-clk-cpu-freq
 variable >top_fast_mem   >top_fast_mem off \ -/- 34 bytes used by the os
 
 : allocate-fast-mem ( n - addr ior )
-   aligned >top_fast_mem @ 2dup + /fast_mem >  if
+   aligned >top_fast_mem @ 2dup + /fast_mem > if
       2drop 0 true
    else
       + dup >top_fast_mem ! rtc-fast false
@@ -103,15 +79,15 @@ variable >top_fast_mem   >top_fast_mem off \ -/- 34 bytes used by the os
 
 [then]
 
-: create-timer: ( <name> - ) 3 cells  buffer: ;  \ Map: cell-flag float-UsTimeStart
+: create-timer: ( <name> - ) 3 cells  buffer: ;  \ Map: cell-flag  float-us-time-start
 : start-timer   ( timer - )  true over ! cell+ usf@ f! ;
 : .tElapsed     ( timer - )  dup usf@  cell+ f@  f- f# 0.001 f* f. ." ms" ;
 
 : tElapsed? ( f: us-elapsed - ) ( timer - flag )
-   dup @  if
+   dup @ if
       cell+ f@  f+ usf@ f< \ Time elapsed?
    else
-      2drop false          \ The timer is off
+      fdrop drop false     \ The timer is off
    then
 ;
 
@@ -137,7 +113,7 @@ test-1second
    usf@ (time-start) 2@ system-time>f f- to trim-time
 ;
 : time-reset ( - )
-   trim-time f0=  if
+   trim-time f0= if
       set-trim-time
    then
    (time-start) get-system-time!
@@ -157,12 +133,12 @@ f# 1e6   fvalue time-1-sample   f# 180e3 fvalue cycle-time
 f# 180e3 fvalue next-measurement
 
 : .tcycle ( - )
-   stages-  if
+   stages- if
       cr space usf@ tcycle f- f# 0.000001 f* f>d drop .
    then
 ;
 : SetStage ( cfa - )
-   stages-  if
+   stages- if
       .tcycle dup .name
    then to 'stage
 ;
@@ -178,16 +154,12 @@ f# 180e3 fvalue next-measurement
 : sysledOn          ( -- )  1 sysled gpio-pin!    ;
 : sysledOff         ( -- )  0 sysled gpio-pin!    ;
 
-#6000 to wifi-timeout
-: wifi-open-station ( retr wifi-timeout wifi-storage &ss sscnt  &pw pwcnt - flag )
-   5 roll wifi-open nip nip
-;
 \ For an extra uart
 0    value uart_num
 #130 value /RxBuf
 0    value &RxBuf
 
-: send-tx ( adr cnt -  )
+: send-tx ( addr cnt -  )
    tuck swap uart_num uart-write-bytes <> abort" uart-write-bytes failed"
 ;
 : read-rx ( - #read )  0 /RxBuf &RxBuf uart_num  uart-read-bytes
@@ -215,18 +187,18 @@ f# 180e3 fvalue next-measurement
 : +lplace      ( addr len dest -- )    2dup  >r >r  lcount + swap  cmove r> r> +! ;
 : lplace       ( addr len dest -- )    0 over ! +lplace ;
 : es           ( ?? -- ) ( f: ?? -- )  clear fclear ; \ empty stacks
-: 16bit>32bit  ( signed16bits - signed32bits )  dup $7FFF >  if  $FFFF0000 or  then ;
+: 16bit>32bit  ( signed16bits - signed32bits )  dup $7FFF > if $FFFF0000 or then ;
 : 4drop        ( n4 n3 n2 n1 -- )    2drop 2drop ;
-: (number?)    ( addr len -- d1 f1 ) $number?  if   true   else 0. false  then ;
+: (number?)    ( addr len -- d1 f1 ) $number? if true else 0. false then ;
 : -ftrunc      ( f: n - -ftrunc )    fdup ftrunc f-  ;
-: fint         ( f: r.x - r )        fdup f0<   if   fceil    else  floor  then ;
+: fint         ( f: r.x - r )        fdup f0< if fceil else floor then ;
 : f2drop       ( fs: r1 r2 -- )      fdrop fdrop ;
 : dup>r        ( n1 -- n1 ) ( R: -- n1 ) s" dup >r"  evaluate ; immediate
 : parse-single ( <number$> - n flag )  \ parse-single
-   parse-word dup 0=  if
+   parse-word dup 0= if
       ." No number found" nip dup
    else
-      2dup (number?)  if
+      2dup (number?) if
          d>s -rot 2drop true
       else
          2drop cr type ."  <--- Bad number" false dup
@@ -258,7 +230,7 @@ patch check-conditional here <resolve
 : end-structure       ( addr n -- ) swap ! ; \ set size
 : +field  ( offset size -- offset' )
    create  over ,  +  ( offset' )
-   does>  ( adr -- adr' )  @ +
+   does>  ( addr -- adr' )  @ +
 ;
 : field:     ( n1 <"name"> -- n2 ) ( addr -- 'addr )  aligned cell +field ;
 : cfield:    ( n1 <"name"> -- n2 ) ( addr -- 'addr )  1 chars +field ;
@@ -269,7 +241,7 @@ patch check-conditional here <resolve
 ENVIRONMENT DEFINITIONS
    : X:STRUCTURES ;
 FORTH DEFINITIONS
-: perform ( adr - )  s" @ execute " evaluate ; immediate
+: perform ( addr - )  s" @ execute " evaluate ; immediate
 
 begin-structure /circular
    field: >(cbuf-count)
@@ -280,29 +252,27 @@ end-structure
 : >cbuf-count ( - ) ;  immediate
 : incr-cbuf-count ( &CBuffer - ) 1 swap >cbuf-count +!  ;
 
-: >record-cbuf ( i-Cbuffer &CBuffer - adr ) \ i= index that must point INTO the circular buffer
+: >record-cbuf ( i-Cbuffer &CBuffer - addr ) \ i= index that must point INTO the circular buffer
    tuck >&data-buffer @ rot >record-size @ rot * +
 ;
 
 HIDDEN DEFINITIONS
 
 : >circular-index-abs ( i &CBuffer - i-Cbuffer )
-   dup >cbuf-count @ swap >max-records @ 2dup >  if
+   dup >cbuf-count @ swap >max-records @ 2dup > if
       >r + r>  /mod drop
    else
       2drop
    then
 ;
-#4 nuser saved-rp  #4 nuser saved-depth
-create chainerror$ ," Chainperform: The stack changed at: "
 
 FORTH DEFINITIONS ALSO HIDDEN
 
 : >circular-index ( i &CBuffer - i-Cbuffer )
-   over 0>=  if
+   over 0>= if
       >circular-index-abs
    else
-      dup >r >max-records @ negate over >=  if
+      dup >r >max-records @ negate over >= if
          drop 0
       else
          r@ >cbuf-count @ + 0 max
@@ -310,7 +280,7 @@ FORTH DEFINITIONS ALSO HIDDEN
    then
 ;
 : circular-range ( &CBuffer - i-end i-start )
-   dup >cbuf-count @  over >max-records @ >  if
+   dup >cbuf-count @  over >max-records @ > if
       >max-records
    else
       >cbuf-count
@@ -320,7 +290,7 @@ FORTH DEFINITIONS ALSO HIDDEN
 : >circular      ( i &CBuffer - addr )
    tuck >circular-index swap >record-cbuf
 ;
-: >circular-head ( &CBuffer - adr ) \ Next to be used
+: >circular-head ( &CBuffer - addr ) \ Next to be used
    dup >cbuf-count @
    over >max-records @ /mod drop
    swap >record-cbuf
@@ -334,31 +304,6 @@ FORTH DEFINITIONS ALSO HIDDEN
    0 r@ >cbuf-count !
    r>
 ;
-: linked  ( xt adr-chain -- ) here over @ , swap ! ; \ RAM only
-: chained ( xt adr-chain -- ) linked , ;
-defer .chained
-: (.chained)  ( xt - )  cr  chainerror$ count type .name ;
-' (.chained)  is  .chained
-: chainperform ( chain - )
-   rp@ saved-rp !  begin
-      depth saved-depth ! @ dup
-   while
-      dup cell+ @ 2>r r@  catch  depth saved-depth @ <>  if
-         clear 2r@ .chained  \ Which word caused a changed stack
-      else
-         throw 2r@ drop
-      then
-   repeat drop saved-rp @ rp!
-;
-: last-xt, ( - )
-   s" lastacf  [ifndef]  id:  xtliteral  [else]  literal  [then] " evaluate  ;
-
-0 [if] \ EG:
-variable test-chain
-: test ( - ) [ last-xt, ] >name$ type ;
-' test test-chain chained
-test-chain chainperform
-[then]
 
 PREVIOUS
 
@@ -384,26 +329,28 @@ PREVIOUS
    start-length  #bits!             \ to and also using bend.
 ;
 : scan  ( addr len c -- addr2 len2 )
-   >r rp@ 1 search r> drop 0=  if  + 0  then
+   >r rp@ 1 search r> drop 0= if + 0 then
 ;
-: BlankString  ( adrs cnts adr cnt - adrEnd cntEnd|0 )
-   dup >r search  if
+: BlankString  ( adrs cnts addr cnt - adrEnd cntEnd|0 )
+   dup >r search if
       swap  dup r> bl fill swap
    else
       r> 2drop 0
    then
 ;
-: BlankStrings ( adrs cnts adr cnt -- )
+: BlankStrings ( adrs cnts addr cnt -- )
    begin  2over 2over BlankString dup  while  2rot 2drop 2swap  repeat
    4drop 2drop
 ;
 : NextString ( a n delimiter -- a1 n1 ) >r  2dup r> scan nip - ;
 : GetValue ( adrOf-Number+limiter length limiter - n flag )
-   NextString over c@ [char] - = dup >r  if
+   NextString over c@ [char] - = dup >r if
       1 /string
    then
-   0 0 2swap  >number nip 0=  if
-      d>s r>  if  negate  then
+   0 0 2swap  >number nip 0= if
+      d>s r> if 
+         negate 
+      then
       true
    else
        r> drop 2drop 0 0
@@ -412,41 +359,35 @@ PREVIOUS
 
 0     value lsock
 0     value HtmlPage$  \ To collect html for streaming.
-#6000 value /HtmlPage
+$2000 value /HtmlPage
+-1 value listener-socket
 
 : DeepSleep ( sec - )
    lsock lwip-close listener-socket lwip-close
-   [ifdef] esp-wifi-stop esp-wifi-stop  spiffs-unmount 3 rtc-clk-cpu-freq-set
+   [ifdef] esp-wifi-stop esp-wifi-stop
    [else]  wifi-off
    [then]
    1 max deep-sleep
 ;
-: Reboot ( - )  ." Rebooting..." 1 DeepSleep ;
-: ##$        ( seperator n -- adr cnt ) s>d <# # #  2 pick hold  #> rot 0= abs /string ;
+: Reboot ( - )  ." Rebooting..." esp-wifi-stop 1 DeepSleep ;
+: ##$        ( separator n -- addr cnt ) s>d <# # #  2 pick hold  #> rot 0= abs /string ;
 : f>dint ( f: n magn - ) ( d: - n )  f* fround f>d tuck dabs ;
 : .#-> [char] . hold  #s rot sign #>  ;
 : (f.2) ( f -- ) ( -- c-addr u )  f# 100e0  f>dint <# # # .#-> ;
 : (f.1) ( f -- ) ( -- c-addr u )  f# 10e0   f>dint <# # .#-> ;
-: ip"     ( -- adr cnt  )         ipaddr@ ipaddr$ ;
-: ip4Host ( adr cnt -- )          ip" #10 /string ;
-: .ip     ( -- )                  ip" type ;
 : SendHtmlPage ( - )
-   HtmlPage$ lcount dup 0>  if  lsock lwip-write drop  else  2drop  then ;
-: stream-html  ( - )  SendHtmlPage htmlpage$ off ;
-
-\ NOTE for a ESP8266:
-\ if lwip-read returns may return -1 then a sock is used and must also be closed !
-\ Otherwise LWIP_SELECT will return 0 since the sock is not closed
-
-: +html   ( adr cnt -- )
-   htmlpage$ lcount nip over + /HtmlPage >  if
-      stream-html
+   HtmlPage$ lcount dup 0> if lsock lwip-write drop htmlpage$ off else 2drop then 
+; 
+: +html   ( addr cnt -- )
+   dup htmlpage$ @ + /HtmlPage > if
+      SendHtmlPage lsock lwip-write  drop 
+   else
+      htmlpage$ +lplace
    then
-   htmlpage$ +lplace
 ;
 0 value tmp$
 0 value LogLine$ \ To show stacks on a remote system
-: init-HtmlPage ( - )
+: init-HtmlPage ( -- )
    /HtmlPage cell+ allocate
    abort" Allocating HtmlPage failed " dup to HtmlPage$ off
    #255 allocate   abort" Allocating tmp$ failed "     to tmp$
@@ -459,9 +400,14 @@ PREVIOUS
    tmp$ lcount
 ;
 : file-exist?         ( filename cnt -- true-if-file-exist )
-   r/o open-file   if   drop false   else    close-file drop  true   then ;
+   r/o open-file if 
+      drop false 
+   else 
+      close-file drop true 
+   then 
+;
 : +file ( filename cnt buffer lcnt - )   \ Adding a file to a lcounted buffer
-   >r >r r/o open-file  if
+   >r >r r/o open-file if
       2r> 3drop
    else
       r@ @ r@ + cell+
@@ -474,11 +420,27 @@ PREVIOUS
    read-file throw
    r> close-file drop
 ;
+: load-bin ( addr count -) \ Makes it possible to place a file into flash memory while building cforth
+   cr 2dup type r/o open-file  abort" File not found." dup dup file-size 2drop 
+   dup , here over allot swap rot read-file abort" Can't read File." 
+   drop ."  loaded" close-file drop 
+;
+0 [if] \ EG:
+
+create &test.tst
+s" schedule-tool.fth" load-bin 
+&test.tst lcount type \ Later after booting the build cforth 
+
+[then]
+
 : hold"       ( - ) [CHAR] " hold ;
 : hold"bl     ( - ) bl hold hold" ;
+
 : .free     ( - )
-   base @ decimal ."  Free, "  ." ram:" unused 0 u,.r
-   ."  heap:" esp_get_free_heap_size 0 u,.r base ! bl emit
+   base @ decimal ."  Free, "  ." Unused:" unused 0 u,.r
+   2dup dup sp@ #2 swap get-mem-size
+   ."  heap:" drop 0 u,.r
+   ."  largest free block:" 0 u,.r  base ! bl emit
 ;
 : file-it  ( buffer cnt filename cnt - ) \ Write a buffer to a file
    r/w create-file throw >r
@@ -487,7 +449,7 @@ PREVIOUS
    r>  close-file drop
 ;
 : open-file-append  ( filename cnt - hndl ) \ Points to the last postion in a file
-   2dup r/w open-file  if
+   2dup r/w open-file if
       drop r/w create-file throw      \ Create the file when it does not exist
    else
       >r 2drop   r@ file-size throw   r@ reposition-file throw r>
@@ -497,106 +459,44 @@ PREVIOUS
 : writeHTML  ( filename cnt - )          \ Write HtmlPage$ to file
    HtmlPage$ lcount 2swap file-it
 ;
-\ Files to load options if they exist.
-: set-app ( filename cnt - ) s" _appname.txt" file-it ; \ For the start file
-: -app	  ( - )              s" _appname.txt" delete-file ;
-: -html   ( - )              s" _KeepHtmlFiles.txt" delete-file ;
-0 value adr-compile-file
-: compile-file  ( - )  \ Compile the file named in _appname.txt"
-   #50 allocate drop to adr-compile-file adr-compile-file off
-   s" _appname.txt" adr-compile-file #40 +file
-   adr-compile-file lcount
-   2dup file-exist? 0=  if
-      2drop
-   else
-      2dup cr bold type norm space included
-   then
-   adr-compile-file free drop  quit
-;
 : seal   ( -- )
-   context token@     context #vocs /n * erase
-   dup   context #vocs 1- ta+  token!   execute
+   context token@ context #vocs /n * erase
+   dup context #vocs 1- ta+  token! execute
 ;
-: enter-wifi-settings ( passwordBuf ssidBuf - )
-   2>r
-   cr ." Setting up a WiFi connection. The SSID and password will"
-   cr ." be saved in plain text in wifi_connect.fth on the MCU."
-   cr ." Enter SSID:"  pad dup 50 accept r> place
-   ." Enter Password:" pad dup 50 accept r> place
-;
- 2 value wifi-#retries    \ -1 for unlimited, 0 for none, otherwise that many
- 0 value wifi-storage
--2 value wifi-logon-state \ -2 not tried   -1 logon failed    0 Logon OK
 
-: wifi-station-on  { &ss sscnt &pw pwcnt -- }
-   base @ decimal ms@ wifi-mode@  case
-      1 of ipaddr@ @ 0=  if
-            ." >>> Try a reboot and SET-SSID if needed." cr
-           then   endof
-      2 of  ." WiFi is already on in AP mode; type wifi-off to stop it"  cr  endof
-      3 of  ." WiFi is already on in Sta+AP mode."  cr  endof
-            cr ." Connecting to wifi: " &ss sscnt type space
-            wifi-#retries wifi-timeout wifi-storage
-            &ss sscnt  &pw pwcnt wifi-open-station  if
-               -1 to wifi-logon-state
-                cr ." >>> WiFi station connection failed. Try SET-SSID" cr
-             else
-                0 to wifi-logon-state
-             then
-   endcase
-   ms@ swap - . ." ms." base !
-;
-2variable sendtcpStats    \ Map: host-id  #written
 2variable UdpPort$ s" 8899" UdpPort$ place
 2variable range-gforth-servers
-: UdpWrite ( send$ cnt ip-server$ - )
-   count UdpPort$ count 2swap udp-connect
-   >r   r@ lwip-write  50 ms  r> lwip-close drop
-;
-: SelectTcpPort ( ip-server$ - port )
-   count dup 3 - /string evaluate
-   range-gforth-servers 2@ + <=  if  #8080  else  #80  then
-;
-: TcpWrite ( buffer cnt ip-server$ - )
-   -1 sendtcpStats !
-   >r #2000 r@ SelectTcpPort (.) r> count stream-connect >r
-   r@ lwip-write sendtcpStats cell+ ! 50 ms
-   r> lwip-close
-;
-: sendtcp ( buffer cnt to-host - ) \ to-host = receiver on the same network in the same segment
-   dup  >r ip4Host ip" rot - tmp$ place drop \  Save network part
-   (.) tmp$ +place                            \ Add the host (last octet)
-   tmp$ TcpWrite r> sendtcpStats !
-;
-: SleepIfNotConnected ( #sec-deep-sleep - )
-   ipaddr@ @ 0=  if
-       100 ms cr  ." No connection. Entering sleep mode..."  DeepSleep
-    else
-       drop
-    then
-;
-: crlf$		( -- adr n )    " "r"n" ;
-: +html_line	( adr n -- )    +html crlf$ +html ;
-: html|		( -<string|>- ) [char] | parse postpone sliteral ; immediate
-: +html|	( -<string|>- ) postpone html| postpone +html ; immediate
-: set-ssid ( - )                \ Creates wifi_connect.fth on the MCU
-   init-HtmlPage HtmlPage$ off \ A reboot is needed when the entered parameters were wrong
-   50 allocate drop 50 allocate drop   2dup 2dup   enter-wifi-settings
-   +html| s" | count +html +html| " |
-   +html| s" | count +html  html| " wifi-station-on | +html_line
-   free drop  free drop
-   s" wifi_connect.fth" writeHTML   HtmlPage$ free drop 0 to HtmlPage$
-   s" wifi_connect.fth" included #35 ms
-;
-: logon ( -- )
-   s" wifi_connect.fth" file-exist?  if
-      s" wifi_connect.fth" included 500 ms
+
+: UdpWrite ( send$ cnt adr-ip-server$ - )
+   wifi-connected@ if
+      count UdpPort$ count 2swap
+      udp-sendto drop
    else
-      set-ssid
+      3drop
    then
 ;
+: SelectTcpPort ( adr-ip-server$ - port )
+   count dup 3 - /string evaluate 
+   range-gforth-servers 2@ + <= if #8080 else #80  then
+;
+: TcpWrite ( buffer cnt adr-ip-server$ - )
+   wifi-connected@ if
+      base @ decimal >r >r #2000 r@ SelectTcpPort (.) r> count stream-connect r> base ! >r  
+      r@ lwip-write pad cell+ ! 50 ms
+      r> lwip-close
+   else
+      3drop
+   then
+;
+: crlf$		( -- addr n )   " "r"n" ;
+: +html_line	( addr n -- )   +html crlf$ +html ;
+: html|		( -<string|>- ) [char] | parse postpone sliteral ; immediate
+: +html|	( -<string|>- ) postpone html| postpone +html ; immediate
+: decimal(.)    ( n - adr-decimal-value cnt ) base @ decimal swap (.) rot base ! ;
+
 \ For setvbuf
 0 constant _IOFBF \ set fully buffered
 1 constant _IOLBF \ set line buffered
 2 constant _IONBF \ set unbuffered
+defer s \ To start an application
 \ \s
