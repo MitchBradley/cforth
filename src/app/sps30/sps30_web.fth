@@ -1,4 +1,4 @@
-marker -sps30_web.fth  cr lastacf .name #19 to-column .( 22-04-2025 ) \ By J.v.d.Ven
+marker -sps30_web.fth lastacf .name #19 to-column .( 01-07-2026 ) \ By J.v.d.Ven
 
 0 [if]
 
@@ -6,7 +6,7 @@ To see the air quality in a web browser.
 The SPS30 should be connected to an extra UART on the ESP32. See sps30.fth
 
 The time zone can be changed with: tz-local ' America/New_York is tz-local
-List possible timezone with:       2025 .list-summer-times
+List possible time zones with:       2025 .list-summer-times
 Write the change in MachineSettings.fth
 See also timezones.f
 
@@ -17,11 +17,14 @@ s" MachineSettings.fth" file-exist? [if] fl MachineSettings.fth [then]
 
 ALSO HTML ALSO SPS30 DEFINITIONS DECIMAL
 
-: add-line-sps30 ( adr -- )
+: add-line-sps30 ( addr -- )
    dup <tr> <tdR> f@  .Html-Time-from-UtcTics </td>
    1 floats +  #fields 1 - floats   bounds
-       do     <tdR> i f@ (f.2) +html </td>
-              [ 1 floats ] literal
+       do    <tdR> i f@ fdup f# 3000e0 f> 
+                 if  fdrop f# 0e0 
+                 then 
+             (f.2) +html </td>
+             [ 1 floats ] literal
        +loop  </tr>  ;
 
 : add-datalines-sps30 ( -- )
@@ -57,9 +60,9 @@ $C30F3D constant color-pm4.0
 $E3003D constant color-tps
 0       constant color-pm10
 
-DataItem: &Sps30Graph \ Proporties for the temperature line (color etc)
+DataItem: &Sps30Graph \ Properties for the temperature line (color etc)
 
-: .html-uu:mm (  f: UtcTics -- )
+: .html-uu:mm ( F: UtcTics -- )
    fdup f0>=
       if    bl  else  fabs [char] -  then
    >r Time-from-UtcTics
@@ -116,16 +119,16 @@ f# 0e0 fvalue f-interval
    dup  SetXResolution  \ Scale line length to the number of gaps
    s>f #X_Lines   xResolution *  1- s>f f/ ;
 
-: datapoint ( n>=0 -- adr )
+: datapoint ( n>=0 -- addr )
    &CBdata-sps30 >circular OffsetField + ;
 
-: lastdatapoint ( #end #start &DataLine  -- ) ( f: -- val )
+: lastdatapoint ( #end #start &DataLine -- ) ( F: -- val )
    3drop  &CBdata-sps30 circular-range drop 1-
    datapoint f@ ; \ Can be overwritten by realtime data
 
 3 value DataLineWidth
 
-: <poly_line_sequence_summed-up ( #end #start &dataline -- ) ( f: interval -- )
+: <poly_line_sequence_summed-up ( #end #start &dataline -- ) ( F: interval -- )
    <polyline_points  Maximized-fpoly-points>  ;
 
 : PlotDataLine ( color offset -- )
@@ -135,7 +138,7 @@ f# 0e0 fvalue f-interval
    i#end 1 max \ longer data line # xlabels
    i#start 1+ \  To get the first coordinates of the dataline
    r@ f-interval <poly_line_sequence_summed-up  DataLineWidth  r@ >Color @ poly_line>
-   stream-html
+   SendHtmlPage
    MinYBotExact r@ >MinStat f!  MaxYtopExact r@ >MaxStat f!
    Average r> >AverageStat f! ;
 
@@ -257,21 +260,21 @@ create file-schedule-sps30 ," schedule-sps30.dat"
 
 : .pause-msg ( -- ) cr  ." [<Esc>,Pause,Resume,View,Html]" ;
 
-: ticks-next-second ( us-start -- #ticks )
-   f# 1e6 us-to-deadline fus>fms fround f>d drop ms>ticks  ;
+: ms-next-second ( us-start -- #ms )
+   f# 1e6 us-to-deadline fus>fms fround f>d drop  ;
 
 : sensor+http-responder   ( timeout -- )
-   usf@ timed-accept stages-  if
+    accept-reconnect stages-  if
       dup abs .
    then  if
        handle-sps30 \  runs measurements and the schedule of the sps30
    else  http-responder
    then
-   ticks-next-second 20 max to poll-interval ;
+   usf@ ms-next-second #20 max to poll-interval ;
 
 : poll-pause-sps30 ( timeout -- )
-   usf@ ticks-next-second  to poll-interval
-   timed-accept 0=
+   usf@ ms-next-second to poll-interval
+    accept-reconnect 0=
      if   http-responder
      then
    WaitForsleeping-
@@ -283,11 +286,11 @@ create file-schedule-sps30 ," schedule-sps30.dat"
 
 : Schedule-page  ( -- )
    start-html-page
+   <strong> 
    [ifdef]  SitesIndex  SitesIndex [then]
-   s" /list"    s" List"      <<TopLink>>
-   s" /home"    s" Mass"      <<TopLink>>
-   s" /NumConc" s" Number"    <<TopLink>>
-   s" /Tps"     s" Tps"       <<TopLink>>
+   s" /system"   s" System"   <<TopLink>>
+   s" /home" s" Home" <<TopLink>>  
+   +HTML| Schedule| </strong>  .HtmlSpace 
    +TimeDate/legend
    ['] add-options-dropdown  html-schedule-list ;
 
@@ -303,18 +306,20 @@ f# 2e0 f# 60e0 f* fconstant seconds-around-wakup
 
 : sleep-needed? ( -- flag )                       \ To handle timedrift after a long sleep. time-server$ depended.
    scheduled @ 1+ n>sched.time@
-   hhmmUntill  seconds-around-wakup fabs  f<  if \ A new entry ?
+   hhmmUntil  seconds-around-wakup fabs  f<  if \ A new entry ?
       false  exit                                \ No sleep needed
    then
    0 n>sched.option@  Sleep-till-sunset-option =  \ Sleep option active? Then sleep until the next item!
-   scheduled @ 1+ n>sched.time@  2359 < and  ;    \ Current entry inside schedule?
+   scheduled @ 1+ n>sched.time@  2359 < or  ;    \ Current entry inside schedule?
+
 
 : check-sleep-schedule
    sleep-needed? if
       .pause-msg ."   Starting the sleeping-schedule" cr
       ['] poll-pause-sps30      to responder
-      start-sleep \  sleep until the next item in the schedule
+      ['] (sleeping-schedule) is schedule-entry 
    then ;
+
 
 :  <NoData> ( -- )
    <br>  +HTML| ------ No data yet. ------| <br>
@@ -335,20 +340,34 @@ ALSO TCP/IP DEFINITIONS
 
 : /set_time_form  ( -- )
    start-Sps30-page
-   s" /home" s" Chart" <<TopLink>>
-   <strong> +HTML| Sps30 | </strong>  .HtmlSpace </legend>
+   <strong> 
+   [ifdef]  SitesIndex  SitesIndex [then]
+   s" /system"   s" System"   <<TopLink>>
+   s" /home" s" Home" <<TopLink>> 
+   +HTML| Sps30 | </strong>  .HtmlSpace </legend>
    <br> +HTML| Set system date and time: |
    <br> <br> +HTML|  <form> <input type="datetime-local" name="sys_time_user" value="0"> |
    <br> <br> s" Set time" s" nn" <CssButton> </form>
    </tr> </fieldset>   </td> </tr> </table>
    </center>  </h4> </body> </html> ;
 
-: /home ( -- )
+
+: /system  ( -- )
+   start-Sps30-page
+   <strong> [ifdef]  SitesIndex  SitesIndex [then]
+   s" /home" s" Home" <<TopLink>> 
+   +HTML| Sps30 | </strong>  .HtmlSpace </legend>
+   <br> s" /Schedule" s" Schedule" <<TopLink>>  <br>
+   <br> s" /set_time_form" s" Set time" <<TopLink>> <br> 
+   <br> s" /transfer.html" s" Up/Download" <<TopLink>>  
+   </form> </tr> </fieldset>   </td> </tr> </table>
+   </center>  </h4> </body> </html> ;
+
+: home-page ( -- )
    time-server$ GotTime? or if
       start-Sps30-page
          [ifdef]  SitesIndex  SitesIndex [then]
-      s" /set_time_form" s" Set time" <<TopLink>>
-      s" /Schedule" s" Schedule" <<TopLink>>
+      s" /system"   s" System"   <<TopLink>>
       s" /list"     s" List"     <<TopLink>>
       s" /NumConc"  s" Number"   <<TopLink>>
       s" /Tps"      s" Tps"      <<TopLink>>
@@ -362,10 +381,10 @@ ALSO TCP/IP DEFINITIONS
 
 : sys_time_user ( -- ) \ Actions after /set_time_form
    parse-word
-   2dup [char] - remove_seperator
-   2dup [char] T remove_seperator
-   2dup [char] % remove_seperator
-   2dup [char] A remove_seperator
+   2dup [char] - bl replace-all-by 
+   2dup [char] T bl replace-all-by
+   2dup [char] % bl replace-all-by
+   2dup [char] A bl replace-all-by
    evaluate depth  if
       nip 0  swap rot  \ - Y m d H m s            \ Expects local time
       3 roll 4 roll 5 roll
@@ -382,7 +401,7 @@ ALSO TCP/IP DEFINITIONS
 : /NumConc ( -- )
    start-Sps30-page
      [ifdef]  SitesIndex  SitesIndex [then]
-   s" /Schedule" s" Schedule" <<TopLink>>
+   s" /system"   s" System"   <<TopLink>>
    s" /list" s" List"         <<TopLink>>
    s" /home" s" Mass"         <<TopLink>>
    s" /Tps"  s" Tps"          <<TopLink>>
@@ -392,7 +411,7 @@ ALSO TCP/IP DEFINITIONS
 : /Tps ( -- )
    start-Sps30-page
      [ifdef]  SitesIndex  SitesIndex [then]
-   s" /Schedule" s" Schedule" <<TopLink>>
+   s" /system"   s" System"   <<TopLink>>
    s" /list"    s" List"      <<TopLink>>
    s" /home"    s" Mass"      <<TopLink>>
    s" /NumConc" s" Number"    <<TopLink>>
@@ -402,7 +421,7 @@ ALSO TCP/IP DEFINITIONS
 : /list ( -- )    \ Builds the HTML-page starting at HtmlPage$
    ['] noop set-page  start-Sps30-page
      [ifdef]  SitesIndex  SitesIndex [then]
-   s" /Schedule" s" Schedule" <<TopLink>>
+   s" /system"   s" System"   <<TopLink>>
    +HTML| List last 20 records  |  +TimeDate/legend
    +HTML| <table border="0" cellpadding="0" cellspacing="2" width="50%">|
    add-sps30-header
@@ -424,6 +443,7 @@ ALSO TCP/IP DEFINITIONS
 \  ---- End schedule ----
 
 alias /NewPage  noop
+' home-page is /home 
 alias / /home
 
 \ --------------
@@ -433,16 +453,17 @@ SPS30 DEFINITIONS
 
 
 : init-res ( -- )
-   ['] sensor+http-responder to responder
-   wifi-logon-state  -2 =
-     if  #1000000 us logon
+    wifi-connected@ 0=
+     if  logon
      then
    1800 SleepIfNotConnected
    file-schedule-sps30 init-schedule
    init-HtmlPage
    InitDataParms
    #20 to #Max_X_Lines
-   http-listen ;
+   listener-socket -1 = if
+      bold http-listen ." /home" norm
+   then ;
 
 PREVIOUS
 
@@ -467,19 +488,22 @@ PREVIOUS
    while  key drop 50 ms
    repeat ;
 
+: stop-sleep-sensor ( -- ) tTotal off stop-sleep-sps30 startSleep ;
+' stop-sleep-sensor is action-before-deep-sleep
+
+
 : Sleep30MinIfNotConnected
    ipaddr@ @ 0=
-     if  Sps30Sleeping? 0=
-             if  reset-sps30  startSleep
-             then
+     if   stop-sleep-sensor 
           cr ." No connection. Entering sleep mode..."
           1800 deepsleep
      then ;
 
 : program-loop ( -- )
-   begin key?
+   begin key?  
            if  key dup #27 =
-               if    drop +f ONLY FORTH ALSO SPS30  order cr quit
+               if   drop 
+                    ONLY FORTH ALSO FORTH ALSO SPS30  order cr exit 
                else  set-responder
                then
            empty-keybuf
@@ -488,8 +512,8 @@ PREVIOUS
          StopRunSchedule?
            if  schedule schedule-entry
            then
-          usf@ ticks-next-second responder
-        \ 1 to fmeasure-complete es \ To test the schedule without a sps30
+          usf@ ms-next-second responder
+        \ 1 to fmeasure-complete es \ To test the schedule without an sps30
    again ;
 
 : faster ( -- )
@@ -505,12 +529,9 @@ PREVIOUS
    time-server$ 0<>
      if   cr ." Ask time from: " time-server$ count type
                 ms@ >r asktime ms@ r> - dup space . ." ms " #1000 >
-          if   cr ." Stream failed. Rebooting..." 1500 ms 3 DeepSleep
+          if   cr ." Stream failed. Rebooting..." stop-sleep-sensor 1500 ms 3 DeepSleep
           then
      then ;
-
-: .homepage-adr ( -- )
-    bold ."  http://" ipaddr@ .ipaddr ." /home " norm  ;
 
 : set-timings ( -- )
    cr ." Cycle time: "   cycle-time f# 60000000 f/ f>s . ." minutes."
@@ -520,7 +541,6 @@ PREVIOUS
    cr ." Alarm-limit: " alarm-limit f.
    0  to WaitForSleeping-
    empty-keybuf
-   1000 ms>ticks to poll-interval
    cr ." The first results appear after 30 seconds in the list." cr
    time-server$ 0=
      if   space GotTime? 0=
@@ -528,19 +548,21 @@ PREVIOUS
                then
      else  send_ask_time \ check-time
      then
-   cr ." The home page of the webserver is:" .homepage-adr cr ;
+   cr ;
 
 : start-web-server  ( -- )
    cr .date .time
    cr htmlpage$ 0=
       if    init-res
-      else  ." Listening again."
+      else  bold ." Listening on http://" ipaddr@ .ipaddr ." /home" norm
       then
-   restart-schedule
+   ['] sensor+http-responder to responder
+   1000 to poll-interval restart-schedule
+   cr ." Cpu at: " cpu_freq@ #1000000 / 0 ud,. ."  Mhz."
    TCP/IP SEAL sps30?
-      if    init-sps30  wakeUp-sps30
+      if    init-sps30  wakeUp-sps30 #500 ms
             .device-information
-            3 startMeasurement wait-status-reg
+            3 startMeasurement wait-status-reg #500 vtaskdelay
             init-fmeasure
       else  &RxBuf 0=
                if  init-res-sps30 wakeUp-sps30
@@ -551,10 +573,14 @@ PREVIOUS
 
 f# 3.0e0 to alarm-limit
 
+
 cr .free cr  ORDER cr
 
-\ ' see-request is handle-request
-: s start-web-server ;
+\ For debugging
+\ ' see-request is handle-request \ To see the total received requests
+\ ' see-command is handle-request \ To see the commands only of the received requests
+ 
+' start-web-server is s
 
 true to stages-
 

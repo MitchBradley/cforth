@@ -1,8 +1,8 @@
-marker -sps30.fth  cr lastacf .name #19 to-column .( 06-05-2025 ) \ By J.v.d.Ven
+marker -sps30.fth  cr lastacf .name #20 to-column .( 08-06-2026 ) \ By J.v.d.Ven
 
 0 value msg-board$   0 value sensor-web$
 
-VOCABULARY SPS30 SPS30 DEFINITIONS DECIMAL
+DECIMAL VOCABULARY SPS30 SPS30 DEFINITIONS
 
  #2 to uart_num
 #26 constant rx-pin
@@ -31,7 +31,7 @@ create &code-list
 3 constant /code-line
 4 /code-line * constant /code-list
 
-: encode-sps30   ( char - coded$ cnt )
+: encode-sps30   ( char -- addr cnt )
    1 swap  &code-list /code-list bounds do
       dup i c@ =  if
          2drop 2  i 1+ leave
@@ -44,7 +44,7 @@ create &code-list
 
 create &start-frame $7E c, 00 c,     2 constant /start-frame
 
-: end-frame ( - adr cnt )  &start-frame 1 ;
+: end-frame ( -- adr cnt )  &start-frame 1 ;
 
 $00 constant start-measurement
 $01 constant stop-measurement
@@ -59,11 +59,11 @@ $d2 constant read-device-status-register
 $d3 constant reset
 
 variable tsum
-: +tsum        ( char - ) tsum +!  ;
-: send-encoded ( char - ) dup +tsum  encode-sps30 send-tx ;
-: chk          ( - InvertedChecksumByte ) tsum @ invert $FF and ;
+: +tsum        ( char -- ) tsum +!  ;
+: send-encoded ( char -- ) dup +tsum  encode-sps30 send-tx ;
+: chk          ( -- InvertedChecksumByte ) tsum @ invert $FF and ;
 
-: sendframe    ( byte1...byte0 #bytes cmd - )
+: sendframe    ( byte1...byte0 #bytes cmd -- )
    tsum off &start-frame /start-frame
    send-tx
        send-encoded            \ cmd
@@ -74,7 +74,7 @@ variable tsum
 
 0 value &decoded-frame
 
-: decode-char ( char - decoded-char )
+: decode-char ( char -- decoded-char )
    &code-list /code-list bounds  do
       dup  i 2 + c@ =  if
          i c@  leave
@@ -82,7 +82,7 @@ variable tsum
    /code-line
    +loop nip ;
 
-: decode-frame ( adr cnt - length-decode-frame ) \ 0 = invalid frame
+: decode-frame ( adr cnt -- length-decoded-frame ) \ 0 = invalid frame
    2dup -1 -rot &decoded-frame off tsum off
    1 /string 2 - bounds  ?do
       1+ i c@ dup $7D =  if
@@ -94,25 +94,25 @@ variable tsum
    +loop
    -rot + 2 - c@ chk = and ;
 
-: >data-sps30 ( $data-buffer  - &data-sps30 ) 3 + ;
+: >data-sps30 ( $data-buffer  -- &data-sps30 ) 3 + ;
 
-: get-state ( - n )  &RxBuf >data-sps30 c@ ;
+: get-state ( -- n )  &RxBuf >data-sps30 c@ ;
 
-: .error-state ( error - )
+: .error-state ( error -- )
    $7f and
       case
-         $00 of ." No error" endof
-         $01 of ." Wrong data length for this command (too much or little data)" endof
-         $02 of ." Unknown command" endof
-         $03 of ." No access right for command" endof
-         $04 of ." Illegal command parameter or parameter out of allowed range" endof
-         $28 of ." Internal function argument out of range" endof
-         $43 of ." Command not allowed in current state" endof
+         $00 of ."  No error" endof
+         $01 of ."  Wrong data length for this command (too much or little data)" endof
+         $02 of ."  Unknown command" endof
+         $03 of ."  No access right for command" endof
+         $04 of ."  Illegal command parameter or parameter out of allowed range" endof
+         $28 of ."  Internal function argument out of range" endof
+         $43 of ."  Command not allowed in current state" endof
       endcase   ;
 
-: error-sps30? ( state - err )   $40 and ;
+: error-sps30? ( state -- err )   $40 and ;
 
-: get-frame ( - adr cnt|0 )
+: get-frame ( -- addr cnt|0 )
    read-rx dup 0>
       if  &RxBuf get-state dup 0<>
           if   dup error-sps30?
@@ -124,16 +124,16 @@ variable tsum
       else  drop pad 0
       then  ;
 
-: get-device-information ( info - adr cnt )
+: get-device-information ( info -- addr cnt )
    1 device-information sendframe  get-frame  drop >data-sps30 count 1- ;
 
-: get-version ( - adr cnt )
+: get-version ( -- addr cnt )
    0 read-version sendframe  get-frame ;
 
-: get-status-register ( - n )
+: get-status-register ( -- n )
    0 1 read-device-status-register sendframe  get-frame  drop 4 + @ ;
 
-: .version  ( adr - adr2 )
+: .version  ( addr -- addr' )
    1 swap 4  bounds  ?do
       1- i c@ dup (.) type  0> i pad !  if
          dup 0=  if
@@ -145,7 +145,7 @@ variable tsum
    loop
    drop pad @ 1+ ;
 
-: .device-information ( - )
+: .device-information ( -- )
    0 get-device-information  cr ." Product type: "  type
    3 get-device-information  cr ." Serial no   : " 1- type
    get-version drop cr
@@ -155,10 +155,10 @@ variable tsum
    get-status-register cr ." Status reg. : "  2 base ! . decimal
    cr ;
 
-: bw@ ( adr - n )  \ Fetch 16 bits fetch big-edian
+: bw@ ( adr -- n )  \ Fetch 16 bits fetch big-endian
    dup c@  8 lshift swap 1+ c@  or ;
 
-: bl@ ( adr - n )  \ Fetch 32 bits big-endian
+: bl@ ( adr -- n )  \ Fetch 32 bits big-endian
    dup  bw@ #16 lshift swap 2 + bw@ or ;
 
 \ The SPS-30 uses big-endian IEEE754 float values
@@ -176,7 +176,7 @@ $7ff00000 0 pad 2! pad f@ fconstant Inf
 \ https://en.wikipedia.org/wiki/Single-precision_floating-point_format#Converting_binary32_to_decimal
 \ https://www.h-schmidt.net/FloatConverter/IEEE754.html
 
-: IEEE754>  ( n - ) ( F - n )
+: IEEE754>  ( n -- ) ( F: -- n )
    dup 0 #22 bits@     [ #23 1 #mask ] literal or
    decode-significand             \ Mantissa
    dup #23 #30 bits@  dup #255 =  if
@@ -197,33 +197,32 @@ $7ff00000 0 pad 2! pad f@ fconstant Inf
 
 0 value last-cmd
 
-: send-commend	   ( byte1...byte0 #bytes cmd - )
+: send-command	   ( byte1...byte0 #bytes cmd -- )
     dup to last-cmd sendframe get-frame  0=  if
        last-cmd ."  Sps30 Cmd: $" h. cr
-    else
-       drop
-    then  ;
+    then 
+    drop ;
 
-: reset-sps30      ( - )              0 reset send-commend ;
-: stopMeasurement  ( - )              0 stop-measurement   send-commend ;
-: startMeasurement ( 16b|floats - ) 1 2 start-measurement  send-commend ;
-: startCleaning    ( - )              0 start-fan-cleaning send-commend ;
-: startSleep       ( -  )             0 sleep send-commend ;
-: readMeasurement  ( -  adr cnt )     0 read-measured sendframe get-frame ;
+: reset-sps30      ( -- )              0 reset send-command ;
+: stopMeasurement  ( -- )              0 stop-measurement   send-command ;
+: startMeasurement ( 16b|floats -- ) 1 2 start-measurement  send-command ;
+: startCleaning    ( -- )              0 start-fan-cleaning send-command ;
+: startSleep       ( --  )             0 sleep send-command ;
+: readMeasurement  ( --  adr cnt )     0 read-measured sendframe get-frame ;
 
-: wakeUp           ( -  )
+: wakeUp           ( --  )
    $ff sp@ 1 send-tx drop
    0 wake-up sendframe
    50000 us  get-frame 2drop ;
 
-: ReadAutoCleaning ( - n )
+: ReadAutoCleaning ( -- n )
    0 1 auto-cleaning-interval sendframe get-frame  drop >data-sps30 count drop @ ;
 
-: WriteAutoCleaning ( n - )  \ 604800=every week   86400=24Hrs   43200=12Hrs   0=disable
+: WriteAutoCleaning ( n -- )  \ 604800=every week   86400=24Hrs   43200=12Hrs   0=disable
    pad ! pad  4 + 5 1 do dup i - c@ swap loop drop   \ See the manual.
    0 5 auto-cleaning-interval sendframe get-frame  ;
 
-: wait-status-reg ( - )
+: wait-status-reg ( -- )
    #30 0  do
       get-status-register 0=  if
          leave
@@ -231,14 +230,14 @@ $7ff00000 0 pad 2! pad f@ fconstant Inf
    #500000 us  [char] . emit
    loop ;
 
-: clear-fdata ( - )
+: clear-fdata ( -- )
    &fdata /fdata bounds  do
       f# 0.0e0 i f! [ 1 floats ] literal
    +loop  ;
 
 11 value #fields
 
-: clear-data-buffer-sps30 ( &CBdata-sps30 - )
+: clear-data-buffer-sps30 ( &CBdata-sps30 -- )
    dup >r >&data-buffer @   r@ >max-records @ #fields floats * bounds  do
       f# 0e0 i f!    [ 1 floats ] literal
    +loop
@@ -251,16 +250,16 @@ $7ff00000 0 pad 2! pad f@ fconstant Inf
    #256   allocate drop to &decoded-frame
    /fdata floats allocate drop to &fdata
    rx-pin tx-pin uart_num init-uart-sps30 #100 ms clear-fdata
-   3 ( Minutes) min>fus to cycle-time                        \ In us Includes the sleep time
-   4 ( Hours )  60 * cycle-time fus>fsec f>s
-                60 / 1 max / 2 max 1200 min to /CBdata-sps30 \ Size logging
+   3 ( Minutes ) min>fus to cycle-time                        \ In us Includes the sleep time
+   4 ( Hours )   60 * cycle-time fus>fsec f>s
+                 60 / 1 max / 2 max 1200 min to /CBdata-sps30 \ Size logging
    #11 to #fields
    #fields floats /CBdata-sps30 allocate-cbuffer to &CBdata-sps30
    &CBdata-sps30 clear-data-buffer-sps30 reset-sps30 ;
 
 0 fvalue start-tic
 
-: init-sps30 ( - )
+: init-sps30 ( -- )
    &RxBuf 0=  if
       init-res-sps30
    then
@@ -272,12 +271,12 @@ $7ff00000 0 pad 2! pad f@ fconstant Inf
    #500000 us
    loop ;
 
-: avg-fdata (  adr n #n -- )
+: avg-fdata (  addr n #n -- )
    s>f  bounds  ?do
       i dup f@ fover f/ f!    [ 1 floats ] literal
    +loop  fdrop ;
 
-: +fdata ( adr n -- )
+: +fdata ( addr n -- )
    #2 set-precision 2drop #10 0  do
       &decoded-frame 4 + i cells + bl@ IEEE754>
       i floats &fdata + dup f@  f+  f!
@@ -295,7 +294,7 @@ create-timer: tSps30
 #9  floats constant nc10-Offset
 #10 floats constant tps-Offset
 
-: init-fmeasure ( - )
+: init-fmeasure ( -- )
    clear-fdata 0 to fmeasure-complete
    #samples off  usf@ to tcycle
    tSps30 start-timer
@@ -303,10 +302,10 @@ create-timer: tSps30
 
 create UdpPortESP   ," 8899"
 
-: send-tmp$-msg-board$ ( - )
+: send-tmp$-msg-board$ ( -- )
    tmp$ lcount msg-board$ UdpWrite ;
 
-: send-pm2.5-msgBoard  ( f: n - )
+: send-pm2.5-msgBoard  ( F: n -- )
    fdup f# 10e0 f>  if
       fnegate f# 20e0  \ 10-50
    else
@@ -315,13 +314,13 @@ create UdpPortESP   ," 8899"
    s" -2130706452 F0 M:" tmp$ lplace f>s (.) tmp$ +lplace
    s"  " tmp$ +lplace  send-tmp$-msg-board$ ;
 
-: send-pm2.5-sensorweb ( f: n - )
+: send-pm2.5-sensorweb ( F: n -- )
    f# 100e0 f* fround f>s (.) tmp$ lplace s"  " tmp$ +lplace
    ip4Host tmp$ +lplace
    s"  pm25" tmp$ +lplace
    tmp$ lcount  sensor-web$  UdpWrite ;
 
-: @old-PM25 ( #back - ) ( f: - oldPM25 )
+: @old-PM25 ( #back -- ) ( F: -- oldPM25 )
   &CBdata-sps30 circular-range swap
   rot - max  &CBdata-sps30 >circular pm2.5-Offset + f@ ;
 
@@ -329,11 +328,11 @@ f# 3.e0 fvalue alarm-limit
 #12 value alarm-cmp
 variable alarm-off-cnt  #3 alarm-off-cnt !
 
-: send-alarm-off ( - )
+: send-alarm-off ( -- )
    s" -2130706452 F0 A:0" tmp$ lplace
    s"  @31" tmp$ +lplace  send-tmp$-msg-board$ ;
 
-: send-alarm ( f: n - )
+: send-alarm ( F: n -- )
    alarm-cmp @old-PM25 ." Alarm-compare " f- alarm-limit f> dup .  if
       s" -2130706452 F0 A:1" tmp$ lplace
       s"  @31" tmp$ +lplace  send-tmp$-msg-board$
@@ -344,20 +343,20 @@ variable alarm-off-cnt  #3 alarm-off-cnt !
       then
    then cr ;
 
-: send-pm2.5 ( - )
+: send-pm2.5 ( -- )
   1 @old-PM25   fdup cr ." PM2.5: " f. cr
   fdup send-pm2.5-msgBoard
   fdup send-pm2.5-Sensorweb
   send-alarm ;
 
-: add-to-ring-buffer ( - )
+: add-to-ring-buffer ( -- )
    &fdata  &CBdata-sps30 >circular-head tuck 1 floats +  10 floats cmove>
    local-time-now  stages-  if
       ." Add record:" fdup .Time-from-UtcTics
    then
    f!  &CBdata-sps30 incr-cbuf-count ;
 
-: take-sample ( f: us-time -   )
+: take-sample ( F: us-time --   )
    tSps30  tElapsed?  if
       .tcycle readMeasurement dup 0>  if
          +fdata  #samples @ #max-samples <=  if
@@ -373,28 +372,28 @@ variable alarm-off-cnt  #3 alarm-off-cnt !
       then
    then ;
 
-: Sps30Sleeping? ( - flag ) get-status-register $ffffff = ;
-: wakeUp-sps30   ( - )      Sps30Sleeping?    if   wakeUp    then  ;
+: Sps30Sleeping? ( -- flag ) get-status-register $ffffff = ;
+: wakeUp-sps30   ( -- )      Sps30Sleeping?    if   wakeUp    then  ;
 
 \ ---- 1 measurement ----           \ *order
 
-: take-samples  ( - )               \ *4
+: take-samples  ( -- )               \ *4
    fmeasure-complete 3 =  if  exit then
    time-1-sample take-sample ;
 
 f# 30e6 fvalue warm-up-time
 
-: warming-up  ( - )                 \ *3
+: warming-up  ( -- )                 \ *3
    warm-up-time time-1-sample f- tSps30 tElapsed?  if
       tSps30 start-timer  ['] take-samples SetStage
    then ;
 
-: wait-for-status-registor  ( - )   \ *2
+: wait-for-status-registor  ( -- )   \ *2
    check-time get-status-register 0=  if
       tSps30 start-timer ['] warming-up SetStage
    then ;
 
-: set-next-measurement-sps30 ( - ) \ To get to the next end of the cycle.
+: set-next-measurement-sps30 ( -- ) \ To get to the next end of the cycle.
    cycle-time fdup  &CBdata-sps30 >cbuf-count @ 2 - s>f f* f+
    usf@ start-tic f- f- f# 1000e0 fmax fdup  fus>fms f>s
    cycle-time f# 1000e0 f/ f>s /mod drop dup #10000 >  if
@@ -403,10 +402,10 @@ f# 30e6 fvalue warm-up-time
    then
    to next-measurement ;
 
-: start-measurements  ( - )         \ *1
+: start-measurements  ( -- )         \ *1
    3 startMeasurement ['] wait-for-status-registor SetStage ;
 
-: Wait-till-next-measurement ( - )  \ *5 After 1st-measurement only
+: Wait-till-next-measurement ( -- )  \ *5 After 1st-measurement only
    next-measurement tTotal tElapsed?  if
       .tcycle   stages-  if
          ." End "  .time cr
@@ -414,7 +413,7 @@ f# 30e6 fvalue warm-up-time
    init-fmeasure ['] start-measurements SetStage
    then ;
 
-: sleep-sensor ( - )                \ *5 After all other measurements
+: sleep-sensor ( -- )                \ *5 After all other measurements
    next-measurement  tTotal tElapsed?
      if  .tcycle   stages-
             if  ." End " .time cr
@@ -422,7 +421,7 @@ f# 30e6 fvalue warm-up-time
           wakeUp  init-fmeasure  ['] start-measurements SetStage
      then ;
 
-: 1st-measurement  ( - )            \ *0
+: 1st-measurement  ( -- )            \ *0
    f# 15e6 time-1-sample f-  tSps30 tElapsed?  if
       clear-fdata  check-time
       readMeasurement +fdata  add-to-ring-buffer
@@ -431,12 +430,13 @@ f# 30e6 fvalue warm-up-time
       ['] Wait-till-next-measurement SetStage
    then ;
 
-: start-sleep ( - )
-   wakeUp reset-sps30  startSleep  ['] (sleeping-schedule) is schedule-entry ;
+: stop-sleep-sps30 ( -- )  wakeUp reset-sps30 readMeasurement 2drop startSleep ;
+
+: start-sleep ( -- )  stop-sleep-sps30 ['] (sleeping-schedule) is schedule-entry ;
 
 0 value CleaningDone
 
-: start-cleaning ( - )
+: start-cleaning ( -- )
    CleaningDone 0=  if
       cr ." clean-schedule"
       wakeUp 3 startMeasurement  startCleaning
@@ -446,9 +446,9 @@ f# 30e6 fvalue warm-up-time
 
 0 value prep-cleaning
 
-: prepair-cleaning ( - )  true to prep-cleaning  ;
+: prepair-cleaning ( -- )  true to prep-cleaning  ;
 
-: handle-sps30 ( - )
+: handle-sps30 ( -- )
    'stage execute   fmeasure-complete 1 =  if
       warm-up-time f# 15e6 f>  if
          schedule WaitForSleeping-  if
