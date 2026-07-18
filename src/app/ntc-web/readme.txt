@@ -1,20 +1,31 @@
-To see the temperature measured by a NTC in a web browser
-For: ~/cforth/src/app/esp32-extra
-Needed hardware: A NTC and an esp32
+To see the temperature measured by an NTC in a web browser.
 
-$ Copy ~/cforth/src/app/ntc-web/app.fth   to   ~/cforth/src/app/esp32-extra
-$ cd ~/cforth/build/esp32-extra  
-$ rm *.*
-$ make flash
+Location: ~/cforth/src/app/esp32-extra
 
-Upload from ../src/app/ntc-web/
-favicon.ico AND ntc_web.fth   to the file system of the ESP32.
+Needed hardware: An NTC and an ESP32.
+Allow your router to run a local web server.
 
-Only when you use https://github.com/Jos-Ven/A-smart-home-in-Forth :
-  Edit and upload MachineSettings.fth to the file system of the ESP32 IF you are able to 
-  handle TcpTime packets. See: ~/cforth/src/app/esp32-extra/tools/timediff.fth
-  Disable servers you do not have.
+cp ~/cforth/src/app/ntc-web/app.fth ~/cforth/src/app/esp32-extra
+cd ~/cforth/build/esp32-extra
+make clean
+make   # And flash the application.
 
-Reboot the ESP32 and compile ntc_web.fth
-To auto-run the application hit escape and enter:
-s" fl ntc_web.fth" s" start" file-it
+Start cForth.
+Enter 'transfer <Enter>' to log on to your WiFi network and start an upload session.
+Start your web browser. Go to the web page as displayed in the console.
+Upload ntc_web.fth to the filesystem of the ESP32.
+Close the web browser.
+Reboot the ESP32 and compile ntc_web.fth.
+
+Only when you use https://github.com/Jos-Ven/A-smart-home-in-Forth:
+  Edit and upload MachineSettings.fth to the filesystem of the ESP32 if you are able to
+  handle TcpTime packets. See ~/cforth/src/app/esp32-extra/tools/timediff.fth.
+  Disable the servers you do not have.
+
+To auto-run the application:
+  hit the ESC key
+  Enter 'reboot'
+  Enter 'transfer <Enter>'
+  Start your web browser. Go to the web page as displayed in the console.
+  Upload the file start to the ESP32.
+  Reboot the ESP32.

@@ -29,14 +29,7 @@ alias m-init noop
    false
 ;
 
-: ms>ticks  ( ms -- ticks )
-   esp-clk-cpu-freq  case
-      #240000000 of  exit  endof
-      #80000000  of        endof
-      drop #1 lshift dup
-   endcase
-   #3 /
-;
+: ms>ticks ( ms -- ticks ) get-tick-rate-hz / ;
 
 : system-time>f ( us seconds -- ) ( f: -- us )
    s" s>d d>f f# 1.0e6 f*  s>d d>f  f+ "  evaluate
@@ -59,29 +52,28 @@ alias get-msecs ms@
 
 : ms   ( ms -- )   s>d d>f f# 1.0e3 f* fus ;
 
-
-fl wifi.fth
-
+0 [if] \ In case you need it.
 fl ../esp8266/xmifce.fth
 fl ../../lib/crc16.fth
 fl ../../lib/xmodem.fth
 also modem
 : rx  ( -- )  pad  unused pad here - -  (receive)  #100 ms  ;
 previous
+[then]
 
 fl files.fth
-fl server.fth
-fl tasking_rtos.fth        \ Preemptive multitasking
-
 fl tools/extra.fth
+fl wifi.fth
+fl server.fth
 fl tools/table_sort.fth
 fl tools/timezones.fth
 fl tools/timediff.fth      \ Time calculations
 fl tools/webcontrols.fth   \ Extra tags in ROM
+fl tools/transfer.fth      \ Uses java in a browser. Much faster than xmodem.
 fl tools/svg_plotter.fth
-fl tools/rcvfile.fth
 fl tools/wsping.fth
-fl tools/schedule-tool.fth \ Daily schedule
+fl tools/schedule-tool.fth \ A daily schedule
+fl adc_esp32.fth
 fl ../ntc-web/ntc_steinhart.fth
 
 : interrupt?  ( -- flag )
@@ -92,14 +84,10 @@ fl ../ntc-web/ntc_steinhart.fth
 
 : load-startup-file  ( -- ior )   " start" ['] included catch   ;
 
-: app ( - ) \ Sometimes SPIFFS or a wifi connection causes an error. A reboot solves that.
-   banner  hex  interrupt? 0=  if
-      s" start" file-exist?  if
-         load-startup-file  if
-            ." Reading SPIFFS. " cr interrupt? 0=  if
-               reboot
-            then
-         then
+: app ( - ) 
+   1 s" *" log-level! banner interrupt? hex 0= if
+      s" start" file-exist? if
+         load-startup-file drop
       then
    then
    quit
