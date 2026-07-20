@@ -1,0 +1,87 @@
+================================================================================
+INSTALLATION GUIDE FOR CFORTH ON AN ESP32 (MINIMUM 4MB FLASH) 
+================================================================================
+
+Requirements:
+- Linux PC (tested on 6.12.94+deb13-amd64)
+- An ESP32 'classic' like the ESP32 DEVKITV1
+- picocom installation: sudo apt install picocom -y
+- Connect the ESP32 to an USB port on the linux PC
+
+Testing the connection to the ESP32:
+------------------------------------
+Find the serial port:
+  $ PORT=$(ls /dev/ttyUSB* /dev/ttyACM* 2>/dev/null | head -1); echo "Found: $PORT"
+  Here it is assumed that the port is /dev/ttyUSB0.
+
+Test the connection to the ESP32:
+  $ picocom /dev/ttyUSB0 -b 115200 -p 1 --omap crlf --imap delbs
+
+Press and hold the BOOT button, then press and release the EN button once.
+You should see a message like:
+  rst:0x1 (POWERON_RESET),boot:0x3 (DOWNLOAD_BOOT(UART0/UART1/SDIO_REI_REO_V2))
+  waiting for download
+
+To exit picocom and return to Linux:
+  1) Press and hold the CTRL key
+  2) Press 'c' (once), 'a' (once), then press 'x' (once)
+  3) Release the CTRL key
+
+Installation
+Step 1: Create a directory
+  $ mkdir ~/cf_551
+  $ cd ~/cf_551
+
+Step 2: Clone the repository
+  $ git clone https://github.com/Jos-Ven/cforth
+
+Step 3: Navigate to the build directory
+  $ cd cforth/build/esp32-extra
+
+Step 4: Run make
+  $ make
+
+Step 5: Follow the on-screen instructions during the first build.
+
+Notes:
+- The first make takes time due to many downloads.
+- The second make flashes the ESP32.
+- IDF detects the serial port and shows it during flashing.
+
+Example output:
+  Serial port /dev/ttyUSB0
+  Connecting........
+
+Flashing an ESP32 DEVKITV1 (enter flash mode):
+  1. Press and hold the BOOT button.
+  2. Press and release EN (once) while holding BOOT.
+  3. Release BOOT when 'Flash will be erased from' appears.
+
+If flashing fails, try:
+  $ make flash
+  and enter the flash mode.
+
+After flashing,
+  picocom /dev/ttyUSB0 -b 115200 -p 1 --omap crlf --imap delbs
+  Press the EN button on the ESP32 
+  Then you should the start message and the ok prompt  
+
+Test the included web server with 'transfer'
+  Ensure your router allows a local web server on port 80 within your own network. 
+  (LAN only — no need to expose it to the internet.)
+  Press any key to stop the web server
+
+Tip: Add an alias to ~/.bash_aliases:
+  alias pi='picocom /dev/ttyUSB0 -b 115200 -p 1 --omap crlf --imap delbs'
+
+The installation automatically adds the ESP-IDF export command to your shell startup file:
+  - bash:   ~/.bashrc
+  - zsh:    ~/.zshrc
+  - fish:   ~/.config/fish/config.fish
+
+For more options on 'make', run 'make help'
+
+================================================================================
+END OF INSTALLATION GUIDE 
+================================================================================
+July 2026  https://github.com/Jos-Ven/cforth

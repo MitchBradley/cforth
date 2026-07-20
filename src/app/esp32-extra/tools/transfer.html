@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>Transfer</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+body{background:#FEFFE6;font-family:monospace;margin:20px}
+fieldset{border:2px solid black;border-radius:8px;padding:15px}
+legend{font-weight:bold;font-size:16px}
+.legend-link{font-weight:bold;font-size:16px;margin-right:5px}
+.legend-link a{color:#0066cc;text-decoration:none}
+.legend-link a:hover{text-decoration:underline}
+.btn{background:#e7e7e7;border:none;padding:6px 12px;border-radius:15px;cursor:pointer;margin:2px;width:150px}
+.btn-active{background:#FF6400;color:white}
+.button-bar{display:flex;justify-content:center;gap:10px;margin-bottom:15px}
+.iframe-container{width:100%}
+.iframe-container iframe{width:100%;border:none;display:block}
+.iframe-container iframe:not([style*="display: none"]){height:auto;min-height:500px}
+.js-warning{background:#ffd4d4;color:#c00;padding:20px;margin:20px;border-radius:8px;text-align:center;font-weight:bold}
+</style>
+</head>
+<body>
+<noscript>
+<div class="js-warning">
+⚠️ JavaScript is DISABLED!<br><br>
+This page requires JavaScript to upload/download files.<br>
+Please enable JavaScript in your browser and reload the page.
+</div>
+</noscript>
+<center>
+<fieldset style="width:90%">
+<legend><span class="legend-link"><a href="/home">Home</a></span>Transfer</legend>
+<div class="button-bar">
+	<button id="uploadBtn" class="btn btn-active">Send mode</button>
+	<button id="downloadBtn" class="btn">Receive mode</button>
+</div>
+<div id="iframeContainer" class="iframe-container">
+	<iframe id="uploadFrame" src="upload.html" onload="resizeFrame(this)"></iframe>
+	<iframe id="downloadFrame" src="download.html" style="display:none" onload="resizeFrame(this)"></iframe>
+</div>
+</fieldset>
+</center>
+<script>
+const uploadBtn = document.getElementById('uploadBtn');
+const downloadBtn = document.getElementById('downloadBtn');
+const uploadFrame = document.getElementById('uploadFrame');
+const downloadFrame = document.getElementById('downloadFrame');
+
+function resizeFrame(frame){
+	try{
+		let body = frame.contentWindow.document.body;
+		let height = Math.max(body.scrollHeight, body.offsetHeight, 450);
+		frame.style.height = height + 'px';
+	}catch(e){
+		frame.style.height = '500px';
+	}
+}
+
+function showUpload(){
+	uploadBtn.classList.add('btn-active');
+	downloadBtn.classList.remove('btn-active');
+	uploadFrame.style.display = 'block';
+	downloadFrame.style.display = 'none';
+	setTimeout(() => resizeFrame(uploadFrame), 50);
+}
+
+function showDownload(){
+	downloadBtn.classList.add('btn-active');
+	uploadBtn.classList.remove('btn-active');
+	uploadFrame.style.display = 'none';
+	downloadFrame.style.display = 'block';
+	setTimeout(() => resizeFrame(downloadFrame), 50);
+	try{
+		downloadFrame.contentWindow.loadFileList();
+	}catch(e){}
+}
+
+uploadBtn.onclick = showUpload;
+downloadBtn.onclick = showDownload;
+
+setTimeout(() => resizeFrame(uploadFrame), 100);
+</script>
+</body>
+</html>

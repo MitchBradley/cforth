@@ -1,18 +1,117 @@
-marker -webcontrols.fth  cr lastacf .name #19 to-column .( 05-12-2023 ) \ By J.v.d.Ven
+marker -webcontrols.fth lastacf .name #20 to-column .( 15-06-2026 ) \ By J.v.d.Ven
+
+\ 18-11-2024 removed "border-radius:" from table, th and td
+\ 05-05-2025 Added: <hr>  <hrWH> sendstk
+\ 15-06-2026 Adapted for IDF 5.5.1
 
 needs /circular    extra.fth
 
 cell user xt-htmlpage \ MUST contain the XT that builds the web-page in the buffer at htmlpage$
-                       \ ALL buttons must be evaluted before a new page is sent!
+                      \ ALL buttons must be evaluted before a new page is sent!
 
+HIDDEN DEFINITIONS
+
+4 value ./stack
+0 value (depth)
+: LogStackTop { adr-str -- }
+   depth  0< if
+      clear s"   STK: Underflow." adr-str +place
+   else
+      s"   STK:" adr-str +place   (depth) dup 0= if
+         drop s" Empty." adr-str +place
+      else
+         s" (" adr-str +place (.) adr-str +place s" ) " adr-str +place
+         depth ./stack min  dup 0  ?do
+            dup  i - pick (.) adr-str +place
+            s"  "  adr-str +place
+         loop
+      drop
+      then
+   then
+;
+: LogFStackTop  { adr-str -- }
+   s"  FP:" adr-str +place  fdepth 0< if
+      s" Underflow." adr-str +place
+   else
+      fdepth  0= if
+         s" Empty." adr-str +place
+      else
+         s" (" adr-str +place fdepth (.) adr-str +place s" ) " adr-str +place
+         fdepth 4 min dup 0   ?do
+            dup  i - 1- fpick fstring adr-str +place
+            s"  " adr-str +place
+         loop drop
+      then
+   then
+;
+: sendtcp ( buffer cnt to-host# - ) \ to-host = receiver on the same network in the same segment
+   wifi-connected@ if
+      ip4Host ip" rot - tmp$ place drop \  Save network part
+      decimal(.) tmp$ +place            \ Add the host (last octet)
+      tmp$ TcpWrite
+   else
+      drop
+   then
+;
+: (SendStk) ( server# xt - )
+   LogLine$ 0=  if  init-HtmlPage  then
+   ipaddr@ @ if
+      depth 2 - to (depth) (depth) 0< if
+         clear  ." Stack underflow. "
+      else
+         s" \\ " LogLine$  place   ip"     LogLine$ +place
+         s" :"   LogLine$ +place   >name$  LogLine$ +place
+         >r  LogLine$  LogStackTop  LogLine$ LogFStackTop
+         LogLine$ count r> sendtcp
+      then
+   else
+      2drop cr ." Error (SendStk): Not connected."
+   then
+;
+
+FORTH DEFINITIONS ALSO HIDDEN
+
+: SendStk ( server#  - )
+   lastacf dup 0> if
+      postpone literal
+   else
+      xtliteral
+   then
+   postpone (SendStk)
+; immediate
+
+\ SendStk needs init-HtmlPage first. Then:
+\ : test  4 5 f# 1.2  f# 1.5  f# 1.6  #201 SendStk ;  test
+\ If segment 192.168.0 is active then 192.168.0.201 will receive the stacks
+\ like: \\ 192.168.0.232:test  STK:(2) 4 5  FP:(4) 0.000 1.200 1.500 1.600
+
+: replace-all-by ( addr len characterOld characterNew -- )
+   swap >r -rot begin  
+      r@ scan dup 0<> \ Character found? 
+   while  
+      >r 2dup c! r>   \ Replace the characterOld by characterNew
+      1 /string       \ Skip the changed char       
+   repeat             \ Retry the remainder for adr' len'
+   r> 4drop 
+;
+
+create &favicon.ico   
+s" favicon.ico"  load-bin 
+
+PREVIOUS
+
+0 value /recv
+: .get     ( - )  req-buf  /recv  type ;
 : set-page ( xt - ) xt-htmlpage ! ;
-VOCABULARY TCP/IP
-: +t		( - ) also tcp/ip ;
 
-VOCABULARY HTML HTML DEFINITIONS
+VOCABULARY TCP/IP   VOCABULARY HTML
+
+: +a ( - ) only forth also forth also html also tcp/ip ;
+
+HTML DEFINITIONS
 
 : +1html	( char -- )  sp@ 1 +html drop ;
-: +crlf 	( -- )       crlf$ +html ;
+: +crlf		( -- )       crlf$ +html ;
 : .html		( n -- )     (.) +html ;
 : <html5>	( -- ) +HTML| <!DOCTYPE html>| ; \ html5
 : .HtmlBl	( -- ) +HTML|  | ;
@@ -55,32 +154,31 @@ VOCABULARY HTML HTML DEFINITIONS
 : <tr>		( -- ) +HTML| <tr>|   ;
 : </tr>		( -- ) +HTML| </tr>|  ;
 : </table>	( -- ) +HTML| </table>| ;
-
+: &deg		( -- ) +HTML| &deg;| ;
 : .HtmlSpace	( -- ) +HTML| &nbsp;| ;
 : .forth-driven	( -- ) +HTML| <em>Cforth&nbsp;driven<em>| ;
 
 : .HtmlSpaces	( n - )
-    abs dup 2 <
-      if    drop .HtmlBl
-      else  0
-            ?do .HtmlSpace
-            loop
-      then ;
-
+   abs dup 2 < if
+      drop .HtmlBl
+   else
+      0  ?do  .HtmlSpace  loop
+   then
+;
 : ms>Html	( ms - )
-    #1000 /mod #60 /mod #60 /mod #24 /mod
-    .Html  bl swap ##$ +html
-    [char] : swap ##$ +html
-    [char] : swap ##$ +html
-    drop ;
-
+   #1000 /mod #60 /mod #60 /mod #24 /mod
+   .Html  bl swap ##$ +html
+   [char] : swap ##$ +html
+   [char] : swap ##$ +html
+   drop
+;
 : +Hfile	( filename cnt - )              \ Adding a file to HtmlPage$
-    2dup file-exist?
-      if    HtmlPage$ /HtmlPage +file
-      else  cr type ."  not found."
-      then ;
-
-: favicon	( - )  HtmlPage$ off  s" favicon.ico"  +Hfile ;
+   2dup file-exist? if
+      HtmlPage$ /HtmlPage +file
+   else
+      cr type ."  not found."
+   then
+;
 : SignedDouble	( n - sign dabs ) s>d tuck dabs ;
 : h6#		( sign d - )      base @ >r hex  # # # # # #  r> base !  ;
 : (H6.)		( n - 6hex cnt )  SignedDouble <#  h6# rot sign #>  ;
@@ -88,102 +186,95 @@ VOCABULARY HTML HTML DEFINITIONS
 : "."		( n - "n" cnt )   SignedDouble <# hold"bl  #s  rot sign  hold" #> ;
 : ".%"		( n - "n%" cnt )  SignedDouble <# hold"bl  [char] % hold  #s  rot sign  hold" #> ;
 : ".px"		( n - "npx" cnt ) SignedDouble <# [char] x hold [char] p hold #s  rot sign #> ;
-
-: (u.r)Html	( u w -- adr cnt )
-    0 swap >r (d.) r> over - 0 max .HtmlZeros  pad place pad count  ;
-
+: (u.r)Html	( u w -- addr cnt )
+   0 swap >r (d.) r> over - 0 max .HtmlZeros  pad place pad count
+;
 : 4w.intHtml	( n - )       4 (u.r)Html +html ;
-
 : "#h."		( n - "#6hexnum"$ cnt ) \ format for a color. Eg: Blue="#0000FF"
-    SignedDouble <# hold"bl h6# rot sign  [char] # hold  hold" #> ;
-
+    SignedDouble <# hold"bl h6# rot sign  [char] # hold  hold" #>
+;
 : (h.)		( n -- hexnum$ cnt )
-    SignedDouble <#  base @ >r hex #s  r> base !  rot sign  #> ;
-
+    SignedDouble <#  base @ >r hex #s  r> base !  rot sign  #>
+;
+: <hr>        ( color size -- )
+   +HTML| <hr size=|  "." +html
+   +HTML| width="100%" color=| "#h." +html >|
+;
+: <hrWH>      ( color w h -- )
+   +HTML| <hr size=|  "." +html
+   +HTML| width=| "." +html   +HTML| px" color=| "#h." +html >|
+;
 : <FontSizeColor> ( pxSize RgbColor - )
    +HTML| <font color=| "#h." +html
-   +HTML| style="font-size:| .Html +HTML| px" >| ;
-
+   +HTML| style="font-size:| .Html +HTML| px" >|
+;
 : <<FontSizeColor>> ( pxSize RgbColor string cnt - )
-   tmp$ place <FontSizeColor>  tmp$  count +html </font> ;
-
+   tmp$ place <FontSizeColor>  tmp$  count +html </font>
+;
 : <#td		( #HtmlCells - )
       +HTML| <td colspan= | dup "." +html
-      +HTML| width=| #100 swap / 1 max ".%" +html ;  \ NOTE: No closing > here !
+      +HTML| width=| #100 swap / 1 max ".%" +html   \ NOTE: No closing > here !
+;
+: <#tdC>  ( n - ) <#td +HTML| align="center"> | ;
+: <#tdL>  ( n - ) <#td +HTML| style="text-align:left"> | ;
+: <#tdR>  ( n - ) <#td +HTML| style="text-align:right"> | ;
+: NoName> ( - )   +HTML|  name="nn"> | ;
 
-: <#tdC>	( n - )  <#td +HTML| align="center"> | ;
-: <#tdL>    ( n - )      <#td +HTML| style="text-align:left"> | ;
-: <#tdR>    ( n - )      <#td +HTML| style="text-align:right"> | ;
-
-: NoName> ( - ) +HTML|  name="nn"> | ;
-
-\ Default CSS button as defined in btn at header_styles
-
+\ Default CSS button as defined in btn at header-styles later
 \ <Btn starts a css-button. The content of the value is used as keyword in Forth.
 \ The value name 'nn' needed in the browser is ignored in Forth.
 : <Btn    ( btnCmd cnt - ) +html| <button type="submit" NAME="nn" VALUE="| +html  [char] " +1html ;
 : Btn>    ( btntxt cnt - ) +html  +html| </button>| ;
-: <CssButton> ( btntxt cnt btnCmd cnt - )  <Btn  +html| " class="btn">|  Btn> ;
-
+: <CssButton>     ( btntxt cnt btnCmd cnt - )  <Btn  +html| " class="btn">|  Btn> ;
 : <CssBlueButton> ( btntxt cnt btnCmd cnt - )
-   <Btn +html| " class="btn" style="background-color:#A0A0FF">| Btn> ;
-
+   <Btn +html| " class="btn" style="background-color:#A0A0FF">| Btn>
+;
 : <CssBlue|GrayButton> ( btntxt cnt btnCmd cnt colorflag - )
-      if   <CssBlueButton>
-      else <CssButton>
-      then ;
-
+    if  <CssBlueButton>  else  <CssButton>  then
+;
 : <SmallButton>   ( btntxt cnt cmd cnt - ) \ For a small CSS button
-     <Btn
-      +html| "  style="padding: 1px 10px; font-size: 16px";  class="btn">|
-     Btn> ;
-
+   <Btn  +html| "  style="padding: 1px 10px; font-size: 16px";  class="btn">|  Btn>
+;
 : <empty-cell>       ( - ) <td> .HtmlSpace </td> ;
 : <empty-table-line> ( - ) <tr> <empty-cell> </tr> ;
-
 : <select  ( name cnt size  - )
    +crlf -rot +HTML| <SELECT NAME="| +HTML
-    +HTML| " SIZE=| "." 1- +HTML >| ;
-
+   +HTML| " SIZE=| "." 1- +HTML >|
+;
 : </select> +crlf +HTML| </SELECT>| ;
-
-: Upc-BlankDashes ( adr cnt - )
+: Upc-BlankDashes ( addr cnt - )
    over dup c@ upc swap c! \ Uppercase 1st char
-   s" -" BlankStrings ;    \ Remove dashes
-
+   s" -" BlankStrings      \ Remove dashes
+;
 
 \ : <<option>> ( text cnt index DropDownDefault - )
-\ : .<<option>> ( adr cnt index chosen - )  over = <<option>> ;
-
+\ : .<<option>> ( addr cnt index chosen - )  over = <<option>> ;
 : <option> ( text cnt index chosen - )
-   +crlf +HTML| <OPTION |
-      if  +HTML| SELECTED |
-      then
-    +HTML| VALUE=| "." 1- +HTML >|   +HTML  +HTML| </option> | ;
-
-
-: <<option-cap>>  ( adr cnt index chosen - )
+   +crlf +HTML| <OPTION | if
+      +HTML| SELECTED |
+   then
+   +HTML| VALUE=| "." 1- +HTML >|   +HTML  +HTML| </option> |
+;
+: <<option-cap>>  ( addr cnt index chosen - )
    over =
-   +crlf +HTML| <OPTION |
-      if  +HTML| SELECTED |
-      then
-    +HTML| VALUE=| "." 1- +HTML >|
-    htmlpage$ lcount + over 2>r +HTML
-    2r> Upc-BlankDashes
-   +HTML| </option> | ;
-
+   +crlf +HTML| <OPTION |  if  +HTML| SELECTED |  then
+   +HTML| VALUE=| "." 1- +HTML >|
+   htmlpage$ lcount + over 2>r +HTML
+   2r> Upc-BlankDashes
+  +HTML| </option> |
+;
 : <<TopLink>>	( LinkAdr cnt text cnt - )
    +HTML| <a target="_top" href="|  2swap +HTML +HTML| ">|
-   +HTML +HTML| </a> | ;
-
+   +HTML +HTML| </a> |
+;
 : #DataValues ( n scale - )
    +HTML| <div class=".data_listcontainer">|
    +HTML| <datalist id="values"> |
-   swap 0 ?do  +HTML| <option value="|   dup i  * .html
-          +HTML| "></option>|
-   loop  drop
-   +HTML| </datalist></div>| ;
-
+   swap 0  ?do
+      +HTML| <option value="|   dup i  * .html  +HTML| "></option>|
+    loop
+   drop +HTML| </datalist></div>|
+;
 : start-html-header	( -- )
   HtmlPage$ off
    s" HTTP/1.1 200"            +html_line
@@ -193,18 +284,17 @@ VOCABULARY HTML HTML DEFINITIONS
    s" X-Content-Type-Options: nosniff" +html_line
    crlf$ +html  +HTML| <!DOCTYPE html><html lang="en">|
    <head>
-   +HTML| <meta charset="utf-8">| ;
-
-
-: Html-title-header  ( adr cnt - )
+   +HTML| <meta charset="utf-8">|
+;
+: Html-title-header  ( addr cnt - )
    +html| <title>|
-   s" -" tmp$ lplace ipaddr@ ipaddr$ #10 /string tmp$ +lplace
-    s" - " tmp$ +lplace tmp$ +lplace  tmp$ lcount +html  +html| </title>| ;
-
+   s" -" tmp$ lplace ip" #10 /string 0 max tmp$ +lplace
+   s" - " tmp$ +lplace tmp$ +lplace  tmp$ lcount +html  +html| </title>|
+;
 : header-options ( - )
    +HTML| <meta name="viewport" content="width=device-width, initial-scale=1">|
-   +html| <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">| ;
-
+   +html| <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">|
+;
 : header-styles ( - )
    +HTML| <style> #svgelem{ position: relative; left: 2%; } |
    s" fieldset { border:2px solid green;} svg|a:link, svg|a:visited {  cursor: pointer; } " +html
@@ -216,136 +306,138 @@ VOCABULARY HTML HTML DEFINITIONS
      +HTML| border-radius: 12px;
      +HTML| font-size: 16px; |
      +HTML| width: 80px; |
-
      +HTML| background-color: #e7e7e7; |
      +HTML| box-shadow: 0px 1px 2px rgba(0, 0, 0, 0.5); |
      +HTML| cursor: pointer; } |
-
    +HTML| .btn:active { |
      +HTML| top: 2px; |
      +HTML| left: 1px; |
      +HTML| box-shadow: none; } |
-
    +HTML| .vertslidecontainer [type="range"][orient="vertical"] { |
      +HTML| height: 200px; |
      +HTML| width: 70px; |
      +HTML| cursor: pointer; |
      +HTML| writing-mode: bt-lr; |
      +HTML| appearance: slider-vertical; } |
-
    +HTML| .data_listcontainer { |
      +HTML| display: flex; |
      +HTML| flex-direction: column; } |
-
-   +HTML| table, th, td { |
-     +HTML| border-radius: 10px; } |
-
    +HTML| td { |
-     +HTML| text-align:center; } |  ;
-
-: end-header ( - )
-   +HTML| </style> </head> | ;
-
+     +HTML| text-align:center; } |
+;
+: end-header ( - )   +HTML| </style> </head> | ;
 : html-header  ( title cnt - )
   start-html-header  Html-title-header
-  header-options header-styles end-header ;
+  header-options header-styles end-header
+;
+: MsgPage  ( msg$ cnt -- )
+   dup cell+ allocate drop dup >r lplace
+   s" Update " html-header
+   +HTML| <body>|     \ LeftTopStart
+   +HTML| <br><center>|
+   r@ lcount +HTML
+   +HTML| <center></body> </html>|
+   r> free drop
+;
+: MsgPageReboot ( - )
+   s" Restarting the system, leave this page." MsgPage  SendHtmlPage  200 ms  reboot
+;
 
-TCP/IP DEFINITIONS
-
+TCP/IP DEFINITIONS  
 
 alias get            noop
+alias post           noop
 alias HTTP/1.1       noop
+alias HTTP           noop
+alias \              \
+defer /home
 alias NoReply-HTTP   noop
 alias nn             noop
+alias parse-word     parse-word
 alias order  order
 alias words  words
 alias reboot reboot
+alias +a     +a
 
-: +f       ( - ) only forth  ;
+: /favicon.ico ( - )  &favicon.ico lcount +html  ;
 
-ALSO HTML
-
-: /favicon.ico	( - ) favicon ; \ loads favicon at htmlpage$
-
+: \\ ( - )  .get postpone \ ;
+: TcpTime ( UtcTics UtcOffset sunrise  sunset - ) \ Response to GetTcpTime see timediff.fth
+   SetLocalTime tTotal start-timer cr .date .time cr usf@ to tcycle ;
 
 FORTH DEFINITIONS ALSO HTML
 
 : trim-stack	( ...?   - )
     sp@ sp0 @ u<  cr ." Stack "
-      if     .s ." TRIMMED."
-      else   ." UNDERFLOW."
-      then
-    sp0 @ sp! cr ;
-
+      if  .s ." TRIMMED."  else  ." UNDERFLOW."  then
+    sp0 @ sp! cr
+;
 variable depth-target
-
 : save-stack	( ...ToBeSaved - )
-   s" depth-target off  begin depth while >r 1 depth-target +! repeat "
-   evaluate ; immediate
-
+   s" depth-target off  begin depth while >r 1 depth-target +! repeat " evaluate
+; immediate
 : restore-stack	( - ...saved )
-   s"  begin depth-target @ while  r> -1 depth-target +! repeat "
-   evaluate ; immediate
-
-: cut-line	( adrBuf lenBuf -- adr len ) 2dup $0d scan nip - ;
-
-: .catch-error ( adr len - ) \ The line after the separators are removed.
+   s"  begin depth-target @ while  r> -1 depth-target +! repeat " evaluate
+; immediate
+: cut-line	( adrBuf lenBuf -- addr len ) 2dup $0d scan nip -
+;
+: .catch-error ( addr len - ) \ The line after the separators are removed.
     .date .time  ."  Order: " order  \ Words must be defined in the TCP/IP dictionary !
     cr ." ******* Request aborted! ******* " cr
     s" 404 error" html-header              \ Put the error on the html-page
-
     +html| <body bgcolor="#FEFFE6"><font size="4" face="Segoe UI" color="#000000" >|
-           <br> <br> s" /home" s" Home"        <<TopLink>>
+           <br> <br> s" /home" s" Home" <<TopLink>>
     +html| <br> <br> Page not found, error 404 at: | +html
-    +html| </font></body></html>|  ;
-
-: evaluate_cleaned ( adr len - res-catch )
-  #255 min  evaluate
-  xt-htmlpage @ dup 0<>
-    if    catch 0<>
-            if     ." At web page: "
-                   xt-htmlpage @  >name$ 2dup type cr .catch-error
-            then
-    else  drop
-    then  ;
-
-\ evaluating_tcp/ip looks after stack mismatches and syntax errors
-: evaluating_tcp/ip { adr len -- }
-     save-stack               \ Save/empty the stack here
-     adr len ['] evaluate_cleaned catch 0<>
-       if     adr len .catch-error 0 to len \ Show undefined words
+    +html| </font></body></html>|
+;
+: evaluate_cleaned ( addr len - res-catch )
+  #255 min evaluate   xt-htmlpage @ dup 0<> if
+     catch 0<> if
+       ." At web page: " xt-htmlpage @  >name$ 2dup type cr .catch-error
        then
-    sp@ sp0 @ <>
-        if   cr adr len type trim-stack   \ The stack should be empty without trimming it
-        then
-    restore-stack     \ Restore the previous state
- ;
-
-
-: remove_seperator ( adr len char - ) \ replace them by a space
-   -rot bounds
-      ?do  i c@ over =
-             if   bl i c!
-             then
-      loop drop ;
-
-: remove_seperators  ( adr len - )
-  2dup [char] ? remove_seperator
-  2dup [char] = remove_seperator
-       [char] & remove_seperator ;
-
+    else
+       drop
+    then
+;
+\ evaluating_tcp/ip looks after stack mismatches and syntax errors
+: evaluating_tcp/ip { addr len -- }
+   save-stack               \ Save/empty the stack here
+   addr len ['] evaluate_cleaned catch 0<> if
+      addr len .catch-error 0 to len \ Show undefined words
+   then
+   sp@ sp0 @ <>  if
+      cr addr len type trim-stack   \ The stack should be empty without trimming it
+   then
+   restore-stack     \ Restore the previous state
+;
+: remove_separators  ( addr len - )
+   2dup [char] ? bl replace-all-by
+   2dup [char] = bl replace-all-by
+        [char] & bl replace-all-by
+;
 : see-request ( adrRequest lenRequest -- )
+   cr bold .date .time norm
    cr ." Request: " 2dup type
    cut-line  \ Extract the line with GET
-   2dup remove_seperators
-   dup #128 < if cr then  ." Evaluate: " 2dup type cr
-   evaluating_tcp/ip
-   20 0 do [char] - emit loop cr
-   SendHtmlPage xt-htmlpage off ;
-
+   2dup remove_separators
+   dup #128 < if cr then ."  Evaluate: " 2dup type cr
+   evaluating_tcp/ip     SendHtmlPage
+   ." Html-page: " xt-htmlpage @  dup 0<>
+   if  .name  else  drop ." na"  then
+   cr
+   20 0  do  [char] - emit  loop  cr
+   xt-htmlpage off
+;
 : (handle-request) ( adrRequest lenRequest -- )
    cut-line  \ Extract the line with GET
-   2dup remove_seperators
+   2dup remove_separators
+   evaluating_tcp/ip
+   SendHtmlPage xt-htmlpage off ;
+
+: see-command ( adrRequest lenRequest -- )
+   cut-line  \ Extract the line with GET
+   2dup cr type
+   2dup remove_separators
    evaluating_tcp/ip
    SendHtmlPage xt-htmlpage off ;
 
@@ -354,27 +446,19 @@ defer handle-request   ' (handle-request) is handle-request
 $fff  constant SOL_SOCKET
 $80   constant SO_LINGER
 $1006 constant SO_RCVTIMEO
-
-: SetSolOpt	( tcp-sock optval p2 p1 size - )
-   >r pad 2! r> pad rot SOL_SOCKET 4 roll setsockopt drop ;
-
-\ Set SO_LINGER so lwip-close does not discard any pending data
-: linger-tcp ( handle - ) SO_LINGER 1 sp@ [ 2 cells ] literal SetSolOpt ;
-
-: recv		( sock -- length|-1 )
-   dup >r SO_RCVTIMEO #200 1 [ 2 cells ] literal SetSolOpt
-   req-buf /req-buf r> lwip-read ;
-
+$1005 constant SO_SNDTIMEO
+: recv ( sock -- length|-1 )
+   req-buf /req-buf rot lwip-read
+;
 : http-responder ( sock - )
-   dup to lsock  dup linger-tcp recv dup 0>
-     if   req-buf swap handle-request
-     else drop
-     then
-   lsock lwip-close ;
-
-PREVIOUS PREVIOUS FORTH DEFINITIONS
-
-: .get ( - )  req-buf  /req-buf cut-line type ;
-
+   htmlpage$ off to lsock req-buf /req-buf lsock try-receive dup 0> if
+      req-buf swap dup to /recv handle-request
+      8 &linger SO_LINGER $fff lsock setsockopt drop
+   else
+      drop
+   then
+   lsock lwip-close 
+;
+PREVIOUS PREVIOUS ALSO FORTH DEFINITIONS
 
 \ \s

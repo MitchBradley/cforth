@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>Download</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+body{background:#FEFFE6;font-family:monospace;margin:0;padding:0}
+fieldset{border:2px solid black;border-radius:8px;padding:15px;margin:0}
+legend{font-weight:bold;font-size:16px}
+.btn{background:#e7e7e7;border:none;padding:6px 12px;border-radius:15px;cursor:pointer;margin:2px;width:150px}
+.btn-down{background:#4488ff;color:white;width:auto;padding:4px 12px}
+.btn-receive{background:#FF6400;color:white}
+.file-list-container{max-height:340px;overflow-y:auto;border:1px solid #ddd;border-radius:8px;
+	margin-top:10px;margin-bottom:10px;background:white}
+.file-row{background:#f0f0f0;margin:5px;padding:8px;border-radius:8px;display:flex;
+	justify-content:space-between;align-items:center}
+.file-row:nth-child(even){background:#e8e8e8}
+.file-row input[type="checkbox"]{margin-right:10px;transform:scale(1.2);cursor:pointer}
+.file-row span{flex-grow:1;cursor:pointer}
+.progress-container{width:100%;background:#ddd;border-radius:10px;margin:10px 0}
+.progress-bar{width:0%;height:20px;border-radius:10px;text-align:center;
+	line-height:20px;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.progress-bar.error{color:#FF0000;font-weight:bold}
+.progress-bar.normal{color:#000000}
+.button-bar{display:flex;justify-content:center;gap:10px;margin-top:15px}
+.select-bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;padding:5px}
+.select-bar .btn{width:auto;padding:4px 12px}
+</style>
+</head>
+<body>
+<fieldset style="width:100%;box-sizing:border-box">
+<legend>📥 Receive</legend>
+<div class="select-bar">
+	<span>Files on the server</span>
+	<div><button onclick="selectAll()" class="btn" style="width:auto;padding:4px 12px">Select All</button>
+	<button onclick="deselectAll()" class="btn" style="width:auto;padding:4px 12px">Deselect All</button></div>
+</div>
+<div id="fileListContainer" class="file-list-container"><div id="fileList" style="padding:5px">Click "Refresh / Stop" to load files</div></div>
+<div class="progress-container"><div id="progressBar" class="progress-bar normal"></div></div>
+<div class="button-bar">
+	<button onclick="downloadSelected()" class="btn btn-receive">Receive Selected</button>
+	<button onclick="refreshFileList()" id="refreshBtn" class="btn">Refresh / Stop</button>
+</div>
+</fieldset>
+<script>
+if(typeof window === 'undefined' || typeof document === 'undefined'){
+	document.write('<div style="background:#ffd4d4;color:#c00;padding:20px">JavaScript is not working!</div>');
+}
+
+const CHUNK_SIZE = 4096;
+const MAX_CHUNKS = 5000000;
+
+let currentFiles = [];
+let selectedFiles = new Set();
+let isDownloading = false;
+let downloadAborted = false;
+let lastDownloadedFile = '';
+
+function crc32(data){
+	let crc = 0xFFFFFFFF;
+	for(let i = 0; i < data.length; i++){
+		crc ^= data[i];
+		for(let j = 0; j < 8; j++){
+			crc = (crc >>> 1) ^ ((crc & 1) ? 0xEDB88320 : 0);
+		}
+	}
+	return (crc ^ 0xFFFFFFFF) >>> 0;
+}
+
+function formatBytes(bytes){ return bytes.toLocaleString(); }
+function getBaseUrl(){ let hostname = window.location.hostname; let port = window.location.port;
+	return port ? `http://${hostname}:${port}` : `http://${hostname}`; }
+
+async function minimalFetch(url, options = {}) {
+	const fetchOptions = { method: options.method || 'GET' };
+	if (options.body) {
+		fetchOptions.body = options.body;
+	}
+	return fetch(url, fetchOptions);
+}
+
+function setBarColor(){
+	let bar = document.getElementById('progressBar');
+	if(isDownloading){ bar.style.backgroundColor = '#4CAF50';
+	} else { bar.style.backgroundColor = '#aaaaaa'; }
+}
+
+function updateProgress(pct, text, isError){
+	let bar = document.getElementById('progressBar');
+	let r = Math.round(pct);
+	setBarColor();
+	if(isError){
+		bar.classList.remove('normal');
+		bar.classList.add('error');
+	} else {
+		bar.classList.remove('error');
+		bar.classList.add('normal');
+	}
+	if(text !== undefined && text !== ''){
+		bar.style.width = '100%';
+		if(isError){
+			bar.textContent = '❌ ' + text;
+		} else {
+			bar.textContent = text;
+		}
+	} else if(lastDownloadedFile && !isDownloading && pct === 0 && !isError){
+		bar.style.width = '100%';
+		bar.textContent = `Last downloaded: ${lastDownloadedFile}`;
+	} else {
+		bar.style.width = r + '%';
+		bar.textContent = r + '%';
+	}
+}
+
+function abortDownload(){
+	if(isDownloading){ downloadAborted = true; isDownloading = false; setBarColor();
+		updateProgress(0, 'Download aborted', true); }
+}
+
+function refreshFileList(){ 
+	abortDownload(); 
+	selectedFiles.clear(); 
+	loadFileList(); 
+	updateProgress(0, 'Loading...', false); 
+}
+
+function selectAll(){ for(let f of currentFiles){ selectedFiles.add(f); } displayFileList();
+	updateProgress(0, `${selectedFiles.size} file(s) selected`, false); }
+function deselectAll(){ selectedFiles.clear(); displayFileList(); updateProgress(0, 'No files selected', false); }
+
+function toggleFile(filename, checkbox){
+	if(checkbox.checked){ selectedFiles.add(filename); } else { selectedFiles.delete(filename); }
+	updateProgress(0, `${selectedFiles.size} file(s) selected`, false);
+}
+
+async function loadFileList(){
+	abortDownload(); 
+	selectedFiles.clear(); 
+	updateProgress(0, 'Loading file list...', false);
+	try{
+		let r = await minimalFetch(getBaseUrl() + '/filelist');
+		if(!r.ok) throw new Error(`HTTP ${r.status}`);
+		let txt = await r.text();
+		currentFiles = txt.split('\r\n').filter(l => l.trim());
+		displayFileList();
+		updateProgress(0, `${currentFiles.length} files found`, false);
+		setTimeout(() => { if(!isDownloading && lastDownloadedFile){ updateProgress(0, '', false); } }, 2000);
+	} catch(e){ 
+		updateProgress(0, `Failed: ${e.message}`, true);
+		document.getElementById('fileList').innerHTML = '<div style="color:#888;text-align:center;padding:20px">Failed to load files</div>';
+	}
+}
+
+function displayFileList(){
+	let c = document.getElementById('fileList');
+	if(currentFiles.length === 0){
+		c.innerHTML = '<div style="color:#888;text-align:center;padding:20px">No files found on server</div>';
+		return;
+	}
+	let html = '';
+	for(let f of currentFiles){
+		let isChecked = selectedFiles.has(f);
+		html += `<div class="file-row"><input type="checkbox" id="chk_${escapeHtml(f)}" ${isChecked ? 'checked' : ''}
+			onchange="toggleFile('${escapeHtml(f)}', this)"><span onclick="document.getElementById('chk_${escapeHtml(f)}').click()">${escapeHtml(f)}</span></div>`;
+	}
+	c.innerHTML = html;
+}
+
+async function createZip(files, fileBlobs){
+	let centralDirectory = [];
+	let offset = 0;
+	let zipData = [];
+	for(let i = 0; i < files.length; i++){
+		let filename = files[i];
+		let blob = fileBlobs[i];
+		let data = await blob.arrayBuffer();
+		let dataBytes = new Uint8Array(data);
+		let crcVal = crc32(dataBytes);
+		let localHeader = new Uint8Array(30 + filename.length);
+		let dv = new DataView(localHeader.buffer);
+		dv.setUint32(0, 0x04034b50, true);
+		dv.setUint16(4, 20, true);
+		dv.setUint16(6, 0, true);
+		dv.setUint16(8, 0, true);
+		dv.setUint16(10, 0, true);
+		dv.setUint16(12, 0, true);
+		dv.setUint32(14, crcVal, true);
+		dv.setUint32(18, data.byteLength, true);
+		dv.setUint32(22, data.byteLength, true);
+		dv.setUint16(26, filename.length, true);
+		dv.setUint16(28, 0, true);
+		for(let j = 0; j < filename.length; j++){ localHeader[30 + j] = filename.charCodeAt(j); }
+		zipData.push(localHeader);
+		zipData.push(dataBytes);
+		let centralEntry = new Uint8Array(46 + filename.length);
+		let cdv = new DataView(centralEntry.buffer);
+		cdv.setUint32(0, 0x02014b50, true);
+		cdv.setUint16(4, 20, true);
+		cdv.setUint16(6, 20, true);
+		cdv.setUint16(8, 0, true);
+		cdv.setUint16(10, 0, true);
+		cdv.setUint16(12, 0, true);
+		cdv.setUint16(14, 0, true);
+		cdv.setUint32(16, crcVal, true);
+		cdv.setUint32(20, data.byteLength, true);
+		cdv.setUint32(24, data.byteLength, true);
+		cdv.setUint16(28, filename.length, true);
+		cdv.setUint16(30, 0, true);
+		cdv.setUint16(32, 0, true);
+		cdv.setUint16(34, 0, true);
+		cdv.setUint16(36, 0, true);
+		cdv.setUint32(38, 0, true);
+		cdv.setUint32(42, offset, true);
+		for(let j = 0; j < filename.length; j++){ centralEntry[46 + j] = filename.charCodeAt(j); }
+		centralDirectory.push(centralEntry);
+		offset += localHeader.length + data.byteLength;
+	}
+	let cdSize = centralDirectory.reduce((sum, entry) => sum + entry.length, 0);
+	let endRecord = new Uint8Array(22);
+	let erv = new DataView(endRecord.buffer);
+	erv.setUint32(0, 0x06054b50, true);
+	erv.setUint16(4, 0, true);
+	erv.setUint16(6, 0, true);
+	erv.setUint16(8, centralDirectory.length, true);
+	erv.setUint16(10, centralDirectory.length, true);
+	erv.setUint32(12, cdSize, true);
+	erv.setUint32(16, offset, true);
+	erv.setUint16(20, 0, true);
+	let result = [];
+	for(let part of zipData) result.push(part);
+	for(let part of centralDirectory) result.push(part);
+	result.push(endRecord);
+	return new Blob(result, {type: "application/zip"});
+}
+
+async function downloadSingleFile(filename){
+	let chunks = []; let receivedBytes = 0; let chunkCount = 0; let totalBytes = 0;
+	let sizeUrl = getBaseUrl() + `/filesize?file=${encodeURIComponent(filename)}`;
+	let sizeResponse = await minimalFetch(sizeUrl);
+	if(!sizeResponse.ok){ throw new Error(`Failed to get file size: HTTP ${sizeResponse.status}`); }
+	totalBytes = parseInt(await sizeResponse.text());
+	if(isNaN(totalBytes) || totalBytes === 0){ throw new Error(`Sender: Opening file failed or invalid file size: ${totalBytes}`); }
+	updateProgress(0, `Downloading ${filename} (${formatBytes(totalBytes)} bytes)`, false);
+	while(receivedBytes < totalBytes && !downloadAborted){
+		let chunkUrl = getBaseUrl() + `/ok-`;
+		let response = await minimalFetch(chunkUrl);
+		if(!response.ok){ 
+			throw new Error(`Sender: HTTP ${response.status}`);
+		}
+		let data = await response.arrayBuffer();
+		if(data.byteLength === 0){ 
+			throw new Error(`Sender: Read error. Transfer aborted!`);
+		}
+		
+		chunks.push(data); receivedBytes += data.byteLength; chunkCount++;
+		let percent = (receivedBytes / totalBytes) * 100;
+		updateProgress(percent, '', false);
+		await new Promise(r => setTimeout(r, 5));
+		if(chunkCount > MAX_CHUNKS){ throw new Error(`Too many chunks`); }
+	}
+	return new Blob(chunks);
+}
+
+function downloadWithDialog(blob, filename){
+	let blobUrl = URL.createObjectURL(blob);
+	let a = document.createElement('a');
+	a.href = blobUrl;
+	a.download = filename;
+	document.body.appendChild(a);
+	a.click();
+	URL.revokeObjectURL(blobUrl);
+}
+
+async function downloadSelected(){
+	if(isDownloading){ updateProgress(0, 'Download already in progress', true); return; }
+	if(selectedFiles.size === 0){ updateProgress(0, 'No files selected', true); return; }
+	isDownloading = true; setBarColor(); downloadAborted = false;
+	let fileList = Array.from(selectedFiles);
+	try{
+		if(fileList.length === 1){
+			let filename = fileList[0];
+			updateProgress(0, `Downloading ${filename}...`, false);
+			let blob = await downloadSingleFile(filename);
+			downloadWithDialog(blob, filename);
+			lastDownloadedFile = filename;
+			updateProgress(100, `${filename} complete`, false);
+			await new Promise(r => setTimeout(r, 200));
+			updateProgress(0, '', false);
+		} else {
+			updateProgress(0, `Preparing ${fileList.length} files...`, false);
+			let fileBlobs = []; let totalFiles = fileList.length;
+			for(let i = 0; i < fileList.length; i++){
+				if(downloadAborted) break;
+				let filename = fileList[i];
+				updateProgress(((i) / totalFiles) * 100, `Processing ${filename} (${i+1}/${totalFiles})`, false);
+				let blob = await downloadSingleFile(filename);
+				fileBlobs.push(blob);
+			}
+			if(downloadAborted){ throw new Error('Download aborted'); }
+			updateProgress(0, 'Creating ZIP archive...', false);
+			let zipBlob = await createZip(fileList, fileBlobs);
+			let zipFilename = `download_${new Date().toISOString().slice(0,19).replace(/:/g, '-')}.zip`;
+			downloadWithDialog(zipBlob, zipFilename);
+			lastDownloadedFile = zipFilename;
+			updateProgress(100, `${fileList.length} files as ZIP`, false);
+			await new Promise(r => setTimeout(r, 200));
+			updateProgress(0, '', false);
+		}
+	} catch(e){
+		let errorMsg = e.message;
+		updateProgress(0, errorMsg, true);
+		downloadAborted = true;
+	} finally{
+		isDownloading = false; setBarColor();
+		if(!downloadAborted && lastDownloadedFile){
+			updateProgress(0, `Last downloaded: ${lastDownloadedFile}`, false);
+		}
+	}
+}
+
+function escapeHtml(s){ return s.replace(/[&<>]/g, function(m){
+	if(m === '&') return '&amp;'; if(m === '<') return '&lt;'; if(m === '>') return '&gt;'; return m; }); }
+
+</script>
+</body>
+</html>

@@ -1,0 +1,257 @@
+================================================================================
+TECHNICAL REFERENCE FOR CFORTH ON ESP32
+================================================================================
+
+This document is intended for advanced users who want to understand the
+internal memory layout and configuration system.
+
+================================================================================
+1. DYNAMIC CONFIGURATION SYSTEM
+================================================================================
+
+The configuration menu is dynamic. Different configurations can be created
+and switched between without overwriting each other.
+
+Configuration directory:
+  ~/cforth/src/app/esp32-extra/idf_configs
+
+Each configuration is stored as a separate directory (e.g., esp32, esp32_c3, esp32_fastboot).
+
+To create a new configuration:
+  1. In ~/cforth/src/app/esp32-extra/idf_configs, duplicate the entire
+     directory tree of esp32 (or any other existing item).
+  2. Rename the new directory (do not use spaces).
+  3. Run: make setconfig  (select the new item)
+  4. Make your customizations (e.g., make menuconfig).
+  5. Run: make distclean && make  (test the changes)
+  6. Run: make saveconfig (save current configuration to the config directory)
+
+================================================================================
+2. BUILDFLOW
+================================================================================
+
+libforth.a is used for compiled Forth-related code.
+
+Advantages of using libforth.a:
+-------------------------------
+- Modularity: Forth code is packaged as a separate library
+- Faster builds: Only Forth code is rebuilt when changed
+- Clear separation: Forth vs ESP-IDF is well defined
+- Reusability: Same library can be used across projects
+- Easier debugging: Errors are easier to isolate
+
+Build workflow:
+  make libforth_only   # Build only the Forth library
+  make                 # Full build using existing libforth.a
+
+libforth.a contains all compiled Forth-related code:
+  - interpreter
+  - compiler
+  - words
+  - objects from *.o files (C-compiled code)
+
+forth.bin contains:
+  - libforth.a (Forth code)
+  - ESP-IDF (WiFi, FreeRTOS, drivers, etc.)
+
+Both are needed during the build, but only forth.bin is flashed to the ESP32.
+
+================================================================================
+3. MEMORY LAYOUT
+================================================================================
+
+3.1 Flash Memory (4 MB default)
+--------------------------------
+The 4 MB flash is divided into partitions:
+
+  Partition   | Size     | Contents
+  ------------+----------+------------------------------------------
+  factory     | 2.36 MB  | forth.bin (code + dictionary + OS parts)
+  storage     | 1.37 MB  | LittleFS (files, web pages, logs)
+  nvs         | 24 KB    | Non-volatile storage (WiFi credentials)
+  phy_init    | 4 KB     | RF calibration data
+
+Current factory partition usage (idf.py size):
+  forth.bin binary size:  1,149,456 bytes (0x118a10)
+  Factory partition:      2,359,296 bytes (0x240000)
+  Free space:             1,209,840 bytes (0x1275f0) — 51% free
+
+================================================================================
+3.2 Dictionary Files & Partition Layout (Detailed)
+================================================================================
+
+Forth is divided into several dictionary files located at: ~/cforth/build/esp32-extra/
+These files are collected and combined into forth.bin, which is the final firmware image.
+
+How they are used (on the host / PC):
+--------------------------------------
+  1. kernel.dic   (host)  → Core Forth kernel (loaded by the host tools)
+  2. forth.dic    (host)  → Standard Forth words (loaded by the host tools)
+  3. app.dic      (host)  → Created by combining kernel.dic + forth.dic + user code
+
+app.dic is compiled into forth.bin and flashed to the ESP32.
+forth.bin contains:
+    - app.dic 
+    - ESP-IDF operating system components
+    - Drivers and network stack
+
+Partition Layout (4 MB flash):
+------------------------------
+  Partition   | Offset   | Size     | Contents
+  ------------+----------+----------+------------------------------------------
+  bootloader  | 0x1000   | ~32 KB   | First-stage bootloader
+  partition   | 0x8000   | 4 KB     | Partition table itself
+  nvs         | 0x9000   | 24 KB    | Non-volatile storage (WiFi credentials)
+  phy_init    | 0xf000   | 4 KB     | RF calibration data
+  factory     | 0x10000  | 2.36 MB  | forth.bin (code + dictionary + OS parts)
+  storage     | 0x250000 | 1.37 MB  | LittleFS (files, web pages, logs)
+
+The reserved sizes and offsets for each partition are defined in partitions.csv.
+The actual usage may be less than the reserved sizes.
+
+The factory partition is the most important for Forth users since it contains forth.bin.
+The Storage partition is used for uploaded files and user data.
+
+Current factory partition usage (idf.py size):
+  forth.bin binary size:  1,149,456 bytes (0x118a10)
+  Factory partition:      2,359,296 bytes (0x240000)
+  Free space:             1,209,840 bytes (0x1275f0) — 51% free
+
+Current app.dic size:
+  -rw-rw-r-- 1 pi pi 141544 Jul 10 14:06 app.dic
+
+The maximum size reserved for app.dic is determined by MAXDICT in:
+  ~/cforth/build/esp32-extra/sdk_build/local_config.h
+
+Current reserved size: MAXDICT (0xF4000L) = 999,424 bytes
+
+Free space in app.dic for new words:
+  999,424 - 141,544 = 857,880 bytes
+
+MAXDICT is deliberately kept smaller than the partition to leave room for
+overhead (210,416 bytes).
+
+Overhead calculation:
+  1,209,840 (free in factory) - 999,424 (MAXDICT) = 210,416 bytes
+
+This overhead is used by:
+  - ESP-IDF runtime structures
+  - Flash alignment and management
+  - Future expansion
+
+Advanced users with larger flash memory (8 MB, 16 MB) can adjust the partition
+sizes by editing partitions.csv.
+
+After changing partitions.csv:
+  make distclean
+  make
+  make saveconfig   # Save the tested configuration
+ 
+================================================================================
+3.3 DRAM (Data RAM ~320 KB)
+----------------------------
+
+DRAM is the working memory of the ESP32. It holds the stack, variables,
+and runtime data.
+
+Current memory usage (idf.py size):
+         Used   Used %   Free    Total 
+IRAM   121,995   93.07   9,077  131,072
+DRAM    72,028   39.85 108,708  180,736
+
+The classic ESP32 has separate IRAM and DRAM sections.
+IRAM is used for time-critical code, DRAM for data and heap.
+
+If DRAM usage exceeds the available memory, the linker will report:
+  region `dram0_0_seg' overflowed by XXX bytes
+
+This can happen when host tools code (tconsio.o, tfileio.o) is accidentally
+included in the target build. Always ensure that HOST_CFLAGS and TARGET_CFLAGS
+are correctly separated.
+
+================================================================================
+4. HOW TO CHECK MEMORY USAGE
+================================================================================
+
+After a build, run:
+
+  cd ~/cforth/build/esp32-extra/sdk_build
+  idf.py size
+
+For component-level details:
+  idf.py size-components
+
+
+Usage included object files in libforth.a:
+----------------------------------------------------------------
+$ ar -t libforth.a | while read obj; do
+    size=$(stat -c%s "$obj" 2>/dev/null || echo 0)
+    echo "$size $obj"
+done | sort -n -r
+
+160440 tforth.o      # Forth interpreter (core)
+149800 rodict.o      # Dictionary (app.dic)
+53432  tlineedit.o   # Line editor
+52356  tfloatops.o   # Floating point operations
+43656  tcompiler.o   # Forth compiler
+34232  textend.o     # Extended words
+22340  tconsio.o     # Console I/O
+6192   tsyscall.o    # System calls
+4628   tmain.o       # Main entry
+
+To check free heap at runtime (in Forth):
+  .free
+If 'Unused:' falls below 8 KB, the RAM memory is almost full.
+Move sources compiled in RAM to app.fth, so they will compile in ROM
+and reflash cForth.
+
+================================================================================
+5. TROUBLESHOOTING: DRAM OVERFLOW
+================================================================================
+
+If the linker reports:
+  region `dram0_0_seg' overflowed by XXX bytes
+
+Possible causes:
+  1. Host tools code accidentally included (tconsio.o, tfileio.o in target)
+  2. The Forth dictionary has grown too large in RAM memory.
+  3. Too many static variables or large buffers
+
+Solutions:
+  1. Ensure HOST_CFLAGS and TARGET_CFLAGS are correctly separated.
+  2. Use -Os optimization instead of -O2 in esp32.mk.
+  3. Use ESP32 (classic) instead of ESP32-C3 for larger DRAM (520 KB vs 320 KB).
+
+================================================================================
+6. KEY FILES
+================================================================================
+
+  File                          | Purpose
+  ------------------------------+-------------------------------------------
+  partitions.csv                | Flash partition layout
+  local_config.h                | MAXDICT (dictionary size limit in flash memory)
+  sdkconfig                     | ESP-IDF configuration (menuconfig)
+  app.dic                       | Forth dictionary (user application)
+  forth.bin                     | Complete firmware image
+  interface.c                   | ESP32 to Forth interface functions
+
+================================================================================
+7. QUICK REFERENCE
+================================================================================
+
+  Command                | Purpose
+  -----------------------+-------------------------------------------
+  make setconfig         | Select/restore a configuration
+  make saveconfig        | Save current configuration
+  make menuconfig        | Configure ESP-IDF options
+  make clean             | Clean build files (Forth changes)
+  make distclean         | Full clean (C changes or full cleanup)
+  make test              | Build firmware only (fast rebuild)
+  make debug             | Build with full output (for debugging)
+  make flash             | Flash the ESP32
+  idf.py size            | Show memory usage
+
+================================================================================
+END OF TECHNICAL REFERENCE
+================================================================================
+July 2026  https://github.com/Jos-Ven/cforth

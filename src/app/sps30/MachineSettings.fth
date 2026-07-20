@@ -1,5 +1,6 @@
 marker -MachineSettings.fth  cr lastacf .name #19 to-column .( 11-11-2023 ) \ By J.v.d.Ven
 
+' europe/amsterdam is tz-local
 
 s" 192.168.0."    dup 1+ allocate drop dup to prefix$ place \ For the Gforth-servers
 

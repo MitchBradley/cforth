@@ -96,9 +96,11 @@ alias fix    fround
    fdup f0>  if  floor  else  fceil  then
 ;
 : f>d  ( real -- d )
+   base @ decimal
    #places @  0 #places ! ftrunc fstring $number? 0=
       if  0. then
    rot #places !
+   rot base !
 ;
 : d>f  ( d -- real )
    dup 0<  if

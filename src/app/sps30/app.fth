@@ -29,59 +29,51 @@ alias m-init noop
    false
 ;
 
-: ms>ticks  ( ms -- ticks )
-   esp-clk-cpu-freq #80000000 over =
-     if    drop
-     else  #240000000 =
-             if   exit
-             else #1 lshift
-             then
-     then  #3 /
-;
+: ms>ticks ( ms -- ticks ) get-tick-rate-hz / ;
 
 : system-time>f ( us seconds -- ) ( f: -- us )
-   s" s>d d>f f# 1000000 f*  s>d d>f  f+ "  evaluate ; immediate
+   s" s>d d>f f# 1.0e6 f*  s>d d>f  f+ "  evaluate
+; immediate
 
-: usf@         ( f: -- us )
-   s" dup dup sp@ get-system-time! system-time>f" evaluate ; immediate
+: usf@ ( f: -- us )
+   s" 0. sp@ get-system-time! system-time>f" evaluate  ; immediate
 
-: ms@         ( -- ms ) f# .001 usf@ f* f>d drop ;
+: ms@  ( -- ms ) f# 1.0e-3 usf@ f* f>d d>s  ;
 
 alias get-msecs ms@
 
 : fus  ( f: us - )
-   usf@  f+
-     begin   fdup  usf@  f- f# 100000000 f>
-     while   #100000000 us
-     repeat
-   usf@  f- f>d drop abs us ;
+   usf@  f+  begin
+      fdup  usf@  f- f# 1.0e8 f>
+   while   #100000000 us
+   repeat
+   usf@  f- f>d d>s abs us
+;
 
-: ms ( ms -- )   s>d d>f f# 1000 f* fus ;
+: ms   ( ms -- )   s>d d>f f# 1.0e3 f* fus ;
 
-fl wifi.fth
-
+0 [if] \ In case you need it.
 fl ../esp8266/xmifce.fth
 fl ../../lib/crc16.fth
 fl ../../lib/xmodem.fth
 also modem
 : rx  ( -- )  pad  unused pad here - -  (receive)  #100 ms  ;
 previous
+[then]
 
 fl files.fth
-fl server.fth
-fl tasking_rtos.fth        \ Preemptive multitasking
-
 fl tools/extra.fth
-fl tools/table_sort.f
-fl tools/timezones.f
+fl wifi.fth
+fl server.fth
+fl tools/table_sort.fth
+fl tools/timezones.fth
 fl tools/timediff.fth      \ Time calculations
 fl tools/webcontrols.fth   \ Extra tags in ROM
-fl tools/svg_plotter.f
-fl tools/rcvfile.fth
+fl tools/transfer.fth      \ Uses java in a browser. Much faster than xmodem.
+fl tools/svg_plotter.fth
 fl tools/wsping.fth
-fl tools/schedule-tool.f   \ Daily schedule
+fl tools/schedule-tool.fth \ Daily schedule
 fl ../sps30/sps30.fth      \ For sps30_web.fth
-
 
 : interrupt?  ( -- flag )
    ." Type a key within 2 seconds to interact" cr
@@ -91,19 +83,16 @@ fl ../sps30/sps30.fth      \ For sps30_web.fth
 
 : load-startup-file  ( -- ior )   " start" ['] included catch   ;
 
-: app ( - ) \ Sometimes SPIFFS or a wifi connection causes an error. A reboot solves that.
-   banner  hex  interrupt? 0=
-      if     s" start" file-exist?
-           if   load-startup-file
-                if   ." Reading SPIFFS. " cr interrupt? 0=
-                    if    reboot
-                    then
-                then
-           then
+: app ( - ) 
+   1 s" *" log-level! banner interrupt? hex 0= if
+      s" start" file-exist? if
+         load-startup-file drop
       then
+   then
    quit
 ;
 
+cr  bold .( ******* App: sps30 ******* )  norm cr cr
 alias id: \
 
 " app.dic" save

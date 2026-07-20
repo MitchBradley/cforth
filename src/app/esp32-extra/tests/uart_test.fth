@@ -17,4 +17,5 @@
     0 0 0 0 /RxBuf uart_num uart-driver-install
           abort" uart-driver-install failed" ;
 
+\ Initialize extra UART on UART2 with RX=GPIO25, TX=GPIO26
 #26 #25 2 init-extra-uart

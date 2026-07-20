@@ -6,16 +6,15 @@ fl ../../lib/ilog2.fth
 fl ../../lib/tek.fth
 
 warning @ warning off
-: bye standalone?  if  restart  then  bye  ;
+: bye standalone?  if esp-wifi-stop restart  then  bye  ;
 warning !
 
-: .commit  ( -- )  'version cscount type  ;
+: .commit ( -- )  'version cscount type  ;
 
 : .built  ( -- )  'build-date cscount type  ;
 
-: banner  ( -- )
-   cr ." CForth built " .built
-   ."  from " .commit
+: banner  ( -- )   cr ." CForth under ESP-IDF V5.5.1, " .built
+   ."  from, " .commit 
    cr
 ;
 
@@ -27,52 +26,51 @@ alias m-init noop
    key?  if  key true exit  then
    false
 ;
-: ms>ticks  ( ms -- ticks )
-   esp-clk-cpu-freq #80000000 over =  if
-      drop
-   else
-      #240000000 =  if
-         exit
-      else
-         #1 lshift
-      then
-   then  #3 /
-;
+
+: ms>ticks ( ms -- ticks ) get-tick-rate-hz / ;
 
 : system-time>f ( us seconds -- ) ( f: -- us )
-   s" s>d d>f f# 1000000 f*  s>d d>f  f+ "  evaluate ; immediate
+   s" s>d d>f f# 1.0e6 f*  s>d d>f  f+ "  evaluate
+; immediate
 
-: usf@  ( f: -- us )
-   s" dup dup sp@ get-system-time! system-time>f" evaluate ; immediate
+: usf@ ( f: -- us )
+   s" 0. sp@ get-system-time! system-time>f" evaluate  ; immediate
 
-: ms@   ( -- ms ) f# 0.001 usf@ f* f>d drop ;
+: ms@  ( -- ms ) f# 1.0e-3 usf@ f* f>d d>s  ;
 
 alias get-msecs ms@
 
 : fus  ( f: us - )
-   usf@ f+  begin
-         fdup  usf@  f# 6000 f-  f>
-      while
-         #6000 us
-      repeat
-      usf@ fswap f- f>d drop abs us
+   usf@  f+  begin
+      fdup  usf@  f- f# 1.0e8 f>
+   while   #100000000 us
+   repeat
+   usf@  f- f>d d>s abs us
 ;
 
-: ms  ( ms -- )   s>d d>f f# 1000 f* fus ;
+: ms   ( ms -- )   s>d d>f f# 1.0e3 f* fus ;
 
-fl wifi.fth
-
+0 [if] \ In case you need it.
 fl ../esp8266/xmifce.fth
 fl ../../lib/crc16.fth
 fl ../../lib/xmodem.fth
 also modem
 : rx  ( -- )  pad  unused pad here - -  (receive)  #100 ms  ;
 previous
+[then]
 
 fl files.fth
-fl server.fth
-fl tasking_rtos.fth        \ Preemptive multitasking
+fl mcpwm.fth
+fl espnow.fth 
+fl adc_esp32.fth
 fl tools/extra.fth
+fl wifi.fth                \ Use logon
+fl i2c.fth
+fl server.fth
+fl tools/timezones.fth     \ Set your own timezone
+fl tools/timediff.fth      \ Time calculations.
+fl tools/webcontrols.fth   \ Extra tags and html parser
+fl tools/transfer.fth      \ Much faster than xmodem. Use: transfer
 
 : interrupt?  ( -- flag )
    ." Type a key within 2 seconds to interact" cr
@@ -82,19 +80,14 @@ fl tools/extra.fth
 
 : load-startup-file  ( -- ior )   " start" ['] included catch   ;
 
-: app ( - ) \ Sometimes SPIFFS or a wifi connection causes an error. A reboot solves that.
-   banner  hex  interrupt? 0=  if
-      s" start" file-exist?  if
-         load-startup-file  if
-            ." Reading SPIFFS. " cr interrupt? 0=  if
-               reboot
-            then
-         then
+: app ( - )
+   1 s" *" log-level! banner interrupt? hex 0= if
+      s" start" file-exist? if
+         load-startup-file drop
       then
    then
    quit
 ;
-
 alias id: \
 
 " app.dic" save

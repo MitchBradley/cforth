@@ -1,7 +1,9 @@
 [ifdef]   -ButtonInt.fth bye  [then]
-marker    -ButtonInt.fth cr lastacf .name #19 to-column .( 23-05-2022 )
+marker -ButtonInt.fth cr lastacf .name #20 to-column .( 23-05-2022 )
 
-#33 constant InputButton
+needs CreateGpioQue q_gpio.fth
+
+#27 constant InputButton
 0   value &ulValReceived
 0   value qGpioHandle
 
@@ -13,14 +15,14 @@ marker    -ButtonInt.fth cr lastacf .name #19 to-column .( 23-05-2022 )
       then ;
 
 : WaitForButton ( - flag msEsp )
-    debounce portMAX_DELAY  WaitforGpioQueue &ulValReceived @ ;
-
+    debounce -1  WaitforGpioQueue &ulValReceived @ ;
+ 
 : InitButton ( - )
     cell #25 CreateGpioQue    to &ulValReceived    to qGpioHandle
     InputButton gpio-is-input-pullup
     GPIO_INTR_NEGEDGE qGpioHandle InputButton init-handler ;
 
- : testbutton
+ : testbutton  \ Waits until InputButton get low
     cr ."  Waiting for button on GPIO: " InputButton .d
        5 0 do  cr ." Button.. "  WaitForButton   ." MS after boot: " . drop
        loop ;

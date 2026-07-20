@@ -4,9 +4,9 @@
 // Exported definitions:
 //
 // init_io(argc,argv);		Initialize io system
-// emit(char, up);			Output a character
+// emit(char, up);		Output a character
 // n = key_avail();		How many characters can be read?
-// error(s, up);			Print a string on the error stream
+// error(s, up);		Print a string on the error stream
 // n = caccept(addr, count);	Collect a line of input
 // char = key();		Get the next input character
 // name_input(filename);
@@ -22,10 +22,13 @@
 #include <unistd.h>
 #include <limits.h>
 #include <fcntl.h>
+#include <errno.h>
 
 #include "forth.h"
 #include "compiler.h"
 
+static char path[16] = "/esp-32/";
+static char *expand_name(char *name);
 
 int ansi_emit(int c, FILE *fd);
 extern int key();
@@ -34,49 +37,56 @@ extern FILE *fopen();
 
 #define STRINGINPUT (FILE *) -1
 
-cell
-freadline(cell f, cell *sp, cell *up) // Returns IO result, actual and more? on stack
+cell freadline(cell f, cell *sp, cell *up)
 {
-    // Stack: adr len -- actual more?
-
+    // Stack input:  sp[0] = len, sp[1] = buffer address
+    // f = file handle
+    // Returns: actual more? ior  (sp adjusted: actual, more?)
+    
     u_char *adr = (u_char *)sp[1];
-    register cell len = sp[0];
-
-    register cell actual;
-    register int c;
-
-    sp[0] = -1;         // Assume not end of file
-
-    for (actual = 0; actual < len; ) {
-        if ((c = getc((FILE *)f)) == EOF) {
-            if (actual == 0)
-                sp[0] = 0;
-
-            if (ferror((FILE *)f)) {
-                sp[1] = actual;
-                return(READFAIL);
+    cell len = sp[0];
+    cell actual = 0;
+    int c;
+    
+    // Assume more data available (true= -1 in Forth)
+    sp[0] = -1;  // more? = true (-1)
+    
+    for (actual = 0; actual < len; actual++) {
+        c = getc((FILE *)f);
+        
+        if (c == EOF) {
+            if (actual == 0) {
+                sp[0] = 0;  // more? = false (0), no data anymore
             }
+            
+            if (ferror((FILE *)f)) {
+                sp[1] = actual;  // actual bytes read
+                return -EIO;     // I/O error
+            }
+            
+            // EOF zonder error
             break;
         }
-        if (c == CNEWLINE) {    // Last character of an end-of-line sequence
+        
+        // Check for newline
+        if (c == '\n') {
+            // We read the newline but don't store it
             break;
         }
-
-        // Don't store the first half of a 2-character newline sequence
-        if (c == SNEWLINE[0])
+        
+        // Skip carriage return
+        if (c == '\r') {
+            actual--;  // Don't count this character
             continue;
-
-        *adr++ = c;
-//      printf("%c", c);
-        ++actual;
+        }
+        
+        // Store character
+        *adr++ = (u_char)c;
     }
-//    printf("\n");
-
-
-    sp[1] = actual;
-    return(0);
+    
+    sp[1] = actual;  // actual bytes read (without newline)
+    return 0;        // ior = 0 (success)
 }
-
 cell
 pfclose(cell f, cell *up)
 {
@@ -103,105 +113,66 @@ pfsize(cell f, u_cell *high, u_cell *low, cell *up)
     return((cell)(end==-1 ? SIZEFAIL : 0));
 }
 
-static char path[16] = "/spiffs/";
 
-char *
-expand_name(char *name)
+static char *expand_name(char *name);
+static char *create_modes[] = { "a+b", "wb", "w+b", "" };
+
+static char *expand_name(char *name)
 {
-  char envvar[64], *fnamep, *envp, paren, *fullp;
-  static char fullname[PATH_MAX];
-  int ndx;
-  ndx = strlen(name);
-  char tmp[9];
-  strncpy(tmp, name, 8);
-  tmp[8] = '\0';
-    if (((strcmp(tmp, "/sdcard/") == 0 ) || (strcmp(tmp, "/spiffs/") == 0 )) && (ndx > 8)) {
-       return (name);
-        }  else { if (((strcmp(tmp, "/sdcard/") == 0 ) || (strcmp(tmp, "/spiffs/") == 0 )) && (ndx == 8)) {
-           return ("");
-          }
-        }
-  strcpy(fullname, path);
-  fullp = fullname + strlen(fullname);
-  fnamep = name;
-  while (*fnamep) {
-    if (*fnamep == '$') {
-      fnamep++;
-      ndx = 0;
-      if (*fnamep == '{' || *fnamep == '(') {	// multi char env var
-        paren = (*fnamep++ == '{') ? '}' : ')';
-
-        while (*fnamep != paren && ndx < PATH_MAX && *fnamep != '\0') {
-          envvar[ndx++] = *(fnamep++);
-        }
-        if (*fnamep == paren) {
-          fnamep++;
-        } else {
-          ndx = 0;
-          fnamep = name;
-        }
-      } else		/* single char env. var. */
-        envvar[ndx++] = *(fnamep++);
-      envvar[ndx] = '\0';
-
-      if (ndx > 0 && (envp = getenv(envvar)) != NULL) {
-        strcpy(fullp, envp);
-        fullp += strlen(envp);
-      } else {
-        printf("Can't find environment variable %s in %s\n", envvar,name);
-        exit(1);
-      }
-      ndx = 0;
-    } else {
-      *fullp++ = *fnamep++;
-    }
-  }
-  *fullp = '\0';
-  return (fullname);
+    static char fullname[PATH_MAX];
+    // Absolute path
+    if (strncmp(name, "/sdcard/", 8) == 0 || strncmp(name, "/esp-32/", 8) == 0)
+        return name;
+    // Relatief path
+    snprintf(fullname, PATH_MAX, "%s%s", path, name);
+    return fullname;
 }
 
-// r/o                Open existing file for reading
-// w/o                Open or create file for appending
-// r/w                Open existing for reading and writing
-// r/o create-flag or Open or create file for appending, read at beginning
-// w/o create-flag or ???
+// r/o                Open existing file for reading only
+// r/w or w/o         Open existing file for reading and writing at beginning
+// r/w create-file    Open or create file for reading and writing (truncates if exists)
 
-// 0:r/o 1:w/o 2:r/w 3: undefined
-static char *popen_modes[]  = { "rb",  "wb", "r+b", "" };
 cell pfopen(char *name, int len, int mode, cell *up)
 {
-static char s[256];
-    if ((len == 0) && (mode == -9)) {
-       return (cell)path;
-    }
     char cstrbuf[PATH_MAX];
-    if ((len < 0)  && (mode == -9)) {
-    int length= abs(len);
-    char *s = expand_name(altocstr(name, length, cstrbuf, PATH_MAX));
-    return (cell)s;
-    }  else {
-         char *s = expand_name(altocstr(name, len, cstrbuf, PATH_MAX));
-
-       FILE *fp;
-       int fd;
-           if ((fd = open(s, mode)) == -1) {
-              return(0);
-           }
-       return ( (cell)fdopen(fd, popen_modes[mode&3]));
+    if (mode == -9) {
+        if (len == 0) return (cell)path;  // GET path
+        if (len < 0) {    // SET path of expand
+            char *exp = expand_name(altocstr(name, -len, cstrbuf, PATH_MAX));
+            if (strcmp(exp, "/sdcard/") == 0 || strcmp(exp, "/esp-32/") == 0)
+                strncpy(path, exp, sizeof(path)-1);
+            return (cell)exp;
+        }
     }
+    char *fullpath = expand_name(altocstr(name, len, cstrbuf, PATH_MAX));
+    static const char *c_modes[] = {
+        [0] = "rb",
+        [1] = "r+b",
+        [2] = "r+b",
+        [3] = "w+b"
+    };
+    if ((mode & 3) != 3) {  // Only create mode (3) does not need to exist
+        struct stat st;
+        if (stat(fullpath, &st) == -1) return 0;
+    }
+    FILE *fp = fopen(fullpath, c_modes[mode & 3]);
+    if (!fp) return 0;
+    if ((mode & 3) == 1 || (mode & 3) == 2)
+        fseek(fp, 0, SEEK_SET);
+    return (cell)fp;
 }
 
-static char *create_modes[] = { "a+b", "wb", "w+b", "" };
 cell pfcreate(char *name, int len, int mode, cell *up)
 {
     char cstrbuf[512];
-
-    return( (cell)fopen(expand_name(altocstr(name, len, cstrbuf, 512)), create_modes[mode&3]) );
+    char *fullpath = expand_name(altocstr(name, len, cstrbuf, 512));
+    FILE *fp = fopen(fullpath, create_modes[mode & 3]);
+    return (cell)fp;
 }
 
 cell pfread(cell *sp, cell len, void *fid, cell *up)  // Returns IO result, actual in *sp
 {
-    size_t ret;
+//    size_t ret;
     *sp = (cell)fread((void *)*sp, 1, (size_t)len, (FILE *)fid);
 
     return (*sp == 0) ? ferror((FILE *)fid) : 0;

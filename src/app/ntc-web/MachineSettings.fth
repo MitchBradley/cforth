@@ -1,5 +1,6 @@
-marker -MachineSettings.fth  cr lastacf .name #19 to-column .( 11-11-2023 ) \ By J.v.d.Ven
+marker -MachineSettings.fth  cr lastacf .name #19 to-column .( 05-05-2025 ) \ By J.v.d.Ven
 
+[ifdef] av-trim    f# -2.0e0 to av-trim   [then]
 
 s" 192.168.0."    dup 1+ allocate drop dup to prefix$ place \ For the Gforth-servers
 

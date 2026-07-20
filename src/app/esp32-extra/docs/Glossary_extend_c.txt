@@ -1,0 +1,472 @@
+================================================================================
+CFORTH ESP32 GLOSSARY FOR WORDS IN EXTEND.C  
+================================================================================
+
+For applications and further extensions, refer to the files and directories in:
+  ~/cf_551/cforth/src/app/esp32-extra/
+
+LEGENDA:
+  i.xxx    = integer (cell) parameter
+  a.xxx    = address parameter
+  $.xxx    = string parameter (address + length on stack)
+
+
+1. VERSIE & INFORMATIE
+--------------------------------------------------------------------------------
+  build-date   ( -- a )
+    Returns address of build date string.
+
+  version      ( -- a )
+    Returns address of version string.
+
+
+2. TIMING & DELAY
+--------------------------------------------------------------------------------
+  us           ( i.us -- )
+    Delay for i.us microseconds.
+
+  get-ticks    ( -- i.ticks )
+    Returns FreeRTOS tick count.
+
+  get-tick-rate-hz  ( -- hz )
+    Get the FreeRTOS tick rate in Hz (ticks per second).
+    This value is set by CONFIG_FREERTOS_HZ in menuconfig.
+    Default: 100 Hz (10 ms per tick).
+
+  vTaskDelay   ( i.ms -- )
+    Delay for i.ms milliseconds.    
+    IMPORTANT: Under IDF 5.5.1, the minimum delay is 1 tick.
+    The default tick rate is 100 Hz (configTICK_RATE_HZ),   
+    For delays shorter than 100 ms, use us (microseconds).
+    The actual delay may be longer due to scheduler overhead.
+
+
+3. RESTART & LOGGING
+--------------------------------------------------------------------------------
+  restart      ( -- )
+    Restart the ESP32.
+
+  log-level!   ( i.level $.component -- )
+    Set log level for component.
+    Levels: 0=error, 1=warn, 2=info, 3=debug, 4=verbose.
+
+
+4. ADC (Analog-to-Digital Converter)
+--------------------------------------------------------------------------------
+  adc-new-unit          ( i.clk_src i.unit_id -- handle|0 )
+    Create new ADC unit. Returns handle or 0 on error.
+
+  adc-del-unit          ( i.handle -- i.error )
+    Delete ADC unit. Returns 0 on success.
+
+  adc-config-channel    ( i.bitwidth i.atten i.channel i.handle -- i.error )
+    Configure ADC channel.
+
+  adc-read-raw          ( a.out_raw i.channel i.handle -- i.error )
+    Read raw ADC value.
+
+  adc-raw-to-mv         ( a.out_mv i.raw i.handle -- i.error )
+    Convert raw ADC value to millivolts.
+
+  adc-create-calibration-scheme  ( i.bitwidth i.atten i.unit -- i.handle )
+    Create calibration scheme. ESP32 uses line fitting, ESP32-C3 uses curve fitting.
+    Returns handle or 0.
+
+  adc-delete-calibration-scheme  ( i.handle -- )
+    Delete calibration scheme.
+
+
+5. UART (Serial Communication)
+--------------------------------------------------------------------------------
+  uart-param-config     ( i.flow i.stop i.par i.#bits i.baud i.uart_num -- i.err )
+    Configure UART parameters.
+
+  uart-write-bytes      ( i.size a.src i.uart_num -- i.res )
+    Write bytes to UART.
+
+  uart-read-bytes       ( i.wait i.size a.buf i.uart_num -- i.#bytes )
+    Read bytes from UART.
+
+  uart-set-pin          ( i.cts i.rts i.rx i.tx i.uart_num -- i.error? )
+    Set UART pins.
+
+  uart-driver-install   ( i.flags a.queue i.q_size i.tx_size i.rx_size i.uart_num -- i.error? )
+    Install UART driver.
+
+
+6. I2C (Inter-Integrated Circuit) - Driver-NG
+--------------------------------------------------------------------------------
+  i2c-bus-init          ( i.pullup i.scl i.sda i.glitch -- i.bus-handle )
+    Initialize I2C bus with internal pullup option.
+
+  i2c-bus-delete        ( i.bus-handle -- )
+    Delete I2C bus.
+
+  i2c-device-add        ( i.bus-handle i.tenbit i.addr i.speed i.wait -- i.device-handle )
+    Add device to I2C bus. tenbit=1 for 10-bit addresses.
+
+  i2c-device-delete     ( i.device-handle -- )
+    Delete I2C device.
+
+  i2c-master-read-byte  ( i.reg i.device-handle -- byte )
+    Read one byte from I2C device register.
+
+  i2c-master-write-byte ( i.value i.reg i.device-handle -- i.error )
+    Write one byte to I2C device register.
+
+  i2c-master-read-word  ( i.reg i.device-handle -- word )
+    Read 16-bit word from I2C device register (MSB first).
+
+  i2c-master-write-word ( i.value i.reg i.device-handle -- i.error )
+    Write 16-bit word to I2C device register (MSB first).
+
+  i2c-master-write-read ( a.wbuf i.wsize a.rbuf i.rsize i.device-handle -- i.error )
+    Combined write-then-read transaction.
+
+
+7. GPIO (General Purpose Input/Output)
+--------------------------------------------------------------------------------
+  gpio-pin@             ( i.gpio# -- i.flag )
+    Read GPIO pin (0 or -1).
+
+  gpio-pin!             ( i.level i.gpio# -- )
+    Write GPIO pin (0 or 1).
+
+  gpio-toggle           ( i.gpio# -- )
+    Toggle GPIO pin.
+
+  gpio-is-output        ( i.gpio# -- )
+    Set GPIO as output.
+
+  gpio-is-output-open-drain ( i.gpio# -- )
+    Set GPIO as open-drain output.
+
+  gpio-is-input         ( i.gpio# -- )
+    Set GPIO as input (floating).
+
+  gpio-is-input-pullup  ( i.gpio# -- )
+    Set GPIO as input with pull-up.
+
+  gpio-is-input-pulldown ( i.gpio# -- )
+    Set GPIO as input with pull-down.
+
+  gpio-mode             ( i.pullup? i.direction i.gpio# -- )
+    Set GPIO mode and pull-up/down.
+
+  gpio-hold-en          ( i.gpio# -- )
+    Enable GPIO hold during deep sleep.
+
+  gpio-hold-dis         ( i.gpio# -- )
+    Disable GPIO hold.
+
+  gpio-deep-sleep-hold-en  ( -- )
+    Enable GPIO hold for all pins during deep sleep.
+
+  gpio-deep-sleep-hold-dis ( -- )
+    Disable GPIO hold for all pins.
+
+  gpio_set_intr_type    ( i.intr_type i.gpio_num -- i.res )
+    Set GPIO interrupt type.
+
+  gpio_install_isr_service ( i.no_use -- i.res )
+    Install GPIO ISR service.
+
+  gpio_isr_qhandler_add ( i.hqueue i.gpio_num -- i.res )
+    Add GPIO to ISR queue handler.
+
+  gpio_intr_enable      ( i.handle -- i.err )
+    Enable GPIO interrupt.
+
+  gpio_intr_disable     ( i.handle -- i.err )
+    Disable GPIO interrupt.
+
+  gpio-matrix-out       ( i.inven i.invout i.fun i.pin -- )
+    Configure GPIO output matrix (ESP32 specific).
+
+  gpio-matrix-in        ( i.invert i.fun i.pin -- )
+    Configure GPIO input matrix (ESP32 specific).
+
+
+8. SLEEP & WAKEUP
+--------------------------------------------------------------------------------
+  esp-sleep-enable-ext0-wakeup ( i.level i.pin -- i.error? )
+    Enable wakeup from deep sleep on GPIO pin.
+    ESP32-C3 uses different internal implementation.
+
+  deep-sleep            ( i.sec -- )
+    Enter deep sleep for i.sec seconds.
+
+  light-sleep           ( i.ms -- )
+    Enter light sleep for i.ms milliseconds.
+
+
+9. WIFI applied in: 
+--------------------------------------------------------------------------------
+  wifi-connected@       ( -- i.flag )
+    Check if WiFi is connected. Returns -1 if connected, 0 if not.
+
+  wifi-open             ( $.ssid $.password i.timeout i.auth_mode -- ior )
+    Connect to WiFi network with specified auth mode.
+    wifi-open depends on wifi_event_handler (set in interface.c).
+    Auth modes: 0=OPEN, 3=WPA2, 4=WPA/WPA2, 7=WPA3, 8=WPA2/WPA3.
+    Returns 0 on success, positive reason code on failure, -1 on timeout.
+
+  esp-wifi-start        ( -- )
+    Start WiFi stack (without connecting).
+
+  esp-wifi-stop         ( -- )
+    Stop WiFi stack.
+
+  ssid-available        ( $.ssid i.timeout -- i.flag )
+    Check if SSID is available within timeout (ms).
+    ssid-available depends on WiFi being in STA mode (use esp-wifi-start first).
+    Returns 1 if found, 0 if not, -1 on error.
+
+
+10. SOCKETS & NETWORK (LWIP) - WITH TRY_RECEIVE
+--------------------------------------------------------------------------------
+  socket                ( i.proto i.type i.family -- i.handle )
+    Create socket. family=AF_INET, type=SOCK_STREAM/SOCK_DGRAM.
+
+  bind                  ( i.len a.addr i.handle -- i.error )
+    Bind socket to address.
+
+  setsockopt            ( i.len a.addr i.optname i.level i.handle -- i.error )
+    Set socket option.
+
+  getsockopt            ( i.len a.addr i.optname i.level i.handle -- i.error )
+    Get socket option.
+
+  connect               ( i.len a.adr i.handle -- i.error )
+    Connect socket.
+
+  try-receive           ( a.buf i.len i.socket -- i.length )
+    Non-blocking receive. Temporarily sets socket non-blocking, restores blocking.
+    This prevents the "recv hang" issue on Windows clients.
+    Returns: >0 = data received, 0 = no data (would block), -1 = error.
+
+  stream-connect        ( i.timeout $.portname $.hostname -- i.handle )
+    Connect TCP stream with timeout.
+
+  udp-connect           ( $.portname $.hostname -- i.handle )
+    Create UDP socket bound to host:port.
+
+  udp-sendto            ( a.data i.len $.port $.host -- i.bytes-sent )
+    Send UDP packet.
+
+  lwip-write            ( a.buf i.size i.handle -- i.count )
+    Write to socket.
+
+  lwip-read             ( a.buf i.size i.handle -- i.count )
+    Read from socket.
+
+  lwip-close            ( i.handle -- )
+    Close socket with shutdown() + close().
+
+  lwip-listen           ( i.backlog i.handle -- i.handle )
+    Listen on socket.
+
+  lwip-accept           ( a.addrlen a.addr i.handle -- i.error )
+    Accept connection.
+
+  start-server          ( i.port -- i.error )
+    Start TCP server on port.
+    Returns socket handle or negative error.
+
+  dhcp-status           ( -- i.status )
+    Get DHCP status (1 = IP assigned, 0 = no IP).
+
+  lwip-select           ( i.sec a.exc a.wr a.rd i.n -- i.cnt )
+    Select with timeout.
+
+  ip-info@              ( a.buf i.adapter# -- i.error )
+    Get IP info (12 bytes: ip, netmask, gw).
+
+  errno                 ( -- i.errno )
+    Get last errno.
+
+  strerror              ( i.errno -- $.msg )
+    Get error message for errno.
+
+
+11. FILESYSTEM (LittleFS)
+--------------------------------------------------------------------------------
+  open-dir              ( $.base_path -- a.dir )
+    Open directory.
+
+  close-dir             ( a.dir -- )
+    Close directory.
+
+  next-file             ( a.dir -- a.dirent )
+    Get next file in directory (NULL when done).
+
+  file-bytes            ( $.name-full a.dir -- i.size )
+    Get file size.
+
+  file-name             ( a.dir -- a.name )
+    Get filename from dirent.
+
+  rename-file           ( $.full-old $.full-new -- i.ior )
+    Rename file.
+
+  delete-file           ( $.full-name -- i.ior )
+    Delete file.
+
+  fs-avail              ( a.free64b $.volume -- )
+    Get available free space.
+    Supports: /esp-32 (LittleFS) and /sdcard (FAT)
+    Example: 0 0 sp@ s" /sdcard" fs-avail ud,.
+
+  lfs-unmount           ( -- i.res )
+    Unmount LittleFS.
+
+  NOTE: LittleFS is mounted at /esp-32/ with partition label "storage".
+
+
+12. FORTH EMITTER
+--------------------------------------------------------------------------------
+  m-emit                ( i.char -- )
+    Forth raw emit (output character via UART).
+
+  scankey               ( -- i.scan_code )
+    Waits until a key is pressed.
+    Returns the VT100/ANSI scan code of the pressed key.
+
+
+13. PWM (MCPWM)
+--------------------------------------------------------------------------------
+  mcpwm-config          ( i.gpio i.pwm_i.freq i.resolution_hz i.timer i.unit a.hndl_ret -- i.error )
+    Configure MCPWM. Not available on ESP32-C3.
+
+  mcpwm-set-comparator  ( i.compare_ticks i.hnl_cmpr -- i.err )
+    Set PWM comparator value.
+
+  mcpwm-timer-control   ( i.flag i.hndl_timer -- i.err )
+    Start/stop PWM timer (flag=1 start, flag=0 stop).
+
+
+14. ALARMS & TIMERS (ESP-Timer)
+--------------------------------------------------------------------------------
+  set-alarm             ( i.xt i.ms -- )
+    Start a one-shot timer that triggers after ms milliseconds.
+    The timer runs once in interrupt context and will interrupt the main loop.
+
+  repeat-alarm          ( i.xt i.ms -- )
+    Start a repeating timer that triggers every ms milliseconds.
+    The timer runs continuously in interrupt context.
+    To stop: 0 0 repeat-alarm
+
+  set-alarm-us          ( i.xt i.us -- )
+    Set one-shot alarm in microseconds.
+
+  repeat-alarm-us       ( i.xt i.us -- )
+    Set repeating alarm in microseconds.
+
+  NOTE: Alarms execute Forth words in interrupt context.
+  Stack switching is handled by alarm_callback().
+
+
+15. MEMORY & TASKS
+--------------------------------------------------------------------------------
+  get-mem-size          ( i.memtype a.buffer -- )
+    Get memory statistics (total, free, largest block).
+    memtype: MALLOC_CAP_8BIT (DRAM), MALLOC_CAP_SPIRAM (PSRAM), etc.
+
+  rtc-fast              ( i.offset -- a.rtc_fast )
+    Get address of RTC fast memory (3584 bytes available).
+
+  esp-clk-cpu-freq      ( -- i.hz )
+    Get CPU clock frequency in Hz.
+
+  xTaskGetCurrentTaskHandle ( -- i.htask )
+    Get current task handle.
+
+  vTaskPrioritySet      ( a.prio i.handle -- )
+    Set task priority.
+
+  uxTaskPriorityGet     ( i.handle -- i.prio )
+    Get task priority.
+
+
+16. QUEUES (FreeRTOS)
+--------------------------------------------------------------------------------
+  xQueueGenericCreate   ( i.type i.itemsize i.qlength -- i.handle )
+    Create queue.
+
+  xQueueGenericSend     ( i.front_back i.xTicksToWait i.pvItemToQueue i.qHandle -- i.res )
+    Send to queue (front_back: 0=back, 1=front).
+
+  xQueueReceive         ( i.xTicksToWait a.pxRxedMessage i.qHandle -- i.res )
+    Receive from queue.
+
+  xQueueGenericReset    ( i.type i.handle -- )
+    Reset queue.
+
+  uxQueueMessagesWaiting ( i.handle -- i.waiting )
+    Get number of messages waiting.
+
+  vQueueDelete          ( i.handle -- )
+    Delete queue.
+
+
+17. ESP-NOW (Wireless Communication)
+--------------------------------------------------------------------------------
+  esp-now-open          ( i.channel -- i.error? )
+    Open ESP-NOW on channel.
+
+  esp-now-open-receiver ( i.channel a.buffer -- i.error? )
+    Open ESP-NOW as receiver with buffer.
+
+  esp-now-listen        ( -- i.flag )
+    Check if ESP-NOW message received.
+
+  esp-now-get-data      ( -- a.buffer )
+    Get ESP-NOW received data (MAC + length + payload).
+
+  esp-now-release-buffer ( -- )
+    Release ESP-NOW receive buffer.
+
+  esp-now-add-peer      ( i.channel i.encryption i.mac -- )
+    Add ESP-NOW peer.
+
+  esp-now-del-peer      ( a.mac -- i.res )
+    Delete ESP-NOW peer.
+
+  esp-now-send          ( i.timeout_ms a.data i.size a.peer -- i.error? )
+    Send ESP-NOW message with timeout.
+
+
+18. SPI (Serial Peripheral Interface)
+--------------------------------------------------------------------------------
+  spi-bus-init          ( i.max-transfer i.host_id i.mosi i.miso i.sclk -- i.error )
+    Initialize SPI bus with DMA.
+
+  spi-device-add        ( i.host_id i.clock_speed i.mode i.cs_pin i.queue_size i.flags a.handle_ptr -- i.error )
+    Add SPI device.
+
+  spi-master-data       ( i.len a.send a.receive i.handle -- i.res )
+    SPI master transfer.
+
+  spi-free              ( i.dev_handle i.bus_handle -- i.error )
+    Free SPI bus and device.
+
+  mount-sd-card         ( i.cs i.format_if_fail i.speed_khz i.host -- i.ior )
+    Mount SD card via SPI.
+
+  sd-unmount            ( i.handle -- i.res )
+    Unmount SD card.
+
+
+19. FILE I/O (C Library)
+--------------------------------------------------------------------------------
+  setvbuf               ( i.handle i.method a.buf i.blksize -- i.res )
+    Set file buffer (method: _IONBF, _IOLBF, _IOFBF).
+
+  fsync                 ( i.handle -- i.res )
+    Sync file to storage.
+
+
+================================================================================
+END OF GLOSSARY
+================================================================================
+July 2026  https://github.com/Jos-Ven/cforth
